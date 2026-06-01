@@ -1,224 +1,266 @@
-<mxfile host="app.diagrams.net" modified="2026-06-02T02:49:15.516+09:00" agent="GitHub Copilot CLI" version="24.7.17" type="device">
-  <diagram id="azure-architecture" name="Azure Architecture">
-    <mxGraphModel dx="1900" dy="1150" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1150" math="0" shadow="0">
-      <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="title" value="Azure Meeting Minutes Architecture" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1f4e79;strokeColor=#17365d;fontColor=#ffffff;fontSize=24;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="30" y="20" width="1840" height="55" as="geometry" />
-        </mxCell>
-        <mxCell id="zone-browser" value="1. User Browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;fontSize=18;fontStyle=1;align=center;verticalAlign=top;spacingTop=12;" vertex="1" parent="1">
-          <mxGeometry x="30" y="100" width="320" height="850" as="geometry" />
-        </mxCell>
-        <mxCell id="zone-app" value="2. App/API Workflow" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;fontSize=18;fontStyle=1;align=center;verticalAlign=top;spacingTop=12;" vertex="1" parent="1">
-          <mxGeometry x="380" y="100" width="610" height="850" as="geometry" />
-        </mxCell>
-        <mxCell id="zone-data" value="3. Data &amp; AI Services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;fontSize=18;fontStyle=1;align=center;verticalAlign=top;spacingTop=12;" vertex="1" parent="1">
-          <mxGeometry x="1020" y="100" width="510" height="850" as="geometry" />
-        </mxCell>
-        <mxCell id="zone-obs" value="4. Observability &amp; Security" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;fontSize=18;fontStyle=1;align=center;verticalAlign=top;spacingTop=12;" vertex="1" parent="1">
-          <mxGeometry x="1560" y="100" width="310" height="850" as="geometry" />
-        </mxCell>
-        <mxCell id="user" value="User&#xa;audio file" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;strokeWidth=1;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="80" y="180" width="220" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="browser" value="Browser Web UI&#xa;select/upload file&#xa;poll results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;strokeWidth=2;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="70" y="300" width="240" height="110" as="geometry" />
-        </mxCell>
-        <mxCell id="review" value="Result review&#xa;transcript/minutes&#xa;speaker mapping" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9e6;strokeColor=#d6b656;strokeWidth=1;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="70" y="700" width="240" height="90" as="geometry" />
-        </mxCell>
-        <mxCell id="app-service" value="Azure App Service&#xa;React Web UI hosting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;strokeWidth=2;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="420" y="170" width="230" height="80" as="geometry" />
-        </mxCell>
-        <mxCell id="functions-api" value="Azure Functions Premium&#xa;HTTP API&#xa;Python 3.13" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;strokeWidth=2;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="420" y="300" width="230" height="100" as="geometry" />
-        </mxCell>
-        <mxCell id="sas" value="User Delegation SAS&#xa;write-only upload URL&#xa;short TTL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2ff;strokeColor=#6c8ebf;strokeWidth=1;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="700" y="310" width="230" height="80" as="geometry" />
-        </mxCell>
-        <mxCell id="durable" value="Durable Functions&#xa;orchestrator&#xa;activity fan-out/fan-in" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;strokeWidth=2;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="420" y="470" width="250" height="100" as="geometry" />
-        </mxCell>
-        <mxCell id="scheduler" value="Durable Task Scheduler&#xa;state, checkpoints&#xa;retries" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2ff;strokeColor=#6c8ebf;strokeWidth=1;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="720" y="470" width="230" height="100" as="geometry" />
-        </mxCell>
-        <mxCell id="pipeline" value="Durable activity pipeline" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5faff;strokeColor=#6c8ebf;strokeWidth=1;fontSize=14;fontStyle=1;align=center;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
-          <mxGeometry x="420" y="630" width="530" height="270" as="geometry" />
-        </mxCell>
-        <mxCell id="validate" value="Validate input" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="445" y="690" width="105" height="55" as="geometry" />
-        </mxCell>
-        <mxCell id="preprocess" value="m4a preprocess&#xa;if needed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="575" y="690" width="120" height="55" as="geometry" />
-        </mxCell>
-        <mxCell id="transcribe" value="Transcribe audio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="720" y="690" width="105" height="55" as="geometry" />
-        </mxCell>
-        <mxCell id="normalize" value="Normalize&#xa;transcript" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="445" y="800" width="105" height="55" as="geometry" />
-        </mxCell>
-        <mxCell id="build-chunks" value="Build transcript&#xa;chunks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="575" y="800" width="120" height="55" as="geometry" />
-        </mxCell>
-        <mxCell id="chunk-summary" value="Chunk summaries&#xa;task_all" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="720" y="800" width="105" height="55" as="geometry" />
-        </mxCell>
-        <mxCell id="final-merge" value="Final merge&#xa;render Markdown" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="845" y="800" width="85" height="55" as="geometry" />
-        </mxCell>
-        <mxCell id="blob" value="Azure Blob Storage&#xa;raw audio&#xa;preprocessed audio&#xa;transcripts&#xa;minutes artifacts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1060" y="170" width="210" height="150" as="geometry" />
-        </mxCell>
-        <mxCell id="cosmos" value="Azure Cosmos DB for NoSQL&#xa;jobs&#xa;speaker mappings&#xa;action items/audit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1300" y="170" width="190" height="150" as="geometry" />
-        </mxCell>
-        <mxCell id="speech" value="Azure Speech in Foundry Tools&#xa;Fast Transcription&#xa;diarization on" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1060" y="400" width="210" height="120" as="geometry" />
-        </mxCell>
-        <mxCell id="openai" value="Azure OpenAI in Microsoft Foundry Models&#xa;chunk summaries&#xa;final merge" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1300" y="400" width="190" height="140" as="geometry" />
-        </mxCell>
-        <mxCell id="artifacts" value="Saved artifacts&#xa;normalized transcript&#xa;minutes JSON/Markdown" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef8ee;strokeColor=#82b366;strokeWidth=1;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1125" y="655" width="300" height="100" as="geometry" />
-        </mxCell>
-        <mxCell id="appinsights" value="Application Insights&#xa;traces, dependencies&#xa;custom metrics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1595" y="170" width="240" height="95" as="geometry" />
-        </mxCell>
-        <mxCell id="loganalytics" value="Log Analytics Workspace&#xa;query and retention" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1595" y="310" width="240" height="90" as="geometry" />
-        </mxCell>
-        <mxCell id="identity" value="Managed Identity / RBAC&#xa;Blob, Cosmos, AI access&#xa;no account keys" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1595" y="470" width="240" height="105" as="geometry" />
-        </mxCell>
-        <mxCell id="security" value="Security controls&#xa;User Delegation SAS&#xa;redacted telemetry&#xa;no content logging" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d79b00;strokeWidth=1;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="1595" y="640" width="240" height="120" as="geometry" />
-        </mxCell>
-        <mxCell id="note" value="Public-safe diagram: placeholder labels only; no resource names, IDs, endpoints, tokens, keys, or SAS URLs. Main path uses whole-audio Fast Transcription with diarization; minutes generation is chunk-parallel." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="30" y="1000" width="1840" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="e-user-browser" value="upload file" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="user" target="browser">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-load-app" value="0 load Web UI" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.25;entryX=0;entryY=0.5;" edge="1" parent="1" source="browser" target="app-service">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points"><mxPoint x="350" y="328" /><mxPoint x="350" y="210" /></Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-post-jobs" value="1 POST /api/jobs" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.45;entryX=0;entryY=0.35;" edge="1" parent="1" source="browser" target="functions-api">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points"><mxPoint x="370" y="350" /></Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-create-sas" value="create SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="functions-api" target="sas">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-return-sas" value="2 jobId + upload SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0;exitY=0.25;entryX=1;entryY=0.65;" edge="1" parent="1" source="sas" target="browser">
-          <mxGeometry relative="1" x="-0.25" y="18" as="geometry">
-            <Array as="points"><mxPoint x="680" y="330" /><mxPoint x="680" y="455" /><mxPoint x="330" y="455" /></Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-direct-put" value="3 direct Blob PUT" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=3;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.85;entryX=0;entryY=0.35;" edge="1" parent="1" source="browser" target="blob">
-          <mxGeometry relative="1" x="0.05" y="-18" as="geometry">
-            <Array as="points"><mxPoint x="365" y="394" /><mxPoint x="365" y="225" /><mxPoint x="1000" y="225" /></Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-upload-complete" value="4 POST upload-complete" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.68;entryX=0;entryY=0.78;" edge="1" parent="1" source="browser" target="functions-api">
-          <mxGeometry relative="1" x="0.1" y="16" as="geometry">
-            <Array as="points"><mxPoint x="370" y="375" /></Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-start-orch" value="5 start orchestration; 202 Accepted" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="functions-api" target="durable">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-state" value="state/checkpoints/retries" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;strokeWidth=2;dashed=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="durable" target="scheduler">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-durable-validate" value="6 activity calls" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.35;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="durable" target="validate">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-validate-preprocess" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="validate" target="preprocess">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-preprocess-transcribe" value="7 read audio SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="preprocess" target="transcribe">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-transcribe-speech" value="8 Fast Transcription + diarization" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.45;entryX=0;entryY=0.5;" edge="1" parent="1" source="transcribe" target="speech">
-          <mxGeometry relative="1" x="0.1" y="-15" as="geometry">
-            <Array as="points"><mxPoint x="1000" y="715" /><mxPoint x="1000" y="460" /></Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-speech-blob" value="raw transcript" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="speech" target="blob">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-blob-fetch" value="audioUrl SAS fetch" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;dashed=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.25;exitY=1;entryX=0.25;entryY=0;" edge="1" parent="1" source="blob" target="speech">
-          <mxGeometry relative="1" x="-0.2" y="18" as="geometry" />
-        </mxCell>
-        <mxCell id="e-transcribe-normalize" value="9 normalize/chunk" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;entryX=0.5;entryY=0;" edge="1" parent="1" source="transcribe" target="normalize">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points"><mxPoint x="773" y="770" /><mxPoint x="498" y="770" /></Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-normalize-chunks" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="normalize" target="build-chunks">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-chunks-summary" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="build-chunks" target="chunk-summary">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-summary-openai" value="10 chunk summaries" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.3;entryX=0;entryY=0.65;" edge="1" parent="1" source="chunk-summary" target="openai">
-          <mxGeometry relative="1" x="0.1" y="18" as="geometry">
-            <Array as="points"><mxPoint x="1000" y="817" /><mxPoint x="1000" y="491" /></Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-summary-final" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="chunk-summary" target="final-merge">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-final-openai" value="11 final merge" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.72;entryX=0;entryY=0.85;" edge="1" parent="1" source="final-merge" target="openai">
-          <mxGeometry relative="1" x="0.15" y="-18" as="geometry">
-            <Array as="points"><mxPoint x="1005" y="840" /><mxPoint x="1005" y="519" /></Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-final-artifacts" value="12 persist artifacts" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="final-merge" target="artifacts">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points"><mxPoint x="1000" y="828" /><mxPoint x="1000" y="705" /></Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-artifacts-blob" value="minutes + transcript" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.25;exitY=0;entryX=0.7;entryY=1;" edge="1" parent="1" source="artifacts" target="blob">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-artifacts-cosmos" value="job/output metadata" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.75;exitY=0;entryX=0.45;entryY=1;" edge="1" parent="1" source="artifacts" target="cosmos">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-api-cosmos" value="job status" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.2;entryX=0;entryY=0.3;" edge="1" parent="1" source="functions-api" target="cosmos">
-          <mxGeometry relative="1" x="0.05" y="-18" as="geometry">
-            <Array as="points"><mxPoint x="980" y="320" /><mxPoint x="980" y="215" /></Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-poll" value="13 poll GET status/transcript/minutes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;strokeWidth=2;dashed=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.9;" edge="1" parent="1" source="review" target="functions-api">
-          <mxGeometry relative="1" x="0.1" y="-18" as="geometry">
-            <Array as="points"><mxPoint x="360" y="745" /><mxPoint x="360" y="390" /></Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-api-blob" value="serve transcript/minutes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.55;entryX=0;entryY=0.65;" edge="1" parent="1" source="functions-api" target="blob">
-          <mxGeometry relative="1" x="0.1" y="18" as="geometry">
-            <Array as="points"><mxPoint x="1000" y="355" /><mxPoint x="1000" y="268" /></Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-api-appi" value="telemetry" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;dashed=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.05;entryX=0;entryY=0.5;" edge="1" parent="1" source="functions-api" target="appinsights">
-          <mxGeometry relative="1" x="0.1" y="-18" as="geometry">
-            <Array as="points"><mxPoint x="1540" y="305" /><mxPoint x="1540" y="218" /></Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-appi-log" value="workspace logs" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="appinsights" target="loganalytics">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-identity-functions" value="managed identity + RBAC" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d79b00;strokeWidth=2;dashed=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0;exitY=0.55;entryX=1;entryY=0.55;" edge="1" parent="1" source="identity" target="durable">
-          <mxGeometry relative="1" x="0.05" y="-18" as="geometry">
-            <Array as="points"><mxPoint x="1540" y="528" /><mxPoint x="1540" y="525" /></Array>
-          </mxGeometry>
-        </mxCell>
-      </root>
-    </mxGraphModel>
-  </diagram>
+<mxfile host="65bd71144e">
+    <diagram id="azure-architecture" name="Azure Architecture">
+        <mxGraphModel dx="2066" dy="816" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1130" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="Azure Meeting Minutes Architecture" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1f4e79;strokeColor=#17365d;fontColor=#ffffff;fontSize=24;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="20" width="1840" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="zone-browser" value="1. User Browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;fontSize=18;fontStyle=1;align=center;verticalAlign=top;spacingTop=12;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="100" width="320" height="900" as="geometry"/>
+                </mxCell>
+                <mxCell id="zone-app" value="2. App / API Workflow" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;fontSize=18;fontStyle=1;align=center;verticalAlign=top;spacingTop=12;" parent="1" vertex="1">
+                    <mxGeometry x="380" y="100" width="620" height="900" as="geometry"/>
+                </mxCell>
+                <mxCell id="zone-data" value="3. Data &amp; AI Services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;fontSize=18;fontStyle=1;align=center;verticalAlign=top;spacingTop=12;" parent="1" vertex="1">
+                    <mxGeometry x="1030" y="100" width="500" height="900" as="geometry"/>
+                </mxCell>
+                <mxCell id="zone-obs" value="4. Observability &amp; Security" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;fontSize=18;fontStyle=1;align=center;verticalAlign=top;spacingTop=12;" parent="1" vertex="1">
+                    <mxGeometry x="1560" y="100" width="310" height="900" as="geometry"/>
+                </mxCell>
+                <mxCell id="user" value="User&#xa;audio file" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;strokeWidth=1;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="170" width="220" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="browser" value="Browser Web UI&#xa;select / upload file&#xa;poll results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;strokeWidth=2;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="300" width="240" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="review" value="Result review&#xa;transcript / minutes&#xa;speaker mapping" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9e6;strokeColor=#d6b656;strokeWidth=1;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="720" width="240" height="96" as="geometry"/>
+                </mxCell>
+                <mxCell id="app-service" value="Azure App Service&#xa;React Web UI hosting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;strokeWidth=2;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="420" y="160" width="230" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="functions-api" value="Azure Functions Premium&#xa;HTTP API (Python 3.13)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;strokeWidth=2;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="420" y="290" width="230" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="sas" value="User Delegation SAS&#xa;write-only upload URL&#xa;short TTL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2ff;strokeColor=#6c8ebf;strokeWidth=1;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="710" y="300" width="240" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="durable" value="Durable Functions&#xa;orchestrator&#xa;fan-out / fan-in" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;strokeWidth=2;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="420" y="450" width="240" height="96" as="geometry"/>
+                </mxCell>
+                <mxCell id="scheduler" value="Durable Task Scheduler&#xa;state / checkpoints / retries" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2ff;strokeColor=#6c8ebf;strokeWidth=1;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="710" y="454" width="240" height="88" as="geometry"/>
+                </mxCell>
+                <mxCell id="pipeline" value="Durable activity pipeline" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5faff;strokeColor=#6c8ebf;strokeWidth=1;fontSize=14;fontStyle=1;align=center;verticalAlign=top;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="410" y="620" width="580" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="validate" value="① Validate input" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="430" y="662" width="150" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="preprocess" value="② m4a preprocess&#xa;(if needed)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="662" width="150" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="transcribe" value="③ Transcribe audio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="770" y="662" width="150" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="normalize" value="④ Normalize&#xa;+ build chunks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="430" y="772" width="150" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="chunk-summary" value="⑤ Chunk summaries&#xa;(task_all)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="772" width="150" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="final-merge" value="⑥ Final merge&#xa;render Markdown" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="770" y="772" width="150" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="blob" value="Azure Blob Storage&#xa;raw + preprocessed audio&#xa;transcripts / minutes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1070" y="160" width="200" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="cosmos" value="Azure Cosmos DB for NoSQL&#xa;jobs / speaker mappings&#xa;action items / audit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1320" y="160" width="190" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="speech" value="Azure Speech in Foundry Tools&#xa;Fast Transcription&#xa;diarization on" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1070" y="360" width="200" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="openai" value="Azure OpenAI in Microsoft Foundry Models&#xa;chunk summaries&#xa;final merge" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1320" y="360" width="190" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="artifacts" value="Saved artifacts&#xa;normalized transcript&#xa;minutes JSON / Markdown" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef8ee;strokeColor=#82b366;strokeWidth=1;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1120" y="620" width="320" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="appinsights" value="Application Insights&#xa;traces / dependencies&#xa;custom metrics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1595" y="160" width="240" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="loganalytics" value="Log Analytics Workspace&#xa;query and retention" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1595" y="300" width="240" height="84" as="geometry"/>
+                </mxCell>
+                <mxCell id="identity" value="Managed Identity / RBAC&#xa;Blob, Cosmos, AI access&#xa;no account keys" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1595" y="450" width="240" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="security" value="Security controls&#xa;User Delegation SAS&#xa;redacted telemetry&#xa;no content logging" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d79b00;strokeWidth=1;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1595" y="620" width="240" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="note" value="Public-safe diagram: placeholder labels only; no resource names, IDs, endpoints, tokens, keys, or SAS URLs. Main path uses whole-audio Fast Transcription with diarization; minutes generation is chunk-parallel." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="1040" width="1840" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-user-browser" value="upload file" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="user" target="browser" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-load-app" value="0 load Web UI" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.08;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="browser" target="app-service" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="395" y="310"/>
+                            <mxPoint x="395" y="197"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-post-jobs" value="1 POST /api/jobs" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" parent="1" source="browser" target="functions-api" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="390" y="330"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-create-sas" value="create SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="functions-api" target="sas" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-return-sas" value="2 jobId + upload SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.9;entryDx=0;entryDy=0;" parent="1" source="sas" target="browser" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="830" y="430"/>
+                            <mxPoint x="340" y="430"/>
+                            <mxPoint x="340" y="408"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-direct-put" value="3 direct Blob PUT" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=3;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.85;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="browser" target="blob" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="360" y="402"/>
+                            <mxPoint x="360" y="140"/>
+                            <mxPoint x="1170" y="140"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-upload-complete" value="4 POST upload-complete (202)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.55;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" parent="1" source="browser" target="functions-api" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="395" y="366"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-start-orch" value="5 start orchestration" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="functions-api" target="durable" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-state" value="state / checkpoints / retries" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;strokeWidth=2;dashed=1;startArrow=block;startFill=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="durable" target="scheduler" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-durable-validate" value="6 activity calls" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="durable" target="validate" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-v-p" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="validate" target="preprocess">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-p-t" value="7 read audio SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="preprocess" target="transcribe">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-t-n" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="transcribe" target="normalize">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="845" y="750"/>
+                            <mxPoint x="505" y="750"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-n-c" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="normalize" target="chunk-summary">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-c-f" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="chunk-summary" target="final-merge">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-transcribe-speech" value="8 Fast Transcription + diarization" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="transcribe" target="speech" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1000" y="691"/>
+                            <mxPoint x="1000" y="420"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-speech-blob" value="raw transcript ⇄ audioUrl fetch" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;dashed=1;startArrow=block;startFill=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="speech" target="blob" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-summary-openai" value="10 chunk summaries" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.95;entryDx=0;entryDy=0;" parent="1" source="chunk-summary" target="openai" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="675" y="848"/>
+                            <mxPoint x="1010" y="848"/>
+                            <mxPoint x="1010" y="493"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-final-openai" value="11 final merge" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.8;exitDx=0;exitDy=0;entryX=0;entryY=0.9;entryDx=0;entryDy=0;" parent="1" source="final-merge" target="openai" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1020" y="818"/>
+                            <mxPoint x="1020" y="486"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-final-artifacts" value="12 persist artifacts" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" parent="1" source="final-merge" target="artifacts" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1035" y="795"/>
+                            <mxPoint x="1035" y="690"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-artifacts-blob" value="minutes + transcript" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="artifacts" target="blob" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1055" y="650"/>
+                            <mxPoint x="1055" y="230"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-artifacts-cosmos" value="job / output metadata" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="artifacts" target="cosmos" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1525" y="660"/>
+                            <mxPoint x="1525" y="230"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-api-cosmos" value="job status" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.95;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="functions-api" target="cosmos" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1000" y="385"/>
+                            <mxPoint x="1000" y="150"/>
+                            <mxPoint x="1415" y="150"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-poll" value="13 poll GET status / transcript / minutes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;strokeWidth=2;dashed=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.95;entryDx=0;entryDy=0;" parent="1" source="review" target="functions-api" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="355" y="758"/>
+                            <mxPoint x="355" y="385"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-api-appi" value="telemetry" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;dashed=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="functions-api" target="appinsights" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="665" y="330"/>
+                            <mxPoint x="665" y="120"/>
+                            <mxPoint x="1715" y="120"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-appi-log" value="workspace logs" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="appinsights" target="loganalytics" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-identity-durable" value="managed identity + RBAC" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d79b00;strokeWidth=2;dashed=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="identity" target="durable">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1555" y="500"/>
+                            <mxPoint x="1555" y="960"/>
+                            <mxPoint x="380" y="960"/>
+                            <mxPoint x="380" y="498"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
 </mxfile>
-
