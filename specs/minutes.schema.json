@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/minutes.schema.json",
+  "title": "MeetingMinutes",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "jobId",
+    "tenantId",
+    "title",
+    "summary",
+    "topics",
+    "decisions",
+    "actionItems",
+    "openQuestions",
+    "risks",
+    "generatedAt"
+  ],
+  "properties": {
+    "jobId": { "type": "string" },
+    "tenantId": { "type": "string" },
+    "title": { "type": "string" },
+    "meetingDate": { "type": ["string", "null"], "format": "date" },
+    "summary": { "type": "string" },
+    "speakers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["speakerLabel", "displayName"],
+        "properties": {
+          "speakerLabel": { "type": "string" },
+          "displayName": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "topics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "discussion", "decisions", "actionItems", "openQuestions", "risks", "evidenceTimestamps"],
+        "properties": {
+          "title": { "type": "string" },
+          "discussion": { "type": "string" },
+          "decisions": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/decision" }
+          },
+          "actionItems": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/actionItem" }
+          },
+          "openQuestions": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/openQuestion" }
+          },
+          "risks": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/risk" }
+          },
+          "evidenceTimestamps": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/timestamp" }
+          }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/decision" }
+    },
+    "actionItems": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/actionItem" }
+    },
+    "openQuestions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/openQuestion" }
+    },
+    "risks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/risk" }
+    },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "deploymentName": { "type": "string" },
+        "modelName": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{2}:\\d{2}:\\d{2}$"
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "owner", "sourceTimestamps"],
+      "properties": {
+        "text": { "type": "string" },
+        "owner": { "type": ["string", "null"] },
+        "sourceTimestamps": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/timestamp" }
+        }
+      }
+    },
+    "actionItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task", "owner", "dueDate", "sourceTimestamps"],
+      "properties": {
+        "task": { "type": "string" },
+        "owner": { "type": ["string", "null"] },
+        "dueDate": { "type": ["string", "null"], "format": "date" },
+        "sourceTimestamps": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/timestamp" }
+        }
+      }
+    },
+    "openQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "owner", "sourceTimestamps"],
+      "properties": {
+        "text": { "type": "string" },
+        "owner": { "type": ["string", "null"] },
+        "sourceTimestamps": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/timestamp" }
+        }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "severity", "sourceTimestamps"],
+      "properties": {
+        "text": { "type": "string" },
+        "severity": { "type": "string", "enum": ["low", "medium", "high", "unknown"] },
+        "sourceTimestamps": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/timestamp" }
+        }
+      }
+    }
+  }
+}

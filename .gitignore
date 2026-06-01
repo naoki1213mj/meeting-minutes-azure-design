@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+backend/.python_packages/
+
+# Node
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Azure Functions
+local.settings.json
+backend/local.settings.json
+
+# Azure Developer CLI local state
+.azure/*
+
+# Generated infrastructure outputs
+infra/main.json
+infra/preflight-*.bicepparam
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Generated artifacts
+artifacts/
+
+# Local media samples and meeting recordings
+*.aac
+*.flac
+*.m4a
+*.mov
+*.mp3
+*.mp4
+*.ogg
+*.wav
+*.webm

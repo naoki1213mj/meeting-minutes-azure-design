@@ -1,0 +1,32 @@
+name: meeting-minutes-azure-design
+metadata:
+  template: meeting-minutes-azure-design@0.1.0
+infra:
+  provider: bicep
+  path: infra
+services:
+  backend:
+    project: ./backend
+    language: py
+    host: function
+    hooks:
+      prepackage:
+        windows:
+          shell: pwsh
+          run: if (Test-Path specs) { Remove-Item -Recurse -Force specs }; Copy-Item -Recurse ..\specs .\specs
+        posix:
+          shell: sh
+          run: rm -rf specs && cp -R ../specs ./specs
+        interactive: false
+      postpackage:
+        windows:
+          shell: pwsh
+          run: if (Test-Path specs) { Remove-Item -Recurse -Force specs }
+        posix:
+          shell: sh
+          run: rm -rf specs
+        interactive: false
+  frontend:
+    project: ./frontend
+    language: ts
+    host: appservice

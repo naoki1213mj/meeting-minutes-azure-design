@@ -1,0 +1,18 @@
+{
+  "goldenSetId": "basic-decision-v1",
+  "exhaustive": true,
+  "decisions": [
+    {
+      "text": "週次で進捗を確認する",
+      "sourceTimestamps": ["00:00:10"]
+    }
+  ],
+  "actionItems": [
+    {
+      "task": "進捗を確認する",
+      "owner": "田中",
+      "dueDate": null,
+      "sourceTimestamps": ["00:00:20"]
+    }
+  ]
+}

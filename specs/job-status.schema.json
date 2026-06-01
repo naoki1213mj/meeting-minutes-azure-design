@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/job-status.schema.json",
+  "title": "MeetingMinutesJobStatus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["jobId", "tenantId", "status", "progress", "createdAt", "updatedAt"],
+  "properties": {
+    "jobId": { "type": "string", "minLength": 1 },
+    "tenantId": { "type": "string", "minLength": 1 },
+    "userId": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": [
+        "CREATED",
+        "UPLOADING",
+        "UPLOADED",
+        "VALIDATING",
+        "PREPROCESSING",
+        "TRANSCRIBING",
+        "TRANSCRIPT_READY",
+        "GENERATING_CHUNK_SUMMARIES",
+        "GENERATING_FINAL_MINUTES",
+        "REVIEW_REQUIRED",
+        "DONE",
+        "FAILED",
+        "CANCELLED"
+      ]
+    },
+    "progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "percent", "message", "updatedAt"],
+      "properties": {
+        "step": { "type": "string" },
+        "percent": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "message": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "transcriptReady": { "type": "boolean" },
+        "minutesReady": { "type": "boolean" },
+        "rawTranscriptBlobUri": { "type": ["string", "null"] },
+        "normalizedTranscriptBlobUri": { "type": ["string", "null"] },
+        "minutesJsonBlobUri": { "type": ["string", "null"] },
+        "minutesMarkdownBlobUri": { "type": ["string", "null"] }
+      }
+    },
+    "timings": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "createdAt": { "type": "string", "format": "date-time" },
+        "uploadedAt": { "type": ["string", "null"], "format": "date-time" },
+        "transcriptionStartedAt": { "type": ["string", "null"], "format": "date-time" },
+        "transcriptReadyAt": { "type": ["string", "null"], "format": "date-time" },
+        "minutesReadyAt": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+    "error": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["code", "message", "correlationId"],
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "details": { "type": "object" },
+        "correlationId": { "type": "string" }
+      }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

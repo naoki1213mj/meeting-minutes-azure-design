@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/minutes.structured-output.schema.json",
+  "title": "MeetingMinutesStructuredOutput",
+  "description": "Schema used directly with Azure OpenAI structured outputs. It intentionally avoids unsupported JSON Schema keywords such as format, pattern, minItems, and maxItems.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "meetingDate",
+    "summary",
+    "speakers",
+    "topics",
+    "decisions",
+    "actionItems",
+    "openQuestions",
+    "risks"
+  ],
+  "properties": {
+    "title": { "type": "string" },
+    "meetingDate": { "type": ["string", "null"] },
+    "summary": { "type": "string" },
+    "speakers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["speakerLabel", "displayName"],
+        "properties": {
+          "speakerLabel": { "type": "string" },
+          "displayName": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "topics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "discussion", "decisions", "actionItems", "openQuestions", "risks", "evidenceTimestamps"],
+        "properties": {
+          "title": { "type": "string" },
+          "discussion": { "type": "string" },
+          "decisions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["text", "owner", "sourceTimestamps"],
+              "properties": {
+                "text": { "type": "string" },
+                "owner": { "type": ["string", "null"] },
+                "sourceTimestamps": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          },
+          "actionItems": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["task", "owner", "dueDate", "sourceTimestamps"],
+              "properties": {
+                "task": { "type": "string" },
+                "owner": { "type": ["string", "null"] },
+                "dueDate": { "type": ["string", "null"] },
+                "sourceTimestamps": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          },
+          "openQuestions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["text", "owner", "sourceTimestamps"],
+              "properties": {
+                "text": { "type": "string" },
+                "owner": { "type": ["string", "null"] },
+                "sourceTimestamps": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["text", "severity", "sourceTimestamps"],
+              "properties": {
+                "text": { "type": "string" },
+                "severity": { "type": "string", "enum": ["low", "medium", "high", "unknown"] },
+                "sourceTimestamps": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          },
+          "evidenceTimestamps": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "owner", "sourceTimestamps"],
+        "properties": {
+          "text": { "type": "string" },
+          "owner": { "type": ["string", "null"] },
+          "sourceTimestamps": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "actionItems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["task", "owner", "dueDate", "sourceTimestamps"],
+        "properties": {
+          "task": { "type": "string" },
+          "owner": { "type": ["string", "null"] },
+          "dueDate": { "type": ["string", "null"] },
+          "sourceTimestamps": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "openQuestions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "owner", "sourceTimestamps"],
+        "properties": {
+          "text": { "type": "string" },
+          "owner": { "type": ["string", "null"] },
+          "sourceTimestamps": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "severity", "sourceTimestamps"],
+        "properties": {
+          "text": { "type": "string" },
+          "severity": { "type": "string", "enum": ["low", "medium", "high", "unknown"] },
+          "sourceTimestamps": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

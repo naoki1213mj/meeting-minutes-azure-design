@@ -1,0 +1,23 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "DURABLE_TASK_SCHEDULER_CONNECTION_STRING": "Endpoint=http://localhost:8080;TaskHub=default;Authentication=None",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "ENVIRONMENT": "local",
+    "MEETING_MINUTES_ENV": "local",
+    "APPLICATIONINSIGHTS_CONNECTION_STRING": "",
+    "AZURE_CLIENT_ID": "",
+    "AZURE_TENANT_ID": "",
+    "AZURE_ALLOWED_AUDIENCES": "",
+    "AZURE_STORAGE_ACCOUNT_URL": "",
+    "AZURE_STORAGE_CONTAINER_NAME": "audio",
+    "AZURE_COSMOS_ENDPOINT": "",
+    "AZURE_COSMOS_DATABASE_NAME": "meeting-minutes",
+    "AZURE_COSMOS_JOBS_CONTAINER_NAME": "jobs",
+    "AZURE_SPEECH_ENDPOINT": "",
+    "AZURE_OPENAI_BASE_URL": "",
+    "AZURE_OPENAI_DEPLOYMENT_CHUNK_SUMMARY": "gpt-5.4-mini",
+    "AZURE_OPENAI_DEPLOYMENT_FINAL_MERGE": "gpt-5.4"
+  }
+}

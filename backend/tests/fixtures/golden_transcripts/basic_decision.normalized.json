@@ -1,0 +1,44 @@
+{
+  "jobId": "golden-basic-decision",
+  "tenantId": "tenant-golden",
+  "locale": "ja-JP",
+  "durationMilliseconds": 120000,
+  "speakers": [
+    {
+      "speakerLabel": "Speaker 1",
+      "displayName": null,
+      "phraseCount": 2,
+      "representativePhrases": [
+        {
+          "offsetMilliseconds": 10000,
+          "startTimeText": "00:00:10",
+          "text": "次回から週次で進捗を確認しましょう。"
+        }
+      ]
+    }
+  ],
+  "phrases": [
+    {
+      "phraseId": "p00001",
+      "speakerLabel": "Speaker 1",
+      "displayName": null,
+      "offsetMilliseconds": 10000,
+      "durationMilliseconds": 3000,
+      "startTimeText": "00:00:10",
+      "endTimeText": "00:00:13",
+      "text": "次回から週次で進捗を確認しましょう。",
+      "confidence": 0.95
+    },
+    {
+      "phraseId": "p00002",
+      "speakerLabel": "Speaker 2",
+      "displayName": null,
+      "offsetMilliseconds": 20000,
+      "durationMilliseconds": 3000,
+      "startTimeText": "00:00:20",
+      "endTimeText": "00:00:23",
+      "text": "田中さんが確認します。期限はまだ決めません。",
+      "confidence": 0.93
+    }
+  ]
+}
