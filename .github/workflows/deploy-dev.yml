@@ -1,0 +1,233 @@
+name: Deploy dev
+
+"on":
+  workflow_dispatch:
+    inputs:
+      service:
+        description: Deploy target. all runs azd up; backend/frontend run provision plus targeted deploy.
+        type: choice
+        required: false
+        default: all
+        options:
+          - all
+          - backend
+          - frontend
+      dry_run:
+        description: Validate OIDC, RBAC, and azd setup without changing Azure resources.
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy dev
+    runs-on: ubuntu-latest
+    environment:
+      name: dev
+    env:
+      SERVICE: ${{ inputs.service }}
+      DRY_RUN: ${{ inputs.dry_run }}
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+      AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+      AZURE_PRINCIPAL_ID: ${{ vars.AZURE_PRINCIPAL_ID }}
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Guard dispatch branch and required variables
+        run: |
+          set -euo pipefail
+
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::dev deploy is allowed only from refs/heads/main. Also configure the dev GitHub Environment deployment branch rule to main."
+            exit 1
+          fi
+
+          missing=()
+          for name in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID AZURE_LOCATION AZURE_ENV_NAME AZURE_PRINCIPAL_ID; do
+            if [ -z "${!name:-}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Missing required GitHub Environment variables for dev: ${missing[*]}"
+            cat <<'EOF'
+          Configure the dev environment before deployment:
+          - OIDC federated credential subject: repo:<ORG>/<REPO>:environment:dev
+          - AZURE_CLIENT_ID: federated app registration client ID
+          - AZURE_TENANT_ID: tenant ID
+          - AZURE_SUBSCRIPTION_ID: target subscription ID
+          - AZURE_LOCATION: Azure region, for example westus3
+          - AZURE_ENV_NAME: dev
+          - AZURE_PRINCIPAL_ID: service principal object ID, not client ID
+          - RBAC: Contributor plus User Access Administrator, Role Based Access Control Administrator, or Owner at the required scope
+          EOF
+            exit 1
+          fi
+
+          if [ "$AZURE_ENV_NAME" != "dev" ]; then
+            echo "::error::AZURE_ENV_NAME must be exactly 'dev' for the dev workflow."
+            exit 1
+          fi
+
+          if [ "$AZURE_CLIENT_ID" = "$AZURE_PRINCIPAL_ID" ]; then
+            echo "::error::AZURE_PRINCIPAL_ID must be the service principal object ID. It must not equal AZURE_CLIENT_ID."
+            exit 1
+          fi
+
+          case "$SERVICE" in
+            all|backend|frontend) ;;
+            *)
+              echo "::error::Unsupported service input: $SERVICE"
+              exit 1
+              ;;
+          esac
+
+          echo "Required dev deployment variables are configured. Values are not printed."
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Azure Developer CLI
+        uses: Azure/setup-azd@v2
+
+      - name: Guard current Bicep principal type caveat
+        run: |
+          set -euo pipefail
+
+          if grep -A12 "resource developerDurableTaskRole" infra/app.bicep | grep -q "principalType: 'User'"; then
+            cat <<'EOF'
+          Current Bicep blocks service-principal deployment:
+          - infra/app.bicep assigns developerDurableTaskRole with principalType 'User'.
+          - GitHub OIDC deploy uses a service principal object ID in AZURE_PRINCIPAL_ID.
+          - Fix the Bicep principalType, or split this role assignment into a bootstrap step, before running a real dev deployment.
+          EOF
+
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "::warning::dry_run=true, so the workflow continues for OIDC/RBAC validation only. A real deployment will fail before Azure changes."
+            else
+              echo "::error::Refusing to deploy until the service-principal/Durable Task role-assignment caveat is resolved."
+              exit 1
+            fi
+          fi
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Azure Developer CLI login
+        run: |
+          set -euo pipefail
+          azd auth login \
+            --client-id "$AZURE_CLIENT_ID" \
+            --tenant-id "$AZURE_TENANT_ID" \
+            --federated-credential-provider github
+
+      - name: Configure azd environment
+        run: |
+          set -euo pipefail
+
+          if [ -d ".azure/$AZURE_ENV_NAME" ]; then
+            azd env select "$AZURE_ENV_NAME"
+          else
+            azd env new "$AZURE_ENV_NAME" \
+              --subscription "$AZURE_SUBSCRIPTION_ID" \
+              --location "$AZURE_LOCATION" \
+              --no-prompt
+          fi
+
+          azd env set AZURE_SUBSCRIPTION_ID "$AZURE_SUBSCRIPTION_ID"
+          azd env set AZURE_LOCATION "$AZURE_LOCATION"
+          azd env set AZURE_ENV_NAME "$AZURE_ENV_NAME"
+          azd env set AZURE_PRINCIPAL_ID "$AZURE_PRINCIPAL_ID"
+
+      - name: Validate OIDC and RBAC prerequisites
+        run: |
+          set -euo pipefail
+
+          az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+          active_subscription="$(az account show --query id -o tsv)"
+          if [ "$active_subscription" != "$AZURE_SUBSCRIPTION_ID" ]; then
+            echo "::error::Azure CLI is not scoped to the configured subscription."
+            exit 1
+          fi
+
+          scope="/subscriptions/$AZURE_SUBSCRIPTION_ID"
+          roles="$(az role assignment list \
+            --assignee-object-id "$AZURE_PRINCIPAL_ID" \
+            --scope "$scope" \
+            --include-inherited \
+            --query "[].roleDefinitionName" \
+            -o tsv)"
+
+          if [ -z "$roles" ]; then
+            echo "::error::No role assignments were found for AZURE_PRINCIPAL_ID at the subscription scope."
+            exit 1
+          fi
+
+          has_role() {
+            printf '%s\n' "$roles" | grep -Fxq "$1"
+          }
+
+          if ! has_role "Owner" && ! has_role "Contributor"; then
+            echo "::error::Current IaC needs Contributor or Owner for provision/deploy."
+            exit 1
+          fi
+
+          if ! has_role "Owner" && ! has_role "User Access Administrator" && ! has_role "Role Based Access Control Administrator"; then
+            echo "::error::Current IaC creates role assignments. Grant Owner, User Access Administrator, or Role Based Access Control Administrator before deployment."
+            exit 1
+          fi
+
+          echo "OIDC login and required RBAC role names were validated."
+
+      - name: Dry run complete
+        if: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          echo "dry_run=true: skipping azd provision/deploy. No Azure resources were changed by this workflow."
+
+      - name: Deploy with azd
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+
+          case "$SERVICE" in
+            all)
+              azd up --no-prompt
+              ;;
+            backend|frontend)
+              azd provision --no-prompt
+              azd deploy "$SERVICE" --no-prompt
+              ;;
+          esac

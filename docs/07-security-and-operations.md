@@ -257,10 +257,10 @@ Azure Storage、Cosmos DB、Application Insights の標準暗号化を使う。�
 
 | Environment | 用途 | 必須ゲート |
 |---|---|---|
-| `dev` | `main` merge後の継続デプロイ | CI成功、OIDC subject固定、環境単位concurrency |
+| `dev` | 手動 `workflow_dispatch` による検証・デプロイ | CI成功、OIDC subject固定、環境単位concurrency、`dry_run=true` 既定 |
 | `prod` | 本番候補の手動デプロイ | required reviewers、保護ブランチ/タグ、手動 `workflow_dispatch`、demo認証無効化確認 |
 
-deploy/provisionは環境ごとのconcurrency groupを使い、`cancel-in-progress: false` にする。途中でprovisionやrole assignmentを中断して環境を半端な状態にしない。
+deploy/provisionは環境ごとのconcurrency groupを使い、`cancel-in-progress: false` にする。途中でprovisionやrole assignmentを中断して環境を半端な状態にしない。現行dev workflowは自動push deployではなく手動実行のみ。
 
 ### 13.3 Azure OIDC変数
 

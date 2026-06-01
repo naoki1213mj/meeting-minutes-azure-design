@@ -1,0 +1,142 @@
+name: CI
+
+'on':
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --frozen
+
+      - name: Lint
+        working-directory: backend
+        run: uv run ruff check .
+
+      - name: Type check
+        working-directory: backend
+        run: uv run mypy .
+
+      - name: Test
+        working-directory: backend
+        run: uv run pytest --quiet
+
+      - name: Validate specs
+        working-directory: backend
+        run: uv run python ../scripts/validate_specs.py
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Type check
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: Test
+        working-directory: frontend
+        run: npm test
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+  infra:
+    name: Infra
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Bicep
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az bicep install
+            az bicep build --file infra/main.bicep
+
+  public-safety:
+    name: Public safety
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Scan for concrete leaked values
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          fail_if_hits() {
+            local label="$1"
+            local hits="$2"
+
+            if [ -n "$hits" ]; then
+              echo "::error::$label"
+              printf '%s\n' "$hits" | sed -E 's/^([^:]+:[0-9]+):.*$/\1:<redacted>/'
+              exit 1
+            fi
+          }
+
+          tracked_paths=(-- . ':!.github/workflows/ci.yml')
+
+          local_path_pattern='([A-Za-z]:[\\/]+Users[\\/]+[^\\/[:space:]<>]+[\\/]+|/Users/[^/[:space:]<>]+/|/home/[^/[:space:]<>]+/)'
+          local_path_hits="$(git grep -nIE "$local_path_pattern" "${tracked_paths[@]}" || true)"
+          local_path_hits="$(printf '%s\n' "$local_path_hits" | grep -Ev '(/home/site/|/home/runner/|/Users/(runner|your-user|example)/|[\\/]Users[\\/](runner|your-user|example)[\\/])' || true)"
+          fail_if_hits "Concrete local profile path found" "$local_path_hits"
+
+          storage_key_pattern='DefaultEndpointsProtocol=[^[:space:]]*;.*AccountKey=[A-Za-z0-9+/=]{40,}'
+          storage_key_hits="$(git grep -nIE "$storage_key_pattern" "${tracked_paths[@]}" || true)"
+          storage_key_hits="$(printf '%s\n' "$storage_key_hits" | grep -Eiv '(REDACTED|example|placeholder|<[^>]+>|\*\*\*|UseDevelopmentStorage=true)' || true)"
+          fail_if_hits "Potential unredacted storage account key found" "$storage_key_hits"
+
+          sas_pattern='[?&]sig=[A-Za-z0-9%+/_=.-]{20,}'
+          sas_hits="$(git grep -nIE "$sas_pattern" "${tracked_paths[@]}" || true)"
+          sas_hits="$(printf '%s\n' "$sas_hits" | grep -Eiv '(REDACTED|redacted|stub|placeholder|example|local\.blob\.invalid|localhost|127\.0\.0\.1|\*\*\*)' || true)"
+          fail_if_hits "Potential unredacted SAS signature found" "$sas_hits"

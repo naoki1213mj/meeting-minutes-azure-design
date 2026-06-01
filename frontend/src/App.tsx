@@ -24,7 +24,7 @@ import {
   type MinutesResponse,
   type TranscriptResponse,
 } from "./apiClient";
-import { appTitle, supportedAudioExtensions } from "./appConfig";
+import { appTitle, heroCopy, heroHeadline, supportedAudioExtensions } from "./appConfig";
 import { getAudioDurationSeconds, hardMaxAudioFileSizeBytes, validateAudioFile } from "./fileValidation";
 import { frontendFeatures } from "./frontendFeatures";
 import {
@@ -32,7 +32,7 @@ import {
   shouldFetchMinutes,
   shouldFetchTranscript,
 } from "./jobPolling";
-import { MinutesPanel, TranscriptPanel } from "./Panels";
+import { ResultsWorkspace, type ResultsTab } from "./Panels";
 
 type FileMetadata = {
   name: string;
@@ -53,26 +53,26 @@ type StepState = "active" | "complete" | "failed" | "idle";
 
 const processSteps = [
   { label: "選択", description: "音声ファイルを確認" },
-  { label: "アップロード", description: "Azure Blob へ転送" },
+  { label: "アップロード", description: "音声を安全に転送" },
   { label: "文字起こし", description: "話者分離と整形" },
-  { label: "議事録生成", description: "要約・ToDo抽出" },
+  { label: "議事録生成", description: "要約・アクション抽出" },
   { label: "完了", description: "レビュー可能" },
 ] as const;
 
 const statusLabels: Record<JobStatus, StatusDescriptor> = {
-  CREATED: { label: "ジョブ作成済み", tone: "info" },
+  CREATED: { label: "準備中", tone: "info" },
   UPLOADING: { label: "アップロード中", tone: "accent" },
   UPLOADED: { label: "アップロード完了", tone: "info" },
   VALIDATING: { label: "検証中", tone: "accent" },
   PREPROCESSING: { label: "前処理中", tone: "accent" },
   TRANSCRIBING: { label: "文字起こし中", tone: "accent" },
   TRANSCRIPT_READY: { label: "文字起こし完了", tone: "success" },
-  GENERATING_CHUNK_SUMMARIES: { label: "チャンク要約中", tone: "accent" },
+  GENERATING_CHUNK_SUMMARIES: { label: "要点整理中", tone: "accent" },
   GENERATING_FINAL_MINUTES: { label: "議事録生成中", tone: "accent" },
   REVIEW_REQUIRED: { label: "確認が必要", tone: "warning" },
   DONE: { label: "完了", tone: "success" },
   FAILED: { label: "失敗", tone: "danger" },
-  CANCELLED: { label: "キャンセル", tone: "neutral" },
+  CANCELLED: { label: "キャンセル済み", tone: "neutral" },
 };
 
 export function App() {
@@ -81,6 +81,7 @@ export function App() {
   const [jobStatus, setJobStatus] = useState<JobStatusResponse | null>(null);
   const [transcript, setTranscript] = useState<TranscriptResponse | null>(null);
   const [minutes, setMinutes] = useState<MinutesResponse | null>(null);
+  const [activeResultsTab, setActiveResultsTab] = useState<ResultsTab>("minutes");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isBusy, setIsBusy] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
@@ -88,6 +89,7 @@ export function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const activeJobIdRef = useRef<string | null>(null);
   const abortPollingRef = useRef<AbortController | null>(null);
+  const completedJobTabSelectionRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const fileMetadata = useMemo(() => (selectedFile ? buildFileMetadata(selectedFile) : null), [selectedFile]);
@@ -114,6 +116,15 @@ export function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (jobStatus?.status !== "DONE" || completedJobTabSelectionRef.current === jobStatus.jobId) {
+      return;
+    }
+    // The completed workspace opens minutes-first so users land on the polished deliverable.
+    setActiveResultsTab("minutes");
+    completedJobTabSelectionRef.current = jobStatus.jobId;
+  }, [jobStatus?.jobId, jobStatus?.status]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedFile) {
@@ -130,6 +141,7 @@ export function App() {
     const abortController = new AbortController();
     abortPollingRef.current = abortController;
     activeJobIdRef.current = null;
+    completedJobTabSelectionRef.current = null;
     setIsBusy(true);
     setErrorMessage(null);
     setUploadProgress(0);
@@ -137,6 +149,7 @@ export function App() {
     setCreatedJob(null);
     setTranscript(null);
     setMinutes(null);
+    setActiveResultsTab("minutes");
 
     try {
       setMessage("ジョブを作成しています。");
@@ -145,7 +158,7 @@ export function App() {
       activeJobIdRef.current = job.jobId;
       setCreatedJob(job);
 
-      setMessage("Blob Storageへアップロードしています。");
+      setMessage("音声ファイルをアップロードしています。");
       await uploadAudioFile(job.uploadUrl, selectedFile, setUploadProgress);
       if (activeJobIdRef.current !== job.jobId) {
         return;
@@ -169,6 +182,8 @@ export function App() {
 
   async function pollJobUntilTerminal(jobId: string, signal: AbortSignal) {
     let failureCount = 0;
+    let transcriptLoaded = transcript !== null;
+    let minutesLoaded = minutes !== null;
     while (!signal.aborted && activeJobIdRef.current === jobId) {
       try {
         const status = await getJob(jobId);
@@ -177,18 +192,31 @@ export function App() {
         setMessage(status.progress.message);
         await loadDerivedOutputsOnce(jobId, status);
         if (terminalStatuses.has(status.status)) {
+          if (status.status === "FAILED") {
+            setErrorMessage(status.error?.message || "処理に失敗しました。");
+          }
+          if (status.status === "CANCELLED") {
+            setErrorMessage("処理がキャンセルされました。");
+          }
           return;
         }
 
         async function loadDerivedOutputsOnce(jobId: string, status: JobStatusResponse) {
           if (
             frontendFeatures.transcriptApi &&
-            shouldFetchTranscript(status.status, transcript !== null)
+            status.outputs.transcriptReady &&
+            shouldFetchTranscript(status.status, transcriptLoaded)
           ) {
             setTranscript(await getTranscript(jobId));
+            transcriptLoaded = true;
           }
-          if (frontendFeatures.minutesApi && shouldFetchMinutes(status.status, minutes !== null)) {
+          if (
+            frontendFeatures.minutesApi &&
+            status.outputs.minutesReady &&
+            shouldFetchMinutes(status.status, minutesLoaded)
+          ) {
             setMinutes(await getMinutes(jobId));
+            minutesLoaded = true;
           }
         }
       } catch (error) {
@@ -260,11 +288,13 @@ export function App() {
 
     abortPollingRef.current?.abort();
     activeJobIdRef.current = null;
+    completedJobTabSelectionRef.current = null;
     setSelectedFile(file);
     setCreatedJob(null);
     setJobStatus(null);
     setTranscript(null);
     setMinutes(null);
+    setActiveResultsTab("minutes");
     setUploadProgress(0);
     setErrorMessage(null);
     setMessage("準備完了。アップロードを開始できます。");
@@ -273,11 +303,13 @@ export function App() {
   function clearSelectedFile(resetMessage = true) {
     abortPollingRef.current?.abort();
     activeJobIdRef.current = null;
+    completedJobTabSelectionRef.current = null;
     setSelectedFile(null);
     setCreatedJob(null);
     setJobStatus(null);
     setTranscript(null);
     setMinutes(null);
+    setActiveResultsTab("minutes");
     setUploadProgress(0);
     setErrorMessage(null);
     setIsDragActive(false);
@@ -291,31 +323,29 @@ export function App() {
 
   return (
     <main className="app-shell">
-      <title>Azure 議事録 Studio</title>
+      <title>{appTitle}</title>
       <meta
         name="description"
-        content="Azureで音声ファイルから話者分離付き文字起こしと議事録を生成するMVPダッシュボード"
+        content="会議録音をアップロードするだけで、要点・決定事項・アクションアイテムを整理した議事録を生成します。"
       />
 
       <section className="dashboard-shell" aria-labelledby="app-title">
         <header className="hero">
           <div className="hero__content">
-            <p className="eyebrow">Azure Meeting Intelligence</p>
-            <h1 id="app-title">{appTitle}</h1>
-            <p className="hero-copy">
-              録音済み音声をアップロードするだけで、話者分離付きの文字起こしから構造化された議事録までを一気通貫で生成します。
-            </p>
+            <p className="eyebrow">{appTitle}</p>
+            <h1 id="app-title">{heroHeadline}</h1>
+            <p className="hero-copy">{heroCopy}</p>
             <div className="trust-row" aria-label="主な特徴">
               <span>日本語会議に最適化</span>
-              <span>Blob Storage 直接アップロード</span>
-              <span>要約・ToDo抽出</span>
+              <span>文字起こしと議事録を一体生成</span>
+              <span>アクションアイテムを自動整理</span>
             </div>
           </div>
 
           <aside className="hero-card" aria-label="ワークフロー概要">
-            <span className="hero-card__label">MVP Workflow</span>
-            <strong>Upload → Transcribe → Minutes</strong>
-            <p>署名付きURLは画面に表示せず、ブラウザから安全に音声を転送します。</p>
+            <span className="hero-card__label">3ステップで完成</span>
+            <strong>録音を選ぶ → 生成を待つ → 議事録を確認</strong>
+            <p>議事録を先に読み、必要なときだけ発話ログで該当箇所を確認できます。</p>
             <div className="hero-card__bars" aria-hidden="true">
               <span />
               <span />
@@ -327,7 +357,7 @@ export function App() {
         <section className="workspace-grid" aria-label="アップロードと処理状況">
           <form id="upload-panel" className="upload-card" onSubmit={(event) => void handleSubmit(event)}>
             <div className="section-heading">
-              <p className="section-kicker">Input</p>
+              <p className="section-kicker">録音</p>
               <h2>音声アップロード</h2>
               <p>
                 {supportedFormatsText} に対応。最大 {formatBytes(hardMaxAudioFileSizeBytes)} までの音声をドラッグ＆ドロップできます。
@@ -381,7 +411,7 @@ export function App() {
           <aside className="status-card" aria-live="polite" aria-label="処理ステータス">
             <div className="status-card__top">
               <div>
-                <p className="section-kicker">Pipeline</p>
+                <p className="section-kicker">進行状況</p>
                 <h2>処理ステータス</h2>
               </div>
               <span className={`status-badge status-badge--${statusDescriptor.tone}`}>
@@ -393,14 +423,20 @@ export function App() {
 
             <div className="progress-meter" aria-hidden="true">
               <div className="progress-meter__header">
-                <span>{jobStatus ? "バックエンド進捗" : "アップロード準備"}</span>
+                <span>{jobStatus ? "生成進捗" : "アップロード準備"}</span>
                 <strong>{currentProgress}%</strong>
               </div>
               <div className="progress-meter__track">
                 <span className="progress-meter__bar" style={{ inlineSize: `${currentProgress}%` }} />
               </div>
             </div>
-            <progress className="sr-only" value={currentProgress} max={100}>
+            <progress
+              aria-label="処理進捗"
+              aria-valuetext={`${currentProgress}% - ${statusDescriptor.label}`}
+              className="sr-only"
+              value={currentProgress}
+              max={100}
+            >
               {currentProgress}%
             </progress>
 
@@ -411,35 +447,46 @@ export function App() {
                   hasRunStarted: Boolean(selectedFile || createdJob || jobStatus),
                 });
                 return (
-                  <li className={`stepper__item stepper__item--${stepState}`} key={step.label}>
+                  <li
+                    aria-current={stepState === "active" ? "step" : undefined}
+                    className={`stepper__item stepper__item--${stepState}`}
+                    key={step.label}
+                  >
                     <span className="stepper__dot" aria-hidden="true" />
                     <span>
                       <strong>{step.label}</strong>
                       <small>{step.description}</small>
+                      <span className="sr-only">状態: {getStepStateLabel(stepState)}</span>
                     </span>
                   </li>
                 );
               })}
             </ol>
 
-            <dl className="status-details">
+            <dl className="status-details status-details--primary">
               <div>
                 <dt>アップロード</dt>
                 <dd>{uploadProgress}%</dd>
               </div>
               <div>
-                <dt>Job ID</dt>
-                <dd className="mono">{createdJob?.jobId ?? "未作成"}</dd>
-              </div>
-              <div>
-                <dt>処理ステップ</dt>
+                <dt>現在の処理</dt>
                 <dd>{jobStatus?.progress.step ?? "待機中"}</dd>
               </div>
-              <div>
-                <dt>SAS有効期限</dt>
-                <dd>{createdJob ? formatDateTime(createdJob.uploadExpiresAt) : "未発行"}</dd>
-              </div>
             </dl>
+
+            <details className="developer-details">
+              <summary>開発者向け情報</summary>
+              <dl className="status-details status-details--developer">
+                <div>
+                  <dt>ジョブID</dt>
+                  <dd className="mono">{createdJob?.jobId ?? "未作成"}</dd>
+                </div>
+                <div>
+                  <dt>アップロードURL期限</dt>
+                  <dd>{createdJob ? formatDateTime(createdJob.uploadExpiresAt) : "未発行"}</dd>
+                </div>
+              </dl>
+            </details>
 
             {errorMessage ? (
               <p id="upload-error" className="error" role="alert">
@@ -452,19 +499,35 @@ export function App() {
         <section className="results-section" aria-labelledby="results-title">
           <div className="section-heading section-heading--inline">
             <div>
-              <p className="section-kicker">Outputs</p>
+              <p className="section-kicker">結果</p>
               <h2 id="results-title">生成結果プレビュー</h2>
             </div>
-            <p>文字起こしと議事録の取得APIが有効化されると、ここに結果が展開されます。</p>
+            <p>完了後は議事録を先頭に表示します。文字起こしは確認用タブとして必要な箇所だけ参照できます。</p>
           </div>
-          <div className="placeholder-grid">
-            <TranscriptPanel jobStatus={jobStatus} transcript={transcript} />
-            <MinutesPanel jobStatus={jobStatus} minutes={minutes} />
-          </div>
+          <ResultsWorkspace
+            activeTab={activeResultsTab}
+            jobStatus={jobStatus}
+            minutes={minutes}
+            transcript={transcript}
+            onTabChange={setActiveResultsTab}
+          />
         </section>
       </section>
     </main>
   );
+}
+
+function getStepStateLabel(stepState: StepState): string {
+  switch (stepState) {
+    case "active":
+      return "進行中";
+    case "complete":
+      return "完了";
+    case "failed":
+      return "失敗";
+    case "idle":
+      return "未開始";
+  }
 }
 
 function FileMetadataCard({
@@ -500,7 +563,7 @@ function FileMetadataCard({
           <dd>{metadata.size}</dd>
         </div>
         <div>
-          <dt>MIME</dt>
+          <dt>種類</dt>
           <dd>{metadata.type}</dd>
         </div>
         <div>

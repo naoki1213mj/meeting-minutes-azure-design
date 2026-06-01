@@ -1,0 +1,40 @@
+name: Deploy prod
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  blocked:
+    name: Block prod deployment
+    runs-on: ubuntu-latest
+    environment:
+      name: prod
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Explain production gate
+        run: |
+          set -euo pipefail
+          cat <<'EOF'
+          Production deployment is intentionally blocked.
+
+          Required before enabling prod deploy:
+          - Remove demo authentication from the production configuration.
+          - Enable Microsoft Entra ID / Easy Auth on frontend and backend.
+          - Verify token-claims-based tenant/user authorization.
+          - Confirm anonymous direct API calls cannot run business APIs.
+          - Configure prod GitHub Environment reviewers, protected branch/tag rules, and OIDC subject repo:<ORG>/<REPO>:environment:prod.
+
+          This workflow does not log in to Azure and does not deploy.
+          EOF
+          echo "::error::prod deploy is blocked until demo auth is removed and Easy Auth is enabled."
+          exit 1

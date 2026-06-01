@@ -140,7 +140,7 @@ curl --location "https://{speechResourceName}.cognitiveservices.azure.com/speech
   --header "Authorization: Bearer {accessToken}" \
   --header "Content-Type: multipart/form-data" \
   --form 'definition={
-    "audioUrl": "https://storage.blob.core.windows.net/...?...sas...",
+    "audioUrl": "<user-delegation-sas-url>",
     "locales": ["ja-JP"],
     "diarization": {"enabled": true, "maxSpeakers": 8}
   }'

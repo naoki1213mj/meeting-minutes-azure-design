@@ -87,7 +87,12 @@
 - Resource group: `<resource-group>`
 - Region: `westus3`
 
-### 2.2 Function registration
+### 2.2 アーキテクチャ図
+
+- `docs/diagrams/azure-resource-architecture.drawio`: Azureサービスアイコン付きのリソース構成図。
+- `docs/diagrams/azure-architecture.drawio`: 主要フローを簡潔に示す概要図。
+
+### 2.3 Function registration
 
 - Azure上は v1 `function.json` wrappers を使い、Python 3.13環境で安定して関数をindexさせる。
 - `function_app.py` はローカル・テスト用であり、`.funcignore` によりデプロイパッケージから除外する。

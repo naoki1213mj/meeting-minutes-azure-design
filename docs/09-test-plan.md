@@ -15,8 +15,8 @@
 
 | 種別 | コマンド / 確認 | 期待値 / 実績 |
 |---|---|---|
-| Backend unit/lint/type/schema | `uv run pytest --quiet`; `uv run ruff check . --quiet`; `uv run mypy .`; `uv run python ..\scripts\validate_specs.py` | 2026-06-01時点で37 tests、lint/type/schema validation成功 |
-| Frontend type/test/build | `npm run typecheck`; `npm test`; `npm run build` | 2026-06-01時点で6 tests、typecheck/build成功 |
+| Backend unit/lint/type/schema | `uv run pytest --quiet`; `uv run ruff check . --quiet`; `uv run mypy .`; `uv run python ..\scripts\validate_specs.py` | 2026-06-02時点で83 tests、lint/type/schema validation成功 |
+| Frontend type/test/build | `npm run typecheck`; `npm test`; `npm run build` | 2026-06-02時点で22 tests、typecheck/build成功 |
 | API smoke | `POST /api/jobs`; `POST /api/jobs/{jobId}/upload-complete`; `GET /api/jobs/{jobId}` | dev live環境で成功 |
 | Result retrieval | `GET /api/jobs/{jobId}/transcript`; `GET /api/jobs/{jobId}/minutes` | dev live E2Eで取得成功 |
 | Live E2E | TTSで生成した短い日本語音声 | `DONE` 到達、normalized transcript / minutes schema validation成功、chunk/chunk summary Blob保存確認 |
@@ -227,26 +227,26 @@ PoCでは以下を測る。
 
 ### 10.1 PR CI
 
-PR CIはAzureへログインせず、ソース、スキーマ、ビルド可能性を検証する。runnerは既存PowerShellコマンドと合わせて `windows-latest` を既定にする。Ubuntu runnerを使う場合は `..\scripts\validate_specs.py` を `../scripts/validate_specs.py`、`infra\main.bicep` を `infra/main.bicep` に読み替える。
+PR CIはAzureへログインせず、ソース、スキーマ、ビルド可能性を検証する。GitHub Actionsでは `ubuntu-latest` を既定にし、パスはLinux形式で記述する。
 
 | Job | Runtime | Cache | Commands | 備考 |
 |---|---|---|---|---|
-| Backend | Python 3.13 exactly + uv | `backend\uv.lock` | `cd backend`; `uv sync --frozen`; `uv run ruff check .`; `uv run mypy .`; `uv run pytest --quiet`; `uv run python ..\scripts\validate_specs.py` | Structured outputs / JSON Schema / OpenAPIの回帰を含める |
-| Frontend | Node 20 | `frontend\package-lock.json` | `cd frontend`; `npm ci`; `npm run typecheck`; `npm test`; `npm run build` | lockfile前提。`npm install` ではなく `npm ci` |
-| Infra | Azure CLI / Bicep | なし | `az bicep build --file infra\main.bicep` | OIDC変数がある内部PRでは `azd provision --preview --no-prompt` または `az deployment sub what-if/validate` も可 |
+| Backend | Python 3.13 exactly + uv | `backend/uv.lock` | `cd backend`; `uv sync --frozen`; `uv run ruff check .`; `uv run mypy .`; `uv run pytest --quiet`; `uv run python ../scripts/validate_specs.py` | Structured outputs / JSON Schema / OpenAPIの回帰を含める |
+| Frontend | Node 20 | `frontend/package-lock.json` | `cd frontend`; `npm ci`; `npm run typecheck`; `npm test`; `npm run build` | lockfile前提。`npm install` ではなく `npm ci` |
+| Infra | Azure CLI / Bicep | なし | `az bicep build --file infra/main.bicep` | OIDC変数がある内部PRでは `azd provision --preview --no-prompt` または `az deployment sub what-if/validate` も可 |
 | Security | Python 3.13 / Node 20 | 各lockfile | gitleaksまたはsecret scanning、CodeQL、`pip-audit`、`npm audit` | CodeQL upload jobは必要に応じて `security-events: write` を付与 |
 
-PR workflowのconcurrencyはPR番号単位にし、`cancel-in-progress: true` にする。
+PR workflowのconcurrencyは `${{ github.workflow }}-${{ github.ref }}` を使い、`cancel-in-progress: true` にする。
 
 ### 10.2 dev deploy
 
-`main` merge後、PR CIと同等の検証に成功した場合だけdeploy jobを実行する。
+現行のdev deploy workflowは手動 `workflow_dispatch` のみで、既定は `dry_run=true`。OIDC/RBAC、GitHub Environment、Bicepのservice principal role assignment caveatを解消するまで、`main` pushからの自動deployは有効化しない。
 
 1. GitHub Environment `dev` を使い、OIDC subjectを `repo:<ORG>/<REPO>:environment:dev` に固定する。
 2. deploy job permissionsは `contents: read` と `id-token: write` のみにする。
 3. `azure/login` でOIDCログインする。
 4. `AZURE_SUBSCRIPTION_ID`、`AZURE_LOCATION`、`AZURE_ENV_NAME=dev`、`AZURE_PRINCIPAL_ID` を設定する。`AZURE_PRINCIPAL_ID` はservice principalのobject IDでありclient IDではない。
-5. `azd provision --no-prompt`、`azd deploy backend`、`azd deploy frontend` を順に実行する。
+5. `dry_run=false` の場合だけ `azd provision --no-prompt`、`azd deploy backend`、`azd deploy frontend` を実行する。
 
 `azure.yaml` のbackend `prepackage` hookはroot `specs/` をbackend packageへ一時コピーする。schema filesをFunctions packageに含めるため、このhookをCI/CDでも保持する。AZD deploy runnerではPythonがPATHにあることを事前条件にする。
 
