@@ -58,7 +58,7 @@
                 <mxCell id="speech" value="Azure Speech in Foundry Tools&lt;br&gt;Fast Transcription + diarization" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/ai_machine_learning/Speech_Services.svg;" parent="1" vertex="1">
                     <mxGeometry x="1346" y="260" width="88" height="88" as="geometry"/>
                 </mxCell>
-                <mxCell id="openai" value="Azure OpenAI in Microsoft Foundry Models&lt;br&gt;chunk summary / final merge" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/ai_machine_learning/Azure_OpenAI.svg;" parent="1" vertex="1">
+                <mxCell id="openai" value="Azure OpenAI in Microsoft Foundry Models&lt;br&gt;direct minutes / chunk fallback" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/ai_machine_learning/Azure_OpenAI.svg;" parent="1" vertex="1">
                     <mxGeometry x="1346" y="560" width="88" height="88" as="geometry"/>
                 </mxCell>
                 <mxCell id="appinsights" value="Application Insights&lt;br&gt;traces / metrics" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/devops/Application_Insights.svg;" parent="1" vertex="1">
@@ -138,7 +138,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e-functions-openai" value="6. chunk summary / final merge" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#5C2D91;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.95;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="functions" target="openai" edge="1">
+                <mxCell id="e-functions-openai" value="6. direct minutes (fallback: chunks)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#5C2D91;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.95;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="functions" target="openai" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="740" y="542"/>

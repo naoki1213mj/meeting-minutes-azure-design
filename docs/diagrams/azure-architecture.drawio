@@ -37,7 +37,7 @@
                 <mxCell id="sas" value="User Delegation SAS&#xa;write-only upload URL&#xa;short TTL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2ff;strokeColor=#6c8ebf;strokeWidth=1;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
                     <mxGeometry x="710" y="300" width="240" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="durable" value="Durable Functions&#xa;orchestrator&#xa;fan-out / fan-in" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;strokeWidth=2;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                <mxCell id="durable" value="Durable Functions&#xa;orchestrator&#xa;retries / fallback" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;strokeWidth=2;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
                     <mxGeometry x="420" y="450" width="240" height="96" as="geometry"/>
                 </mxCell>
                 <mxCell id="scheduler" value="Durable Task Scheduler&#xa;state / checkpoints / retries" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eaf2ff;strokeColor=#6c8ebf;strokeWidth=1;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
@@ -55,13 +55,13 @@
                 <mxCell id="transcribe" value="③ Transcribe audio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
                     <mxGeometry x="770" y="662" width="150" height="58" as="geometry"/>
                 </mxCell>
-                <mxCell id="normalize" value="④ Normalize&#xa;+ build chunks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                <mxCell id="normalize" value="④ Normalize&#xa;transcript" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
                     <mxGeometry x="430" y="772" width="150" height="58" as="geometry"/>
                 </mxCell>
-                <mxCell id="chunk-summary" value="⑤ Chunk summaries&#xa;(task_all)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                <mxCell id="chunk-summary" value="⑤ Direct minutes&#xa;full transcript" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
                     <mxGeometry x="600" y="772" width="150" height="58" as="geometry"/>
                 </mxCell>
-                <mxCell id="final-merge" value="⑥ Final merge&#xa;render Markdown" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                <mxCell id="final-merge" value="⑥ Validate JSON&#xa;render Markdown" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
                     <mxGeometry x="770" y="772" width="150" height="58" as="geometry"/>
                 </mxCell>
                 <mxCell id="blob" value="Azure Blob Storage&#xa;raw + preprocessed audio&#xa;transcripts / minutes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
@@ -73,7 +73,7 @@
                 <mxCell id="speech" value="Azure Speech in Foundry Tools&#xa;Fast Transcription&#xa;diarization on" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
                     <mxGeometry x="1070" y="360" width="200" height="120" as="geometry"/>
                 </mxCell>
-                <mxCell id="openai" value="Azure OpenAI in Microsoft Foundry Models&#xa;chunk summaries&#xa;final merge" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                <mxCell id="openai" value="Azure OpenAI in Microsoft Foundry Models&#xa;direct minutes generation&#xa;chunk fallback only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
                     <mxGeometry x="1320" y="360" width="190" height="140" as="geometry"/>
                 </mxCell>
                 <mxCell id="artifacts" value="Saved artifacts&#xa;normalized transcript&#xa;minutes JSON / Markdown" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef8ee;strokeColor=#82b366;strokeWidth=1;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
@@ -91,7 +91,7 @@
                 <mxCell id="security" value="Security controls&#xa;User Delegation SAS&#xa;redacted telemetry&#xa;no content logging" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d79b00;strokeWidth=1;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
                     <mxGeometry x="1595" y="620" width="240" height="120" as="geometry"/>
                 </mxCell>
-                <mxCell id="note" value="Public-safe diagram: placeholder labels only; no resource names, IDs, endpoints, tokens, keys, or SAS URLs. Main path uses whole-audio Fast Transcription with diarization; minutes generation is chunk-parallel." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                <mxCell id="note" value="Public-safe diagram: placeholder labels only; no resource names, IDs, endpoints, tokens, keys, or SAS URLs. Main path uses whole-audio Fast Transcription with diarization and direct full-transcript minutes generation; chunk summary is fallback only." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
                     <mxGeometry x="30" y="1040" width="1840" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="e-user-browser" value="upload file" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="user" target="browser" edge="1">
@@ -175,7 +175,7 @@
                 <mxCell id="e-speech-blob" value="audioUrl fetch (read SAS)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;dashed=1;startArrow=block;startFill=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="speech" target="blob" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="e-summary-openai" value="10 chunk summaries" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.95;entryDx=0;entryDy=0;" parent="1" source="chunk-summary" target="openai" edge="1">
+                <mxCell id="e-summary-openai" value="10 direct minutes&#xa;(fast / quality)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.95;entryDx=0;entryDy=0;" parent="1" source="chunk-summary" target="openai" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="675" y="848"/>
@@ -184,15 +184,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e-final-openai" value="11 final merge" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.8;exitDx=0;exitDy=0;entryX=0;entryY=0.9;entryDx=0;entryDy=0;" parent="1" source="final-merge" target="openai" edge="1">
-                    <mxGeometry relative="1" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="1020" y="818"/>
-                            <mxPoint x="1020" y="486"/>
-                        </Array>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="e-final-artifacts" value="12 persist artifacts" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" parent="1" source="final-merge" target="artifacts" edge="1">
+                <mxCell id="e-final-artifacts" value="11 persist artifacts" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" parent="1" source="final-merge" target="artifacts" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1035" y="795"/>
