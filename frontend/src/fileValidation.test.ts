@@ -15,6 +15,7 @@ function file(name: string, size: number, type = "audio/mpeg"): File {
 describe("fileValidation", () => {
   it("accepts supported audio extensions", () => {
     expect(validateAudioFile(file("meeting.mp3", 1024)).valid).toBe(true);
+    expect(validateAudioFile(file("meeting.mp4", 1024, "video/mp4")).valid).toBe(true);
   });
 
   it("rejects unsupported extensions", () => {

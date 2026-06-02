@@ -85,13 +85,13 @@ React + Vite Web UI
 
 | 項目 | dev MVP の扱い |
 |---|---|
-| 受理する拡張子 | `.mp3`, `.wav`, `.m4a`, `.ogg`, `.webm`, `.flac` |
+| 受理する拡張子 | `.mp3`, `.wav`, `.m4a`, `.mp4`, `.ogg`, `.webm`, `.flac` |
 | `application/octet-stream` | 上記拡張子に限って受理 |
-| 明示的に拒否する例 | `.mp4` などの動画ファイル |
+| MP4 | 動画から音声トラックだけを抽出して前処理 |
 | 通常受付サイズ | 300MB 未満 |
 | ハード上限 | 500MB 未満 |
 | 音声長 | 120分まで best effort。120分超は拒否 |
-| m4a | 必要に応じて backend で 16kHz mono FLAC へ前処理 |
+| m4a / mp4 | 必要に応じて backend で 16kHz mono FLAC へ前処理 |
 
 Fast Transcription の diarization 経路は 2 時間境界に近づくほど失敗リスクが高くなります。120分近傍は best effort とし、公開・本番利用の前に対象リージョン、SKU、quota、データ所在地、代表音声での品質・処理時間・コストを確認してください。
 

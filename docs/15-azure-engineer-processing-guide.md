@@ -16,7 +16,7 @@ Browser
   -> Browser direct PUT to Blob Storage
   -> upload-complete
   -> Durable Functions orchestration
-  -> m4a preprocessing if needed
+  -> m4a/mp4 preprocessing if needed
   -> Fast Transcription audioUrl + diarization
   -> normalized transcript保存
   -> direct minutes generation
@@ -80,7 +80,7 @@ Application InsightsではActivity durationやjobIdなどの運用メタデー�
 - speaker reconciliationの追加設計が必要になる。
 - 現要件では話者分離品質を優先する。
 
-m4aはFast Transcriptionで直接失敗するケースがあるため、必要に応じて16kHz mono FLACへ前処理してからSpeechへ渡す。
+m4a/mp4はFast Transcriptionで直接失敗するケースがあるため、必要に応じてffmpegで音声トラックだけを16kHz mono FLACへ前処理してからSpeechへ渡す。MP4に音声トラックがない場合は前処理エラーにする。
 
 ## 7. 議事録生成方式
 

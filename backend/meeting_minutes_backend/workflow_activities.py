@@ -97,7 +97,7 @@ def create_read_sas(job: dict[str, object]) -> dict[str, object]:
                     "progress": Progress(
                         step=JobStatus.PREPROCESSING.value,
                         percent=15,
-                        message="m4a音声を文字起こし用に変換しています。",
+                        message="音声を文字起こし用に変換しています。",
                         updatedAt=now,
                     ),
                     "updatedAt": now,

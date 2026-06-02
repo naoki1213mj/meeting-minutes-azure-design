@@ -40,7 +40,7 @@
                 <mxCell id="functions" value="Azure Functions Premium&lt;br&gt;API + Durable Functions" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/compute/Function_Apps.svg;" parent="1" vertex="1">
                     <mxGeometry x="430" y="455" width="92" height="92" as="geometry"/>
                 </mxCell>
-                <mxCell id="preprocess" value="Activity: m4a → 16kHz mono FLAC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#107C10;fontSize=12;align=center;verticalAlign=middle;strokeWidth=2;" parent="1" vertex="1">
+                <mxCell id="preprocess" value="Activity: m4a/mp4 audio → 16kHz mono FLAC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#107C10;fontSize=12;align=center;verticalAlign=middle;strokeWidth=2;" parent="1" vertex="1">
                     <mxGeometry x="410" y="680" width="320" height="64" as="geometry"/>
                 </mxCell>
                 <mxCell id="blob" value="Azure Blob Storage&lt;br&gt;audio &amp; artifacts" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/storage/Storage_Accounts.svg;" parent="1" vertex="1">
@@ -103,7 +103,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e-functions-preprocess" value="m4a preprocess" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#107C10;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.2;entryY=0;entryDx=0;entryDy=0;" parent="1" source="functions" target="preprocess" edge="1">
+                <mxCell id="e-functions-preprocess" value="m4a/mp4 preprocess" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#107C10;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.2;entryY=0;entryDx=0;entryDy=0;" parent="1" source="functions" target="preprocess" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="e-preprocess-containers" value="preprocessed FLAC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#107C10;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="preprocess" target="blob-containers">

@@ -58,7 +58,7 @@ Fast Transcription 完了後、まず transcript を表示可能にする。続�
 
 | 項目 | 初期実装 |
 |---|---|
-| 入力 | 音声ファイル。API受付は `.mp3`, `.wav`, `.m4a`, `.ogg`, `.webm`, `.flac`。E2E確認済みは短いWAVとm4a→FLAC前処理経路 |
+| 入力 | 音声/動画ファイル。API受付は `.mp3`, `.wav`, `.m4a`, `.mp4`, `.ogg`, `.webm`, `.flac`。MP4は音声トラックだけを抽出して処理する。E2E確認済みは短いWAVとm4a→FLAC前処理経路 |
 | 音声長 | 120分までbest effort。120分超は拒否 |
 | 通常ファイルサイズ | 300MB未満 |
 | 話者分離 | あり。speaker ID は匿名ラベルとして扱う |
@@ -96,7 +96,7 @@ Fast Transcription 完了後、まず transcript を表示可能にする。続�
 1. API: ジョブ作成、SAS発行、アップロード完了、状態取得、transcript取得、minutes取得。
 2. Durable workflow: validate -> transcribe -> normalize -> direct minutes generation -> render/persist。chunk summary方式はfallbackとして保持。
 3. Speech client: Fast Transcription + diarization の live E2E。
-   - m4aはFast Transcription直渡しでデコードできないケースがあるため、Backendで16kHz mono FLACへ前処理する。
+   - m4a/mp4はFast Transcription直渡しでデコードできないケースがあるため、Backendで16kHz mono FLACへ前処理する。
 4. Minutes generator: Structured outputs 用schemaによるJSON固定、保存前schema検証、Markdownコード生成。
 5. UI: アップロード、進捗、transcript/minutes表示のdev MVP。
 6. Observability: Application Insightsで機密ログ漏えいスキャンを実施し、主要secretやSAS全文の未検出を確認。

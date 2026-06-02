@@ -15,7 +15,17 @@ from meeting_minutes_backend.blob_sas import BlobSasIssuer, UploadSas
 from meeting_minutes_backend.errors import AppError
 from meeting_minutes_backend.models import InputConstraints
 
-M4A_CONTENT_TYPES = frozenset({"audio/mp4", "audio/m4a", "audio/x-m4a", "audio/aac"})
+PREPROCESS_CONTENT_TYPES = frozenset(
+    {
+        "application/mp4",
+        "audio/aac",
+        "audio/m4a",
+        "audio/mp4",
+        "audio/x-m4a",
+        "video/mp4",
+    }
+)
+PREPROCESS_EXTENSIONS = frozenset({".m4a", ".mp4"})
 PREPROCESSED_CONTENT_TYPE = "audio/flac"
 PREPROCESSED_EXTENSION = ".flac"
 
@@ -93,7 +103,10 @@ class FfmpegAudioTranscoder:
 
 def should_preprocess_audio(blob_name: str, content_type: str) -> bool:
     content_type_key = content_type.split(";", 1)[0].strip().lower()
-    return Path(blob_name).suffix.lower() == ".m4a" or content_type_key in M4A_CONTENT_TYPES
+    return (
+        Path(blob_name).suffix.lower() in PREPROCESS_EXTENSIONS
+        or content_type_key in PREPROCESS_CONTENT_TYPES
+    )
 
 
 def prepare_audio_for_transcription(
@@ -121,7 +134,8 @@ def prepare_audio_for_transcription(
 
     with temporary_directory() as temp_dir:
         temp_path = Path(temp_dir)
-        source_path = temp_path / "input.m4a"
+        suffix = Path(blob_name).suffix.lower()
+        source_path = temp_path / f"input{suffix if suffix in PREPROCESS_EXTENSIONS else '.media'}"
         converted_path = temp_path / f"input{PREPROCESSED_EXTENSION}"
         store.download_to_path(container_name, blob_name, source_path)
         transcoder.transcode_to_fast_transcription_audio(source_path, converted_path)
@@ -151,6 +165,6 @@ def preprocessed_blob_name(tenant_id: str, job_id: str) -> str:
 def _preprocess_error() -> AppError:
     return AppError(
         code="AUDIO_PREPROCESS_FAILED",
-        message="m4a音声を文字起こし用に変換できませんでした。",
+        message="音声または動画ファイルを文字起こし用に変換できませんでした。音声トラックが含まれているか確認してください。",
         http_status=400,
     )

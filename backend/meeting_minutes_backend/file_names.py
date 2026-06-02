@@ -5,16 +5,20 @@ from pathlib import PureWindowsPath
 
 from meeting_minutes_backend.errors import AppError
 
-SUPPORTED_AUDIO_EXTENSIONS = frozenset({".mp3", ".wav", ".m4a", ".ogg", ".webm", ".flac"})
+SUPPORTED_AUDIO_EXTENSIONS = frozenset(
+    {".mp3", ".wav", ".m4a", ".mp4", ".ogg", ".webm", ".flac"}
+)
 ALLOWED_EXTENSIONS_BY_CONTENT_TYPE = {
     "audio/mpeg": frozenset({".mp3"}),
     "audio/mp3": frozenset({".mp3"}),
     "audio/wav": frozenset({".wav"}),
     "audio/x-wav": frozenset({".wav"}),
-    "audio/mp4": frozenset({".m4a"}),
+    "audio/mp4": frozenset({".m4a", ".mp4"}),
     "audio/m4a": frozenset({".m4a"}),
     "audio/x-m4a": frozenset({".m4a"}),
     "audio/aac": frozenset({".m4a"}),
+    "video/mp4": frozenset({".mp4"}),
+    "application/mp4": frozenset({".mp4"}),
     "audio/ogg": frozenset({".ogg"}),
     "audio/webm": frozenset({".webm"}),
     "audio/flac": frozenset({".flac"}),

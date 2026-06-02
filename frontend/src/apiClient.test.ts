@@ -56,6 +56,22 @@ describe("apiClient", () => {
     );
   });
 
+  it("infers a stable mp4 content type when the browser omits one", () => {
+    expect(resolveAudioContentType({ name: "meeting.mp4", type: "" })).toBe("video/mp4");
+  });
+
+  it("preserves compatible browser mp4 content types", () => {
+    expect(resolveAudioContentType({ name: "meeting.mp4", type: "video/mp4" })).toBe(
+      "video/mp4",
+    );
+  });
+
+  it("normalizes mismatched mp4 content types before sending to the backend", () => {
+    expect(resolveAudioContentType({ name: "meeting.mp4", type: "audio/mpeg" })).toBe(
+      "video/mp4",
+    );
+  });
+
   it("preserves compatible browser m4a content types", () => {
     expect(resolveAudioContentType({ name: "meeting.m4a", type: "audio/x-m4a" })).toBe(
       "audio/x-m4a",

@@ -15,8 +15,8 @@
 - 音声本文、transcript全文、議事録全文は通常ログに出さない。
 - すべてのレスポンスに correlation ID を紐づける。リクエストに `x-correlation-id` があれば検証後に引き継ぎ、なければAPI入口で生成してエラーレスポンス、ログ、Cosmos DBの失敗情報で同じ値を使う。
 - OpenAPIの `JobStatus` は `specs/job-status.schema.json` を参照する。OpenAPI内の `JobStatusEnum` はツール互換性のためのローカル定義で、`specs/job-status.schema.json#/properties/status/enum` とCIで一致を検査する。
-- 受理する音声拡張子は `.mp3`, `.wav`, `.m4a`, `.ogg`, `.webm`, `.flac`。`.mp4` 動画は非対応で、`UNSUPPORTED_AUDIO_FORMAT` を返す。
-- m4aは `audio/mp4`, `audio/m4a`, `audio/x-m4a`, `audio/aac`, または `.m4a` + `application/octet-stream` を受け付け、Backendで16kHz mono FLACへ前処理してから文字起こしする。
+- 受理する拡張子は `.mp3`, `.wav`, `.m4a`, `.mp4`, `.ogg`, `.webm`, `.flac`。
+- m4a/mp4は `audio/mp4`, `audio/m4a`, `audio/x-m4a`, `audio/aac`, `video/mp4`, `application/mp4`, または対応拡張子 + `application/octet-stream` を受け付け、Backendで音声トラックを16kHz mono FLACへ前処理してから文字起こしする。
 
 ## 2. エンドポイント一覧
 

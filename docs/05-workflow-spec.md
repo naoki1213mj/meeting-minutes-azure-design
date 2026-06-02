@@ -35,7 +35,7 @@
 |---|---|---|---|---|
 | `LoadJobActivity` | tenantId, jobId | job | あり | 実装済み |
 | `ValidateInputActivity` | job | validationResult | なし | 実装済み |
-| `CreateReadSasActivity` | job | readSasUrl | あり | 実装済み。m4aの場合は16kHz mono FLACへ前処理してからread SASを返す |
+| `CreateReadSasActivity` | job | readSasUrl | あり | 実装済み。m4a/mp4の場合は音声トラックを16kHz mono FLACへ前処理してからread SASを返す |
 | `TranscribeAudioActivity` | job, readSasUrl | rawTranscriptBlobUri | あり | live E2E済み |
 | `NormalizeTranscriptActivity` | rawTranscriptBlobUri | normalizedTranscriptBlobUri | あり | live E2E済み |
 | `GenerateFinalMinutesActivity` | normalizedTranscriptBlobUri | minutes JSON blob | あり | direct全文生成の本線。制約時のみchunk fallback |
@@ -97,7 +97,7 @@ def orchestrator(context):
         })
 ```
 
-`CreateReadSasActivity` は名前上はSAS発行だが、dev MVPではm4a互換性対応もここで行う。入力音声がm4aの場合、Cosmosのprogressを `PREPROCESSING` にし、`imageio-ffmpeg` のffmpegで16kHz mono FLACへ変換し、audio container内の `preprocessed/{tenantId}/{jobId}/input.flac` に保存してから、そのBlobのread SASを返す。m4a以外は元のraw audio Blobのread SASを返す。
+`CreateReadSasActivity` は名前上はSAS発行だが、dev MVPではm4a/mp4互換性対応もここで行う。入力がm4aまたはmp4の場合、Cosmosのprogressを `PREPROCESSING` にし、`imageio-ffmpeg` のffmpegで音声トラックだけを16kHz mono FLACへ変換し、audio container内の `preprocessed/{tenantId}/{jobId}/input.flac` に保存してから、そのBlobのread SASを返す。その他の対応音声形式は元のraw audio Blobのread SASを返す。
 
 Orchestrator内でネットワークI/O、Blob/Cosmos I/O、現在時刻取得などの非決定的処理を直接行わない。I/Oと副作用はActivityへ閉じ込める。
 

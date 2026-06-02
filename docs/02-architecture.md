@@ -72,7 +72,7 @@
 | Azure Speech in Foundry Tools | Fast Transcription + diarization | AIServices endpointを使用 |
 | Azure OpenAI in Microsoft Foundry Models | 議事録生成 | `gpt-5.4-mini`, `gpt-5.4`、GlobalStandard capacity 100 each |
 | Application Insights + Log Analytics | 監視・トレース | デプロイ済み。機密ログ漏えいスキャン実施済み |
-| Azure Container Apps Jobs | 大型音声前処理 | 未導入。現在のm4a前処理はFunctions内の `imageio-ffmpeg` で実施。より重い前処理はPhase 2候補 |
+| Azure Container Apps Jobs | 大型音声/動画前処理 | 未導入。現在のm4a/mp4前処理はFunctions内の `imageio-ffmpeg` で実施。より重い前処理はPhase 2候補 |
 | Azure SignalR Service | 進捗push通知 | 未導入。Phase 2候補 |
 | Azure AI Search | 過去議事録検索 | 未導入。Phase 3候補 |
 
@@ -217,7 +217,7 @@ direct minutes generationは長尺音声でJSON出力が切れないよう `max_
 
 - Blob への保存・読み取り。
 - SAS発行。
-- m4a音声をFast Transcription用の16kHz mono FLACへ前処理し、`preprocessed/{tenantId}/{jobId}/input.flac` に保存する。
+- m4a/mp4から音声トラックをFast Transcription用の16kHz mono FLACへ前処理し、`preprocessed/{tenantId}/{jobId}/input.flac` に保存する。
 - Cosmos DB への job state 保存。
 - 同一 jobId の冪等性保証。
 
@@ -225,7 +225,7 @@ direct minutes generationは長尺音声でJSON出力が切れないよう `max_
 
 初期実装は Azure Functions + Durable Functions で開始し、dev MVPは Functions Premium EP1 で稼働している。
 
-dev MVPではm4a前処理をFunctions Activity内で `imageio-ffmpeg` の同梱ffmpegバイナリをsubprocess実行して行う。Functions Premium EP1で動作確認済みだが、依存バイナリのサイズ、実行権限、タイムアウト、サプライチェーンレビューは本番化時に確認する。より重い変換やffprobe検証が必要になった場合だけ、Azure Container Apps Jobs を追加する。
+dev MVPではm4a/mp4前処理をFunctions Activity内で `imageio-ffmpeg` の同梱ffmpegバイナリをsubprocess実行して行う。Functions Premium EP1で動作確認済みだが、依存バイナリのサイズ、実行権限、タイムアウト、サプライチェーンレビューは本番化時に確認する。より重い変換やffprobe検証が必要になった場合だけ、Azure Container Apps Jobs を追加する。
 
 ## 6. 進捗通知方式
 

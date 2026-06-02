@@ -85,9 +85,9 @@ SAS URL全文はAPIレスポンスで必要な場面を除き、ログ、例外�
 
 Storage public endpoint は過去にIaC外で `Disabled` へドリフトし、User Delegation SAS発行が403になって `POST /api/jobs` が500になった。Bicepでは `publicNetworkAccess=Enabled` と `networkAcls.defaultAction=Allow` を明示する。Azure Policyは2026-06-02時点でauditのみ確認済みだが、Policy/手動変更による再ドリフトを監視する。
 
-### 4.1 m4a前処理
+### 4.1 m4a/mp4前処理
 
-m4aはFast Transcription直渡しで `InvalidAudioFormat` になるケースがあるため、Backend Activity内で16kHz mono FLACへ変換してから `audioUrl` を渡す。変換は `imageio-ffmpeg` が同梱するffmpegバイナリをsubprocess実行する。ffmpeg stderr、ローカル一時パス、SAS URL、音声内容はエラーdetailsやログへ出さない。
+m4a/mp4はFast Transcription直渡しで `InvalidAudioFormat` になるケースがあるため、Backend Activity内で音声トラックだけを16kHz mono FLACへ変換してから `audioUrl` を渡す。変換は `imageio-ffmpeg` が同梱するffmpegバイナリをsubprocess実行する。MP4に音声トラックがない場合は変換エラーにする。ffmpeg stderr、ローカル一時パス、SAS URL、音声内容はエラーdetailsやログへ出さない。
 
 ### 4.2 CORS
 

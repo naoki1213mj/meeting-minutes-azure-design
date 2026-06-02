@@ -71,7 +71,10 @@ class FakeTranscoder:
         if self.fail:
             raise AppError(
                 code="AUDIO_PREPROCESS_FAILED",
-                message="m4a音声を文字起こし用に変換できませんでした。",
+                message=(
+                    "音声または動画ファイルを文字起こし用に変換できませんでした。"
+                    "音声トラックが含まれているか確認してください。"
+                ),
                 http_status=400,
             )
         destination_path.write_bytes(b"flac")
@@ -96,6 +99,8 @@ class TrackingTemporaryDirectory:
     [
         ("raw/job/input.m4a", "audio/x-m4a", True),
         ("raw/job/input.m4a", "application/octet-stream", True),
+        ("raw/job/input.mp4", "video/mp4", True),
+        ("raw/job/input.mp4", "application/octet-stream", True),
         ("raw/job/input.mp3", "audio/mpeg", False),
     ],
 )
@@ -131,7 +136,34 @@ def test_prepare_audio_for_transcription_converts_m4a_to_flac_blob() -> None:
     assert not TrackingTemporaryDirectory.last_path.exists()
 
 
-def test_prepare_audio_for_transcription_skips_non_m4a() -> None:
+def test_prepare_audio_for_transcription_extracts_mp4_audio_to_flac_blob() -> None:
+    store = FakeStore()
+    sas_issuer = FakeSasIssuer()
+    transcoder = FakeTranscoder()
+    now = datetime(2026, 6, 1, tzinfo=UTC)
+
+    result = prepare_audio_for_transcription(
+        tenant_id="tenant-a",
+        job_id="job-a",
+        blob_name="raw-audio/tenant-a/job-a/input.mp4",
+        content_type="video/mp4",
+        container_name="audio",
+        store=store,
+        sas_issuer=sas_issuer,
+        now=now,
+        transcoder=transcoder,
+        temporary_directory=TrackingTemporaryDirectory,
+    )
+
+    expected_blob = preprocessed_blob_name("tenant-a", "job-a")
+    assert store.downloads == [("audio", "raw-audio/tenant-a/job-a/input.mp4")]
+    assert store.uploads == [("audio", expected_blob, PREPROCESSED_CONTENT_TYPE)]
+    assert sas_issuer.read_blob_names == [expected_blob]
+    assert result.url.endswith(f"{expected_blob}?sig=redacted")
+    assert transcoder.calls[0][0].name == "input.mp4"
+
+
+def test_prepare_audio_for_transcription_skips_non_preprocessed_formats() -> None:
     store = FakeStore()
     sas_issuer = FakeSasIssuer()
 
@@ -167,4 +199,5 @@ def test_prepare_audio_for_transcription_hides_transcoder_details_on_failure() -
         )
 
     assert exc_info.value.code == "AUDIO_PREPROCESS_FAILED"
+    assert "音声トラック" in exc_info.value.message
     assert exc_info.value.details == {}

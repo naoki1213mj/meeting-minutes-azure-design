@@ -165,7 +165,7 @@ PoCでは以下を測る。
 | 同時10ジョブ | Durable/Blob/Cosmos負荷 |
 | capacity変更 | `gpt-5.4-mini` / `gpt-5.4` capacity 100で429率を確認 |
 | polling backoff | UI/API呼び出し回数と体感UXを確認 |
-| m4a前処理 | m4aを16kHz mono FLACへ変換し、Fast Transcriptionが完了すること |
+| m4a/mp4前処理 | m4a/mp4から音声トラックを16kHz mono FLACへ変換し、Fast Transcriptionが完了すること |
 | Storage public endpoint drift | `publicNetworkAccess=Enabled`, `allowSharedKeyAccess=false`, `allowBlobPublicAccess=false` が維持され、User Delegation SAS発行が403にならないこと |
 
 計測値:
@@ -183,14 +183,15 @@ PoCでは以下を測る。
 - Cosmos DB RU消費
 - chunk数、chunk並列度、token usage
 
-### 7.1 添付m4a回帰
+### 7.1 添付m4a/mp4回帰
 
 2026-06-02に55分m4a音声でlive E2Eを確認済み。回帰テストでは次を確認する。
 
 - `POST /api/jobs` が `.m4a` / `audio/x-m4a` を `201` で受け付ける。
-- m4aは `PREPROCESSING` を経由し、`preprocessed/{tenantId}/{jobId}/input.flac` が `audio/flac` で保存される。
+- `POST /api/jobs` が `.mp4` / `video/mp4` を `201` で受け付ける。
+- m4a/mp4は `PREPROCESSING` を経由し、`preprocessed/{tenantId}/{jobId}/input.flac` が `audio/flac` で保存される。
 - `DONE` 後に transcript と minutes を取得できる。
-- `.mp4` 動画は引き続き `UNSUPPORTED_AUDIO_FORMAT` で拒否される。
+- 音声トラックがないMP4は `AUDIO_PREPROCESS_FAILED` で拒否される。
 - 既に `FAILED` になったジョブはretry API未実装のため、同じファイルを再アップロードして確認する。
 
 性能回帰の初期期待値:
