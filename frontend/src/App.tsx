@@ -107,6 +107,8 @@ export function App() {
   const [minutesModel, setMinutesModel] = useState<MinutesModel>("fast");
   const [activeResultsTab, setActiveResultsTab] = useState<ResultsTab>("minutes");
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [runStartedAtMs, setRunStartedAtMs] = useState<number | null>(null);
+  const [runFinishedAtMs, setRunFinishedAtMs] = useState<number | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const [message, setMessage] = useState("音声ファイルを選択してください。");
@@ -118,6 +120,7 @@ export function App() {
 
   const fileMetadata = useMemo(() => (selectedFile ? buildFileMetadata(selectedFile) : null), [selectedFile]);
   const activeStatus = jobStatus?.status ?? createdJob?.status ?? null;
+  const isTerminalStatus = activeStatus !== null && terminalStatuses.has(activeStatus);
   const statusDescriptor = getStatusDescriptor(activeStatus, {
     hasError: Boolean(errorMessage),
     hasFile: Boolean(selectedFile),
@@ -169,6 +172,8 @@ export function App() {
     setIsBusy(true);
     setErrorMessage(null);
     setUploadProgress(0);
+    setRunStartedAtMs(Date.now());
+    setRunFinishedAtMs(null);
     setJobStatus(null);
     setCreatedJob(null);
     setTranscript(null);
@@ -181,6 +186,8 @@ export function App() {
       if (durationSeconds !== null && durationSeconds > maxAudioDurationSeconds) {
         setErrorMessage("120分を超える音声は対応範囲外です。音声を分割してからアップロードしてください。");
         setMessage("音声の長さを確認してください。");
+        setRunStartedAtMs(null);
+        setRunFinishedAtMs(null);
         return;
       }
       const job = await createJob(selectedFile, durationSeconds, minutesModel);
@@ -202,6 +209,7 @@ export function App() {
       setMessage("ジョブ状態を確認しています。");
       await pollJobUntilTerminal(job.jobId, abortController.signal);
     } catch (error) {
+      setRunFinishedAtMs(Date.now());
       setErrorMessage(toUserMessage(error));
       setMessage("処理を完了できませんでした。設定またはファイルを確認してください。");
     } finally {
@@ -221,6 +229,7 @@ export function App() {
         setMessage(status.progress.message);
         await loadDerivedOutputsOnce(jobId, status);
         if (terminalStatuses.has(status.status)) {
+          setRunFinishedAtMs(Date.now());
           if (status.status === "FAILED") {
             setErrorMessage(status.error?.message || "処理に失敗しました。");
           }
@@ -251,6 +260,7 @@ export function App() {
       } catch (error) {
         failureCount += 1;
         if (failureCount >= 3) {
+          setRunFinishedAtMs(Date.now());
           throw error;
         }
       }
@@ -325,6 +335,8 @@ export function App() {
     setMinutes(null);
     setActiveResultsTab("minutes");
     setUploadProgress(0);
+    setRunStartedAtMs(null);
+    setRunFinishedAtMs(null);
     setErrorMessage(null);
     setMessage("準備完了。アップロードを開始できます。");
   }
@@ -340,6 +352,8 @@ export function App() {
     setMinutes(null);
     setActiveResultsTab("minutes");
     setUploadProgress(0);
+    setRunStartedAtMs(null);
+    setRunFinishedAtMs(null);
     setErrorMessage(null);
     setIsDragActive(false);
     if (resetMessage) {
@@ -459,7 +473,7 @@ export function App() {
             </button>
           </form>
 
-          <aside className="status-card" aria-live="polite" aria-label="処理ステータス">
+          <aside className="status-card" aria-label="処理ステータス">
             <div className="status-card__top">
               <div>
                 <p className="section-kicker">進行状況</p>
@@ -470,7 +484,7 @@ export function App() {
               </span>
             </div>
 
-            <p className="status-message">{message}</p>
+            <p className="status-message" aria-live="polite">{message}</p>
 
             <div className="progress-meter" aria-hidden="true">
               <div className="progress-meter__header">
@@ -520,8 +534,26 @@ export function App() {
                 <dd>{uploadProgress}%</dd>
               </div>
               <div>
+                <dt>経過時間</dt>
+                <dd>
+                  <ElapsedTime
+                    finishedAtMs={runFinishedAtMs}
+                    isRunning={Boolean(runStartedAtMs && isBusy && !isTerminalStatus)}
+                    startedAtMs={runStartedAtMs}
+                  />
+                </dd>
+              </div>
+              <div>
                 <dt>現在の処理</dt>
                 <dd>{jobStatus?.progress.step ?? "待機中"}</dd>
+              </div>
+              <div>
+                <dt>議事録モード</dt>
+                <dd>{getMinutesModelLabel(jobStatus?.minutesModel ?? minutesModel)}</dd>
+              </div>
+              <div>
+                <dt>文字起こし</dt>
+                <dd>{getTranscriptAvailabilityLabel(jobStatus, transcript)}</dd>
               </div>
             </dl>
 
@@ -640,6 +672,34 @@ function wait(milliseconds: number, signal: AbortSignal): Promise<void> {
   });
 }
 
+function ElapsedTime({
+  finishedAtMs,
+  isRunning,
+  startedAtMs,
+}: {
+  finishedAtMs: number | null;
+  isRunning: boolean;
+  startedAtMs: number | null;
+}) {
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!startedAtMs || !isRunning) {
+      return;
+    }
+    setNowMs(Date.now());
+    const intervalId = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(intervalId);
+  }, [isRunning, startedAtMs]);
+
+  if (!startedAtMs) {
+    return <span>未開始</span>;
+  }
+
+  const endMs = finishedAtMs ?? nowMs;
+  return <span>{formatElapsedDuration(Math.max(0, endMs - startedAtMs))}</span>;
+}
+
 function toUserMessage(error: unknown): string {
   if (error instanceof ApiClientError || error instanceof UploadError) {
     return error.message;
@@ -648,6 +708,34 @@ function toUserMessage(error: unknown): string {
     return error.message;
   }
   return "処理中にエラーが発生しました。";
+}
+
+function getMinutesModelLabel(minutesModel: MinutesModel): string {
+  switch (minutesModel) {
+    case "fast":
+      return "高速";
+    case "quality":
+      return "高品質";
+  }
+}
+
+function getTranscriptAvailabilityLabel(
+  jobStatus: JobStatusResponse | null,
+  transcript: TranscriptResponse | null,
+): string {
+  if (transcript) {
+    return "先に確認できます";
+  }
+  if (jobStatus?.outputs.transcriptReady) {
+    return "取得中";
+  }
+  if (jobStatus?.status === "TRANSCRIBING" || jobStatus?.status === "PREPROCESSING") {
+    return "処理中";
+  }
+  if (jobStatus) {
+    return "準備中";
+  }
+  return "未開始";
 }
 
 function buildFileMetadata(file: File): FileMetadata {
@@ -664,6 +752,17 @@ function buildFileMetadata(file: File): FileMetadata {
 function getFileExtension(fileName: string): string {
   const dotIndex = fileName.lastIndexOf(".");
   return dotIndex >= 0 ? fileName.slice(dotIndex).toUpperCase() : "不明";
+}
+
+function formatElapsedDuration(milliseconds: number): string {
+  const totalSeconds = Math.floor(milliseconds / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 function formatBytes(bytes: number): string {
