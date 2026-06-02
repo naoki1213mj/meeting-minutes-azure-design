@@ -13,7 +13,12 @@ class UploadSas:
 
 
 class BlobSasIssuer(Protocol):
-    def create_upload_sas(self, blob_name: str, now: datetime) -> UploadSas:
+    def create_upload_sas(
+        self,
+        blob_name: str,
+        now: datetime,
+        ttl_minutes: int | None = None,
+    ) -> UploadSas:
         pass
 
     def create_read_sas(self, blob_name: str, now: datetime) -> UploadSas:
@@ -24,8 +29,13 @@ class LocalBlobSasIssuer:
     def __init__(self, ttl_minutes: int = 30) -> None:
         self._ttl_minutes = ttl_minutes
 
-    def create_upload_sas(self, blob_name: str, now: datetime) -> UploadSas:
-        expires_at = now + timedelta(minutes=self._ttl_minutes)
+    def create_upload_sas(
+        self,
+        blob_name: str,
+        now: datetime,
+        ttl_minutes: int | None = None,
+    ) -> UploadSas:
+        expires_at = now + timedelta(minutes=ttl_minutes or self._ttl_minutes)
         encoded_blob_name = quote(blob_name, safe="/")
         return UploadSas(
             url=f"https://local.blob.invalid/{encoded_blob_name}?sig=local-dev-placeholder",

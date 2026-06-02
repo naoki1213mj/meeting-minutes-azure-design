@@ -33,6 +33,7 @@ def test_azure_blob_sas_issuer_uses_user_delegation_key_and_https() -> None:
         sas = issuer.create_upload_sas(
             "raw-audio/tenant/job/input.mp3",
             datetime(2026, 6, 1, tzinfo=UTC),
+            ttl_minutes=120,
         )
 
     assert sas.url == (
@@ -41,3 +42,4 @@ def test_azure_blob_sas_issuer_uses_user_delegation_key_and_https() -> None:
     service_client.get_user_delegation_key.assert_called_once()
     assert generate_sas.call_args.kwargs["account_name"] == "storageacct"
     assert generate_sas.call_args.kwargs["protocol"] == "https"
+    assert generate_sas.call_args.kwargs["expiry"].minute == 0

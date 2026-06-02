@@ -44,7 +44,11 @@ class JobService:
         job_id = uuid.uuid4().hex
         safe_file_name = build_safe_file_name(request.fileName, request.contentType)
         blob_name = f"raw-audio/{auth.tenant_id}/{job_id}/{safe_file_name}"
-        upload_sas = self._blob_sas_issuer.create_upload_sas(blob_name, now)
+        upload_sas = self._blob_sas_issuer.create_upload_sas(
+            blob_name,
+            now,
+            ttl_minutes=self._upload_sas_ttl_minutes(request.processingRoute),
+        )
 
         record = JobRecord(
             jobId=job_id,
@@ -200,6 +204,11 @@ class JobService:
         if processing_route == ProcessingRoute.CONTENT_UNDERSTANDING:
             return self._constraints.contentUnderstandingMaxFileSizeBytes
         return self._constraints.hardMaxFileSizeBytes
+
+    def _upload_sas_ttl_minutes(self, processing_route: ProcessingRoute) -> int:
+        if processing_route == ProcessingRoute.CONTENT_UNDERSTANDING:
+            return self._constraints.contentUnderstandingUploadSasTtlMinutes
+        return self._constraints.stableUploadSasTtlMinutes
 
     def _raise_file_size_limit_error(self, processing_route: ProcessingRoute) -> None:
         if processing_route == ProcessingRoute.CONTENT_UNDERSTANDING:

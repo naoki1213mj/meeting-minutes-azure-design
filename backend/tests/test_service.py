@@ -86,6 +86,23 @@ def test_create_job_persists_requested_processing_route() -> None:
     )
 
 
+def test_create_job_uses_longer_upload_sas_for_content_understanding_route() -> None:
+    service = _service()
+    request = _create_request().model_copy(
+        update={
+            "fileName": "meeting.mp4",
+            "contentType": "video/mp4",
+            "processingRoute": ProcessingRoute.CONTENT_UNDERSTANDING,
+        }
+    )
+
+    response = service.create_job(_auth(), request)
+
+    status = service.get_job(_auth(), response.jobId)
+    delta = response.uploadExpiresAt - status.createdAt
+    assert int(delta.total_seconds() / 60) == 120
+
+
 def test_create_job_rejects_normal_size_limit() -> None:
     service = _service()
 

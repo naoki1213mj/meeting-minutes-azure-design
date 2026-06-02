@@ -48,8 +48,13 @@ class FakeSasIssuer:
     def __init__(self) -> None:
         self.read_blob_names: list[str] = []
 
-    def create_upload_sas(self, blob_name: str, now: datetime) -> UploadSas:
-        _ = (blob_name, now)
+    def create_upload_sas(
+        self,
+        blob_name: str,
+        now: datetime,
+        ttl_minutes: int | None = None,
+    ) -> UploadSas:
+        _ = (blob_name, now, ttl_minutes)
         raise NotImplementedError
 
     def create_read_sas(self, blob_name: str, now: datetime) -> UploadSas:

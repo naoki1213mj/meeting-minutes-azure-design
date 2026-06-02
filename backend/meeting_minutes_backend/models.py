@@ -41,6 +41,8 @@ class InputConstraints(StrictModel):
     hardMaxFileSizeBytes: int = 524_288_000
     contentUnderstandingMaxFileSizeBytes: int = 4_294_967_296
     maxDurationSecondsWithDiarization: int = 7_200
+    stableUploadSasTtlMinutes: int = 30
+    contentUnderstandingUploadSasTtlMinutes: int = 120
 
 
 class CreateJobRequest(StrictModel):

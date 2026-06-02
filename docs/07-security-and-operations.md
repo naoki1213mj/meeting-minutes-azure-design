@@ -98,6 +98,7 @@ m4a/mp4はFast Transcription直渡しで `InvalidAudioFormat` になるケース
 - Function App CORSは `supportCredentials: false` とし、demo認証の代替にしない。
 - Storage Blob CORSは直接アップロードに必要な `PUT` とpreflight用 `OPTIONS`、`x-ms-blob-type` / `content-type` などの最小ヘッダーを許可する。
 - Storage Blob CORSの `maxAgeInSeconds` は600秒にし、preflightの繰り返しを減らす。これは性能改善であり、認証・認可の代替ではない。
+- 256MB超のファイルはブラウザからBlobへブロック分割アップロードする。`x-ms-blob-content-type` を使うため、Storage Blob CORSのallowed headersに含める。
 
 注意:
 
@@ -231,6 +232,7 @@ traces
 - 本アプリのUX上限は120分までbest effort、120分超は拒否する。120分近傍はdiarizationの2時間境界に近いため失敗リスクをユーザーへ明示する。
 - 標準経路の初期UX上限は300MB、ハード上限は500MBにする。
 - Content Understanding動画理解（実験）経路はBlob URL参照Analyze APIを使うため4GB/2時間まで許可できる。ただし大容量動画はアップロード時間、解析時間、コスト、失敗時再実行の影響が大きい。
+- 標準経路のアップロードSAS TTLは30分、動画理解（実験）経路は大容量動画向けに120分にする。SAS URL全文はログに出さない。
 
 ### Azure OpenAI in Microsoft Foundry Models
 

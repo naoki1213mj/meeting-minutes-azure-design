@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  appendBlobQueryParameters,
   buildDevAuthHeaders,
   createJob,
   isLocalApiBaseUrl,
@@ -19,6 +20,15 @@ describe("apiClient", () => {
       true,
     );
     expect(isLocalPlaceholderUploadUrl("https://local.blob.invalid.evil.test/file")).toBe(false);
+  });
+
+  it("appends block upload query parameters after the SAS query", () => {
+    expect(
+      appendBlobQueryParameters("https://storage.example/video.mp4?sv=2026&sig=redacted", {
+        comp: "block",
+        blockid: "abc==",
+      }),
+    ).toBe("https://storage.example/video.mp4?sv=2026&sig=redacted&comp=block&blockid=abc%3D%3D");
   });
 
   it("adds development auth headers only when dev mode is enabled", () => {
@@ -102,6 +112,8 @@ describe("apiClient", () => {
               hardMaxFileSizeBytes: 524288000,
               contentUnderstandingMaxFileSizeBytes: 4294967296,
               maxDurationSecondsWithDiarization: 7200,
+              stableUploadSasTtlMinutes: 30,
+              contentUnderstandingUploadSasTtlMinutes: 120,
             },
           }),
           { status: 201, headers: { "Content-Type": "application/json" } },

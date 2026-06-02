@@ -95,7 +95,7 @@ React + Vite Web UI
 | 音声長 | 120分まで best effort。120分超は拒否 |
 | m4a / mp4 | 必要に応じて backend で 16kHz mono FLAC へ前処理 |
 
-Fast Transcription の diarization 経路は 2 時間境界に近づくほど失敗リスクが高くなります。120分近傍は best effort とし、公開・本番利用の前に対象リージョン、SKU、quota、データ所在地、代表音声での品質・処理時間・コストを確認してください。
+Fast Transcription の diarization 経路は 2 時間境界に近づくほど失敗リスクが高くなります。120分近傍は best effort とし、公開・本番利用の前に対象リージョン、SKU、quota、データ所在地、代表音声での品質・処理時間・コストを確認してください。動画理解（実験）経路の大容量動画はブロック分割アップロードを使い、アップロードSAS TTLを長めにしますが、ネットワーク中断時は再実行が必要です。
 
 ## セキュリティとプライバシー
 

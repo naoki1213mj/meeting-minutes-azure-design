@@ -134,7 +134,7 @@ Activity別の時間はApplication Insightsのtraceで確認する。詳細KQL�
 | リアルタイム音声 | 対象外 |
 | 音声チャンク並列STT | 話者分離品質リスクのため本線では不採用 |
 
-120分はFast Transcription diarizationおよびContent Understanding video URL参照の2時間境界に近い。120分近傍はサービス制限やファイル内容により失敗する可能性がある。4GB級の動画は単一PUTアップロードの失敗時に再開できないため、実用上はより小さい動画でのデモを推奨する。
+120分はFast Transcription diarizationおよびContent Understanding video URL参照の2時間境界に近い。120分近傍はサービス制限やファイル内容により失敗する可能性がある。256MB超のファイルはブラウザからBlobへブロック分割アップロードする。再開機能までは未実装のため、ネットワーク中断時は再実行が必要。実用上はより小さい動画でのデモを推奨する。
 
 ## 10. 運用チェックリスト
 

@@ -313,6 +313,8 @@ components:
           hardMaxFileSizeBytes,
           contentUnderstandingMaxFileSizeBytes,
           maxDurationSecondsWithDiarization,
+          stableUploadSasTtlMinutes,
+          contentUnderstandingUploadSasTtlMinutes,
         ]
       properties:
         normalMaxFileSizeBytes:
@@ -327,6 +329,12 @@ components:
         maxDurationSecondsWithDiarization:
           type: integer
           default: 7200
+        stableUploadSasTtlMinutes:
+          type: integer
+          default: 30
+        contentUnderstandingUploadSasTtlMinutes:
+          type: integer
+          default: 120
     UploadCompleteRequest:
       type: object
       additionalProperties: false

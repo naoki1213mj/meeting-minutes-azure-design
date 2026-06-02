@@ -27,6 +27,8 @@ export type CreateJobResponse = {
     hardMaxFileSizeBytes: number;
     contentUnderstandingMaxFileSizeBytes: number;
     maxDurationSecondsWithDiarization: number;
+    stableUploadSasTtlMinutes: number;
+    contentUnderstandingUploadSasTtlMinutes: number;
   };
 };
 
@@ -158,6 +160,8 @@ export const terminalStatuses: ReadonlySet<JobStatus> = new Set(["DONE", "FAILED
 
 const defaultApiBaseUrl = "http://localhost:7071/api";
 const fallbackContentType = "application/octet-stream";
+const blockUploadThresholdBytes = 256 * 1024 * 1024;
+const blockSizeBytes = 8 * 1024 * 1024;
 const canonicalAudioContentTypeByExtension: Record<string, string> = {
   ".mp3": "audio/mpeg",
   ".wav": "audio/wav",
@@ -314,6 +318,10 @@ export async function uploadAudioFile(
     return;
   }
 
+  if (file.size > blockUploadThresholdBytes) {
+    return uploadAudioFileInBlocks(uploadUrl, file, onProgress);
+  }
+
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.open("PUT", uploadUrl);
@@ -346,6 +354,108 @@ export async function uploadAudioFile(
     };
     request.send(file);
   });
+}
+
+async function uploadAudioFileInBlocks(
+  uploadUrl: string,
+  file: File,
+  onProgress: (percent: number) => void,
+): Promise<void> {
+  const blockIds: string[] = [];
+  let uploadedBytes = 0;
+  for (let offset = 0, index = 0; offset < file.size; offset += blockSizeBytes, index += 1) {
+    const block = file.slice(offset, Math.min(offset + blockSizeBytes, file.size));
+    const blockId = btoa(`block-${String(index).padStart(6, "0")}`);
+    blockIds.push(blockId);
+    await uploadBlock(
+      appendBlobQueryParameters(uploadUrl, { comp: "block", blockid: blockId }),
+      block,
+      file,
+      uploadedBytes,
+      onProgress,
+    );
+    uploadedBytes += block.size;
+    onProgress(Math.round((uploadedBytes / file.size) * 100));
+  }
+  await commitBlockList(uploadUrl, blockIds, resolveAudioContentType(file));
+  onProgress(100);
+}
+
+function uploadBlock(
+  blockUrl: string,
+  block: Blob,
+  file: File,
+  uploadedBytes: number,
+  onProgress: (percent: number) => void,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("PUT", blockUrl);
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        onProgress(Math.round(((uploadedBytes + event.loaded) / file.size) * 100));
+      }
+    };
+    request.onload = () => {
+      if (request.status >= 200 && request.status < 300) {
+        resolve();
+        return;
+      }
+      reject(new UploadError("http-status", "アップロードに失敗しました。", request.status));
+    };
+    request.onerror = () => {
+      reject(
+        new UploadError(
+          "network",
+          "アップロードに失敗しました。ネットワーク接続を確認してください。",
+        ),
+      );
+    };
+    request.onabort = () => reject(new UploadError("aborted", "アップロードが中断されました。"));
+    request.send(block);
+  });
+}
+
+function commitBlockList(
+  uploadUrl: string,
+  blockIds: string[],
+  contentType: string,
+): Promise<void> {
+  const body = `<?xml version="1.0" encoding="utf-8"?><BlockList>${blockIds
+    .map((id) => `<Latest>${id}</Latest>`)
+    .join("")}</BlockList>`;
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("PUT", appendBlobQueryParameters(uploadUrl, { comp: "blocklist" }));
+    request.setRequestHeader("Content-Type", "application/xml");
+    request.setRequestHeader("x-ms-blob-content-type", contentType);
+    request.onload = () => {
+      if (request.status >= 200 && request.status < 300) {
+        resolve();
+        return;
+      }
+      reject(new UploadError("http-status", "アップロードに失敗しました。", request.status));
+    };
+    request.onerror = () => {
+      reject(
+        new UploadError(
+          "network",
+          "アップロードに失敗しました。ネットワーク接続を確認してください。",
+        ),
+      );
+    };
+    request.onabort = () => reject(new UploadError("aborted", "アップロードが中断されました。"));
+    request.send(body);
+  });
+}
+
+export function appendBlobQueryParameters(
+  uploadUrl: string,
+  parameters: Record<string, string>,
+): string {
+  const separator = uploadUrl.includes("?") ? "&" : "?";
+  const query = new URLSearchParams(parameters).toString();
+  return `${uploadUrl}${separator}${query}`;
 }
 
 function getLowerExtension(fileName: string): string | undefined {
