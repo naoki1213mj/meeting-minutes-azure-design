@@ -100,7 +100,7 @@ function loginPage(error) {
 <meta name="robots" content="noindex" />
 <title>Minutes Studio</title>
 <style>
-  :root { color-scheme: light dark; }
+  :root { color-scheme: light; }
   * { box-sizing: border-box; }
   body { margin: 0; min-height: 100vh; display: grid; place-items: center;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -111,7 +111,8 @@ function loginPage(error) {
   p.sub { margin: 0 0 1.5rem; color: #5b6577; font-size: .9rem; }
   label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .4rem; }
   input { width: 100%; padding: .7rem .85rem; font-size: 1rem; border: 1px solid #cfd6e4;
-    border-radius: 10px; background: #fbfcfe; }
+    border-radius: 10px; background: #fbfcfe; color: #1b2330; caret-color: #3b6ef0; }
+  input::placeholder { color: #9aa4b5; }
   input:focus { outline: 2px solid #3b6ef0; border-color: #3b6ef0; }
   button { margin-top: 1.25rem; width: 100%; padding: .75rem; font-size: 1rem; font-weight: 600;
     color: #fff; background: #3b6ef0; border: 0; border-radius: 10px; cursor: pointer; }
