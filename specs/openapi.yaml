@@ -264,6 +264,11 @@ components:
           enum: [fast, quality]
           default: fast
           description: fast は GPT-5.4-mini、quality は GPT-5.4 を使う議事録生成モード。
+        processingRoute:
+          type: string
+          enum: [stable, contentUnderstanding]
+          default: stable
+          description: stable は現行の Speech + direct minutes 経路。contentUnderstanding は動画理解比較用の実験経路。
     CreateJobResponse:
       type: object
       additionalProperties: false

@@ -10,6 +10,11 @@
     "tenantId": { "type": "string", "minLength": 1 },
     "userId": { "type": "string" },
     "minutesModel": { "type": "string", "enum": ["fast", "quality"], "default": "fast" },
+    "processingRoute": {
+      "type": "string",
+      "enum": ["stable", "contentUnderstanding"],
+      "default": "stable"
+    },
     "status": {
       "type": "string",
       "enum": [

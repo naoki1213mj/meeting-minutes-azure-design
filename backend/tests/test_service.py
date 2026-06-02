@@ -10,6 +10,7 @@ from meeting_minutes_backend.models import (
     CreateJobRequest,
     JobStatus,
     MinutesModel,
+    ProcessingRoute,
     UploadCompleteRequest,
 )
 from meeting_minutes_backend.orchestration import InMemoryDurableStarter
@@ -59,6 +60,7 @@ def test_create_job_initializes_created_progress_and_safe_blob_name() -> None:
     assert status.progress.step == "CREATED"
     assert status.progress.percent == 0
     assert status.minutesModel == MinutesModel.FAST
+    assert status.processingRoute == ProcessingRoute.STABLE
 
 
 def test_create_job_persists_requested_minutes_model() -> None:
@@ -69,6 +71,19 @@ def test_create_job_persists_requested_minutes_model() -> None:
     response = service.create_job(_auth(), request)
 
     assert service.get_job(_auth(), response.jobId).minutesModel == MinutesModel.QUALITY
+
+
+def test_create_job_persists_requested_processing_route() -> None:
+    service = _service()
+    request = _create_request().model_copy(
+        update={"processingRoute": ProcessingRoute.CONTENT_UNDERSTANDING}
+    )
+
+    response = service.create_job(_auth(), request)
+
+    assert service.get_job(_auth(), response.jobId).processingRoute == (
+        ProcessingRoute.CONTENT_UNDERSTANDING
+    )
 
 
 def test_create_job_rejects_normal_size_limit() -> None:

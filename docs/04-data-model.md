@@ -40,6 +40,8 @@ Unique key: `tenantId + jobId`
   "status": "GENERATING_CHUNK_SUMMARIES",
   "locale": "ja-JP",
   "maxSpeakers": 8,
+  "minutesModel": "fast",
+  "processingRoute": "stable",
   "input": {
     "fileName": "meeting.mp3",
     "contentType": "audio/mpeg",
@@ -145,6 +147,8 @@ Partition key: `/tenantId`
 ## 4. Job status
 
 正式なスキーマは `specs/job-status.schema.json` を参照。
+
+`processingRoute` は処理方式を表す。`stable` は現行標準経路、`contentUnderstanding` はContent Understanding比較デモ用の実験経路。既定は `stable`。
 
 | status | 説明 | 終了状態 |
 |---|---|---:|

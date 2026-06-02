@@ -97,7 +97,7 @@ def orchestrator(context):
         })
 ```
 
-`CreateReadSasActivity` は名前上はSAS発行だが、dev MVPではm4a/mp4互換性対応もここで行う。入力がm4aまたはmp4の場合、Cosmosのprogressを `PREPROCESSING` にし、`imageio-ffmpeg` のffmpegで音声トラックだけを16kHz mono FLACへ変換し、audio container内の `preprocessed/{tenantId}/{jobId}/input.flac` に保存してから、そのBlobのread SASを返す。その他の対応音声形式は元のraw audio Blobのread SASを返す。
+`CreateReadSasActivity` は名前上はSAS発行だが、dev MVPではm4a/mp4互換性対応もここで行う。標準経路では、入力がm4aまたはmp4の場合、Cosmosのprogressを `PREPROCESSING` にし、`imageio-ffmpeg` のffmpegで音声トラックだけを16kHz mono FLACへ変換し、audio container内の `preprocessed/{tenantId}/{jobId}/input.flac` に保存してから、そのBlobのread SASを返す。その他の対応音声形式は元のraw audio Blobのread SASを返す。Content Understanding実験経路では、映像情報を使うため元MP4 Blobのread SASを渡す設計にする。
 
 Orchestrator内でネットワークI/O、Blob/Cosmos I/O、現在時刻取得などの非決定的処理を直接行わない。I/Oと副作用はActivityへ閉じ込める。
 

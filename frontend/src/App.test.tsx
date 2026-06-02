@@ -12,6 +12,8 @@ describe("App", () => {
     expect(markup).toContain("アクションアイテムを自動整理");
     expect(markup).toContain("経過時間");
     expect(markup).toContain("議事録生成モード");
+    expect(markup).toContain("処理方式");
+    expect(markup).toContain("動画理解");
     expect(markup).toContain("高速");
     expect(markup).not.toContain("話者分離付き議事録を生成");
     expect(markup).not.toContain("Blob Storage");

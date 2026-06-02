@@ -31,6 +31,11 @@ class MinutesModel(StrEnum):
     QUALITY = "quality"
 
 
+class ProcessingRoute(StrEnum):
+    STABLE = "stable"
+    CONTENT_UNDERSTANDING = "contentUnderstanding"
+
+
 class InputConstraints(StrictModel):
     normalMaxFileSizeBytes: int = 314_572_800
     hardMaxFileSizeBytes: int = 524_288_000
@@ -46,6 +51,7 @@ class CreateJobRequest(StrictModel):
     locale: str = "ja-JP"
     maxSpeakers: int = Field(default=8, ge=2, le=30)
     minutesModel: MinutesModel = MinutesModel.FAST
+    processingRoute: ProcessingRoute = ProcessingRoute.STABLE
 
 
 class CreateJobResponse(StrictModel):
@@ -97,6 +103,7 @@ class JobStatusResponse(StrictModel):
     tenantId: str
     userId: str
     minutesModel: MinutesModel = MinutesModel.FAST
+    processingRoute: ProcessingRoute = ProcessingRoute.STABLE
     status: JobStatus
     progress: Progress
     outputs: Outputs
@@ -113,6 +120,7 @@ class JobRecord(StrictModel):
     locale: str
     maxSpeakers: int
     minutesModel: MinutesModel = MinutesModel.FAST
+    processingRoute: ProcessingRoute = ProcessingRoute.STABLE
     status: JobStatus
     originalFileName: str
     contentType: str

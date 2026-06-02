@@ -23,6 +23,7 @@ import {
   type JobStatusResponse,
   type MinutesModel,
   type MinutesResponse,
+  type ProcessingRoute,
   type TranscriptResponse,
 } from "./apiClient";
 import { appTitle, heroCopy, heroHeadline, supportedAudioExtensions } from "./appConfig";
@@ -82,6 +83,25 @@ const minutesModelOptions: Array<{
   },
 ];
 
+const processingRouteOptions: Array<{
+  id: ProcessingRoute;
+  label: string;
+  description: string;
+  badge?: string;
+}> = [
+  {
+    id: "stable",
+    label: "標準",
+    description: "現行の安定経路。音声抽出、話者分離、議事録生成を既存方式で実行します。",
+  },
+  {
+    id: "contentUnderstanding",
+    label: "動画理解",
+    description: "Content Understandingで映像補足も比較する実験経路です。現在は準備中です。",
+    badge: "実験",
+  },
+];
+
 const statusLabels: Record<JobStatus, StatusDescriptor> = {
   CREATED: { label: "準備中", tone: "info" },
   UPLOADING: { label: "アップロード中", tone: "accent" },
@@ -105,6 +125,7 @@ export function App() {
   const [transcript, setTranscript] = useState<TranscriptResponse | null>(null);
   const [minutes, setMinutes] = useState<MinutesResponse | null>(null);
   const [minutesModel, setMinutesModel] = useState<MinutesModel>("fast");
+  const [processingRoute, setProcessingRoute] = useState<ProcessingRoute>("stable");
   const [activeResultsTab, setActiveResultsTab] = useState<ResultsTab>("minutes");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [runStartedAtMs, setRunStartedAtMs] = useState<number | null>(null);
@@ -190,7 +211,7 @@ export function App() {
         setRunFinishedAtMs(null);
         return;
       }
-      const job = await createJob(selectedFile, durationSeconds, minutesModel);
+      const job = await createJob(selectedFile, durationSeconds, minutesModel, processingRoute);
       activeJobIdRef.current = job.jobId;
       setCreatedJob(job);
 
@@ -446,6 +467,40 @@ export function App() {
             )}
 
             <fieldset className="model-selector" disabled={isBusy}>
+              <legend>処理方式</legend>
+              <p>標準経路は既存の安定処理です。動画理解は比較デモ用の実験経路として準備中です。</p>
+              <div className="model-selector__options">
+                {processingRouteOptions.map((option) => {
+                  const isDisabled =
+                    option.id === "contentUnderstanding" &&
+                    !frontendFeatures.contentUnderstandingRoute;
+                  return (
+                    <label
+                      className={"model-option" + (isDisabled ? " model-option--disabled" : "")}
+                      key={option.id}
+                    >
+                      <input
+                        checked={processingRoute === option.id}
+                        disabled={isDisabled}
+                        name="processing-route"
+                        onChange={() => setProcessingRoute(option.id)}
+                        type="radio"
+                        value={option.id}
+                      />
+                      <span>
+                        <strong>
+                          {option.label}
+                          {option.badge ? <em>{option.badge}</em> : null}
+                        </strong>
+                        <small>{option.description}</small>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            <fieldset className="model-selector" disabled={isBusy}>
               <legend>議事録生成モード</legend>
               <p>速度重視か品質重視かを選択できます。話者分離の文字起こしはどちらも同じ精度で処理します。</p>
               <div className="model-selector__options">
@@ -550,6 +605,10 @@ export function App() {
               <div>
                 <dt>議事録モード</dt>
                 <dd>{getMinutesModelLabel(jobStatus?.minutesModel ?? minutesModel)}</dd>
+              </div>
+              <div>
+                <dt>処理方式</dt>
+                <dd>{getProcessingRouteLabel(jobStatus?.processingRoute ?? processingRoute)}</dd>
               </div>
               <div>
                 <dt>文字起こし</dt>
@@ -716,6 +775,15 @@ function getMinutesModelLabel(minutesModel: MinutesModel): string {
       return "高速";
     case "quality":
       return "高品質";
+  }
+}
+
+function getProcessingRouteLabel(processingRoute: ProcessingRoute): string {
+  switch (processingRoute) {
+    case "stable":
+      return "標準";
+    case "contentUnderstanding":
+      return "動画理解（実験）";
   }
 }
 

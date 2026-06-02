@@ -14,6 +14,7 @@ export type JobStatus =
   | "CANCELLED";
 
 export type MinutesModel = "fast" | "quality";
+export type ProcessingRoute = "stable" | "contentUnderstanding";
 
 export type CreateJobResponse = {
   jobId: string;
@@ -40,6 +41,7 @@ export type JobStatusResponse = {
   tenantId: string;
   userId: string;
   minutesModel: MinutesModel;
+  processingRoute: ProcessingRoute;
   status: JobStatus;
   progress: {
     step: string;
@@ -223,6 +225,7 @@ export async function createJob(
   file: File,
   clientEstimatedDurationSeconds?: number | null,
   minutesModel: MinutesModel = "fast",
+  processingRoute: ProcessingRoute = "stable",
 ): Promise<CreateJobResponse> {
   return apiFetch<CreateJobResponse>("/jobs", {
     method: "POST",
@@ -236,6 +239,7 @@ export async function createJob(
       locale: "ja-JP",
       maxSpeakers: 8,
       minutesModel,
+      processingRoute,
     }),
   });
 }

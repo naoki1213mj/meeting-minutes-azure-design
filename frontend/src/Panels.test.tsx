@@ -9,6 +9,7 @@ const doneJob: JobStatusResponse = {
   tenantId: "tenant-1",
   userId: "user-1",
   minutesModel: "fast",
+  processingRoute: "stable",
   status: "DONE",
   progress: {
     step: "完了",

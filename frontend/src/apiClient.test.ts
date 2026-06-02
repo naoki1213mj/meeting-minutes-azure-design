@@ -84,7 +84,7 @@ describe("apiClient", () => {
     );
   });
 
-  it("sends the selected minutes model when creating a job", async () => {
+  it("sends the selected minutes model and processing route when creating a job", async () => {
     const requests: RequestInit[] = [];
     vi.stubGlobal(
       "fetch",
@@ -108,9 +108,18 @@ describe("apiClient", () => {
       }),
     );
 
-    await createJob(new File(["audio"], "meeting.mp3", { type: "audio/mpeg" }), 60, "quality");
+    await createJob(
+      new File(["audio"], "meeting.mp3", { type: "audio/mpeg" }),
+      60,
+      "quality",
+      "contentUnderstanding",
+    );
 
-    const body = JSON.parse(String(requests[0].body)) as { minutesModel: string };
+    const body = JSON.parse(String(requests[0].body)) as {
+      minutesModel: string;
+      processingRoute: string;
+    };
     expect(body.minutesModel).toBe("quality");
+    expect(body.processingRoute).toBe("contentUnderstanding");
   });
 });
