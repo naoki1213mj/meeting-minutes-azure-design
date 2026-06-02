@@ -97,32 +97,25 @@
                 <mxCell id="e-user-browser" value="upload file" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="user" target="browser" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="e-load-app" value="0 load Web UI" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.08;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="browser" target="app-service" edge="1">
-                    <mxGeometry relative="1" as="geometry">
+                <mxCell id="e-load-app" value="0 load UI" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.08;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="browser" target="app-service" edge="1">
+                    <mxGeometry x="-0.2" relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="395" y="310"/>
                             <mxPoint x="395" y="197"/>
                         </Array>
+                        <mxPoint x="0" y="0" as="offset"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e-post-jobs" value="1 POST /api/jobs" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" parent="1" source="browser" target="functions-api" edge="1">
-                    <mxGeometry relative="1" as="geometry">
+                <mxCell id="e-post-jobs" value="1 job ⇄ 2 SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;startArrow=block;startFill=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.22;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" parent="1" source="browser" target="functions-api" edge="1">
+                    <mxGeometry x="0" relative="1" as="geometry">
                         <Array as="points">
-                            <mxPoint x="390" y="330"/>
+                            <mxPoint x="365" y="326"/>
                         </Array>
+                        <mxPoint x="0" y="-9" as="offset"/>
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="e-create-sas" value="create SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="functions-api" target="sas" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="e-return-sas" value="2 jobId + upload SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.9;entryDx=0;entryDy=0;" parent="1" source="sas" target="browser" edge="1">
-                    <mxGeometry relative="1" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="830" y="430"/>
-                            <mxPoint x="340" y="430"/>
-                            <mxPoint x="340" y="408"/>
-                        </Array>
-                    </mxGeometry>
                 </mxCell>
                 <mxCell id="e-direct-put" value="3 direct Blob PUT" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=3;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.85;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="browser" target="blob" edge="1">
                     <mxGeometry relative="1" as="geometry">
@@ -133,11 +126,12 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e-upload-complete" value="4 POST upload-complete (202)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.55;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" parent="1" source="browser" target="functions-api" edge="1">
-                    <mxGeometry relative="1" as="geometry">
+                <mxCell id="e-upload-complete" value="4 upload-complete" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.62;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" parent="1" source="browser" target="functions-api" edge="1">
+                    <mxGeometry x="0" relative="1" as="geometry">
                         <Array as="points">
-                            <mxPoint x="395" y="366"/>
+                            <mxPoint x="365" y="374"/>
                         </Array>
+                        <mxPoint x="0" y="9" as="offset"/>
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="e-start-orch" value="5 start orchestration" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="functions-api" target="durable" edge="1">
@@ -169,15 +163,16 @@
                 <mxCell id="e-c-f" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="chunk-summary" target="final-merge">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="e-transcribe-speech" value="8 Fast Transcription + diarization" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="transcribe" target="speech" edge="1">
+                <mxCell id="e-transcribe-speech" value="8 Fast Transcription" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="transcribe" target="speech" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1000" y="691"/>
                             <mxPoint x="1000" y="420"/>
                         </Array>
+                        <mxPoint x="-40" y="-150" as="offset"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e-speech-blob" value="raw transcript ⇄ audioUrl fetch" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;dashed=1;startArrow=block;startFill=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="speech" target="blob" edge="1">
+                <mxCell id="e-speech-blob" value="audioUrl fetch (read SAS)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;dashed=1;startArrow=block;startFill=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="speech" target="blob" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="e-summary-openai" value="10 chunk summaries" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.95;entryDx=0;entryDy=0;" parent="1" source="chunk-summary" target="openai" edge="1">
@@ -230,7 +225,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e-poll" value="13 poll GET status / transcript / minutes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;strokeWidth=2;dashed=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.95;entryDx=0;entryDy=0;" parent="1" source="review" target="functions-api" edge="1">
+                <mxCell id="e-poll" value="13 poll status / results" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;strokeWidth=2;dashed=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.95;entryDx=0;entryDy=0;" parent="1" source="review" target="functions-api" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="355" y="758"/>
@@ -239,12 +234,13 @@
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="e-api-appi" value="telemetry" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;dashed=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="functions-api" target="appinsights" edge="1">
-                    <mxGeometry relative="1" as="geometry">
+                    <mxGeometry x="-0.78" relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="665" y="330"/>
                             <mxPoint x="665" y="120"/>
                             <mxPoint x="1715" y="120"/>
                         </Array>
+                        <mxPoint x="0" y="0" as="offset"/>
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="e-appi-log" value="workspace logs" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#b85450;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="appinsights" target="loganalytics" edge="1">

@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="azure-resource-architecture" name="Azure resource architecture">
-        <mxGraphModel dx="1033" dy="408" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1300" math="0" shadow="0">
+        <mxGraphModel dx="1722" dy="680" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1300" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -138,19 +138,20 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e-functions-openai" value="6. chunk summary / final merge" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#5C2D91;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.95;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="functions" target="openai" edge="1">
+                <mxCell id="e-functions-openai" value="6. chunk summary / final merge" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#5C2D91;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.95;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="functions" target="openai" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
-                            <mxPoint x="1305" y="542"/>
-                            <mxPoint x="1305" y="604"/>
+                            <mxPoint x="740" y="542"/>
+                            <mxPoint x="740" y="840"/>
+                            <mxPoint x="1390" y="840"/>
                         </Array>
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="e-appsvc-appinsights" value="telemetry" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#0078D4;fontSize=11;dashed=1;dashPattern=6 4;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="appsvc" target="appinsights">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
-                            <mxPoint x="464" y="150"/>
-                            <mxPoint x="1730" y="150"/>
+                            <mxPoint x="464" y="130"/>
+                            <mxPoint x="1730" y="130"/>
                         </Array>
                     </mxGeometry>
                 </mxCell>
