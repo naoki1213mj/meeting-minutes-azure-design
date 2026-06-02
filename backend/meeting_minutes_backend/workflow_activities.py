@@ -130,7 +130,7 @@ def create_read_sas(job: dict[str, object]) -> dict[str, object]:
     return {"audioUrl": read_sas.url}
 
 
-def analyze_content_understanding(payload: dict[str, object]) -> dict[str, object]:
+def start_content_understanding_analysis(payload: dict[str, object]) -> dict[str, object]:
     job = _required_dict(payload, "job")
     content_url = _required_string(payload, "contentUrl")
     tenant_id = _required_string(job, "tenantId")
@@ -160,9 +160,30 @@ def analyze_content_understanding(payload: dict[str, object]) -> dict[str, objec
             }
         )
     )
-    result = build_content_understanding_client(settings).analyze_url(
+    operation_url = build_content_understanding_client(settings).start_analysis(
         ContentUnderstandingRequest(content_url=content_url)
     )
+    return {"operationUrl": operation_url}
+
+
+def poll_content_understanding_analysis(payload: dict[str, object]) -> dict[str, object]:
+    job = _required_dict(payload, "job")
+    operation_url = _required_string(payload, "operationUrl")
+    tenant_id = _required_string(job, "tenantId")
+    job_id = _required_string(job, "jobId")
+    settings = AppSettings.from_env()
+    result = build_content_understanding_client(settings).get_result(operation_url)
+    status = result.get("status")
+    if status != "Succeeded":
+        if status in {"Failed", "Canceled"}:
+            raise AppError(
+                code="CONTENT_UNDERSTANDING_FAILED",
+                message="Content Understanding による動画解析に失敗しました。",
+                http_status=502,
+                details={"operationStatus": str(status)},
+            )
+        return {"status": str(status or "Running")}
+
     store = build_artifact_store(settings)
     raw_blob_name = f"raw/{tenant_id}/{job_id}/content-understanding-response.json"
     raw_uri = store.write_json(settings.transcript_container_name, raw_blob_name, result)
@@ -174,6 +195,7 @@ def analyze_content_understanding(payload: dict[str, object]) -> dict[str, objec
         visual_context,
     )
     return {
+        "status": "Succeeded",
         "rawTranscriptBlobName": raw_blob_name,
         "rawTranscriptBlobUri": raw_uri,
         "visualContextBlobName": visual_blob_name,

@@ -39,7 +39,8 @@
 | `TranscribeAudioActivity` | job, readSasUrl | rawTranscriptBlobUri | あり | live E2E済み |
 | `NormalizeTranscriptActivity` | rawTranscriptBlobUri | normalizedTranscriptBlobUri | あり | live E2E済み |
 | `GenerateFinalMinutesActivity` | normalizedTranscriptBlobUri | minutes JSON blob | あり | direct全文生成の本線。制約時のみchunk fallback |
-| `AnalyzeContentUnderstandingActivity` | job, contentUrl | raw CU result / visual context blob | あり | 動画理解（実験）経路 |
+| `AnalyzeContentUnderstandingActivity` | job, contentUrl | operationUrl | あり | 動画理解（実験）経路。CU解析を開始 |
+| `PollContentUnderstandingActivity` | job, operationUrl | running/result | あり | 動画理解（実験）経路。Durable timerで間隔を空けてpoll |
 | `NormalizeContentUnderstandingTranscriptActivity` | raw CU result | normalized transcript | あり | 動画理解（実験）経路 |
 | `BuildTranscriptChunksActivity` | normalizedTranscriptBlobUri | chunk descriptors | あり | direct生成のfallback用に保持 |
 | `GenerateChunkSummaryActivity` | chunk descriptor | chunk summary blob | あり | direct生成のfallback用に保持 |
@@ -99,7 +100,9 @@ def orchestrator(context):
         })
 ```
 
-`CreateReadSasActivity` は名前上はSAS発行だが、dev MVPではm4a/mp4互換性対応もここで行う。標準経路では、入力がm4aまたはmp4の場合、Cosmosのprogressを `PREPROCESSING` にし、`imageio-ffmpeg` のffmpegで音声トラックだけを16kHz mono FLACへ変換し、audio container内の `preprocessed/{tenantId}/{jobId}/input.flac` に保存してから、そのBlobのread SASを返す。その他の対応音声形式は元のraw audio Blobのread SASを返す。Content Understanding実験経路では、映像情報を使うため元MP4 Blobのread SASを渡す設計にする。
+`CreateReadSasActivity` は名前上はSAS発行だが、dev MVPではm4a/mp4互換性対応もここで行う。標準経路では、入力がm4aまたはmp4の場合、Cosmosのprogressを `PREPROCESSING` にし、`imageio-ffmpeg` のffmpegで音声トラックだけを16kHz mono FLACへ変換し、audio container内の `preprocessed/{tenantId}/{jobId}/input.flac` に保存してから、そのBlobのread SASを返す。その他の対応音声形式は元のraw audio Blobのread SASを返す。Content Understanding実験経路では、映像情報を使うため元MP4 Blobのread SASを渡す。
+
+Content Understanding実験経路では、`AnalyzeContentUnderstandingActivity` は解析開始だけを行い、operation URLを返す。OrchestratorはDurable timerで待機し、`PollContentUnderstandingActivity` を繰り返し呼ぶ。これにより、大きい動画の解析中にActivityが長時間ブロックしてtimeoutすることを避ける。
 
 Orchestrator内でネットワークI/O、Blob/Cosmos I/O、現在時刻取得などの非決定的処理を直接行わない。I/Oと副作用はActivityへ閉じ込める。
 

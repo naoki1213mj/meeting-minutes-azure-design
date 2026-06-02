@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 from MeetingMinutesOrchestrator import orchestrator_function
@@ -18,10 +19,16 @@ class TaskAllCall:
     tasks: list[ActivityCall]
 
 
+@dataclass(frozen=True)
+class TimerCall:
+    fire_at: datetime
+
+
 class FakeDurableContext:
     def __init__(self, payload: dict[str, object]) -> None:
         self._payload = payload
         self.statuses: list[dict[str, object]] = []
+        self.current_utc_datetime = datetime(2026, 6, 2, tzinfo=UTC)
 
     def get_input(self) -> dict[str, object]:
         return self._payload
@@ -34,6 +41,10 @@ class FakeDurableContext:
 
     def task_all(self, tasks: list[ActivityCall]) -> TaskAllCall:
         return TaskAllCall(tasks)
+
+    def create_timer(self, fire_at: datetime) -> TimerCall:
+        self.current_utc_datetime = fire_at
+        return TimerCall(fire_at)
 
 
 def test_orchestrator_uses_direct_minutes_generation_path() -> None:
@@ -66,7 +77,10 @@ def test_orchestrator_routes_content_understanding_jobs_to_cu_activities() -> No
         "jobId": "job-a",
         "processingRoute": "contentUnderstanding",
     }
+    operation = {"operationUrl": "https://example.invalid/operation"}
+    running = {"status": "Running"}
     cu_raw = {
+        "status": "Succeeded",
         "rawTranscriptBlobName": "cu.json",
         "visualContextBlobUri": "https://storage.example/visual.json",
     }
@@ -78,6 +92,14 @@ def test_orchestrator_routes_content_understanding_jobs_to_cu_activities() -> No
     analyze_call = _send_activity(generator, {"audioUrl": "https://example.invalid/video"})
     assert analyze_call.name == "AnalyzeContentUnderstandingActivity"
     assert analyze_call.payload == {"job": job, "contentUrl": "https://example.invalid/video"}
+    poll_call = _send_activity(generator, operation)
+    assert poll_call.name == "PollContentUnderstandingActivity"
+    assert poll_call.payload == {"job": job, **operation}
+    timer = generator.send(running)
+    assert isinstance(timer, TimerCall)
+    second_poll_call = generator.send(None)
+    assert isinstance(second_poll_call, ActivityCall)
+    assert second_poll_call.name == "PollContentUnderstandingActivity"
     normalize_call = _send_activity(generator, cu_raw)
     assert normalize_call.name == "NormalizeContentUnderstandingTranscriptActivity"
     assert normalize_call.payload == {"job": job, **cu_raw}
@@ -133,6 +155,7 @@ def test_orchestrator_activity_names_have_v1_wrappers() -> None:
         "ValidateInputActivity",
         "CreateReadSasActivity",
         "AnalyzeContentUnderstandingActivity",
+        "PollContentUnderstandingActivity",
         "TranscribeAudioActivity",
         "NormalizeTranscriptActivity",
         "NormalizeContentUnderstandingTranscriptActivity",

@@ -1,10 +1,13 @@
 from collections.abc import Generator
+from datetime import timedelta
 
 import azure.durable_functions as df
 
 from meeting_minutes_backend.workflow import serialize_workflow_error
 
 MAX_CHUNK_SUMMARY_BATCH_SIZE = 3
+CONTENT_UNDERSTANDING_POLL_INTERVAL_SECONDS = 30
+CONTENT_UNDERSTANDING_MAX_POLLS = 240
 
 
 def orchestrator_function(
@@ -28,10 +31,30 @@ def orchestrator_function(
 
         if job.get("processingRoute") == "contentUnderstanding":
             context.set_custom_status({"step": "ANALYZING_CONTENT", "percent": 20})
-            raw_transcript = yield context.call_activity(
+            operation = yield context.call_activity(
                 "AnalyzeContentUnderstandingActivity",
                 {"job": job, "contentUrl": read_sas["audioUrl"]},
             )
+            if not isinstance(operation, dict):
+                raise TypeError("AnalyzeContentUnderstandingActivity must return an object")
+
+            raw_transcript: object = None
+            for _attempt in range(CONTENT_UNDERSTANDING_MAX_POLLS):
+                poll_result = yield context.call_activity(
+                    "PollContentUnderstandingActivity",
+                    {"job": job, **operation},
+                )
+                if not isinstance(poll_result, dict):
+                    raise TypeError("PollContentUnderstandingActivity must return an object")
+                if poll_result.get("status") == "Succeeded":
+                    raw_transcript = poll_result
+                    break
+                deadline = context.current_utc_datetime + timedelta(
+                    seconds=CONTENT_UNDERSTANDING_POLL_INTERVAL_SECONDS
+                )
+                yield context.create_timer(deadline)
+            if raw_transcript is None:
+                raise TimeoutError("Content Understanding analysis timed out")
             if not isinstance(raw_transcript, dict):
                 raise TypeError("AnalyzeContentUnderstandingActivity must return an object")
 

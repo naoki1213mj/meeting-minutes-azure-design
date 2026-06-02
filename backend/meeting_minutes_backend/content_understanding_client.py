@@ -43,31 +43,21 @@ class ContentUnderstandingClient:
         self._operation_timeout_seconds = operation_timeout_seconds
 
     def analyze_url(self, request: ContentUnderstandingRequest) -> dict[str, object]:
-        operation_url = self._start_analysis(request)
+        operation_url = self.start_analysis(request)
         deadline = time.monotonic() + self._operation_timeout_seconds
         last_status: str | None = None
         while time.monotonic() <= deadline:
-            token = self._credential.get_token(COGNITIVE_SERVICES_SCOPE).token
-            response = self._http_client.get(
-                operation_url,
-                headers={"Authorization": f"Bearer {token}"},
-                timeout=self._request_timeout_seconds,
-            )
-            if response.status_code >= 400:
-                raise _content_understanding_error(response.status_code, last_status)
-            result = response.json()
-            if not isinstance(result, dict):
-                raise _content_understanding_error(response.status_code, last_status)
+            result = self.get_result(operation_url)
             status = result.get("status")
             last_status = status if isinstance(status, str) else None
             if last_status in TERMINAL_STATUSES:
                 if last_status == "Succeeded":
                     return result
-                raise _content_understanding_error(response.status_code, last_status)
+                raise _content_understanding_error(None, last_status)
             self._sleep(self._poll_interval_seconds)
         raise _content_understanding_error(None, last_status or "TimedOut")
 
-    def _start_analysis(self, request: ContentUnderstandingRequest) -> str:
+    def start_analysis(self, request: ContentUnderstandingRequest) -> str:
         token = self._credential.get_token(COGNITIVE_SERVICES_SCOPE).token
         response = self._http_client.post(
             self._analyze_url(),
@@ -86,6 +76,20 @@ class ContentUnderstandingClient:
         if not operation_location:
             raise _content_understanding_error(response.status_code, "OperationLocationMissing")
         return urljoin(self._endpoint, operation_location)
+
+    def get_result(self, operation_url: str) -> dict[str, object]:
+        token = self._credential.get_token(COGNITIVE_SERVICES_SCOPE).token
+        response = self._http_client.get(
+            operation_url,
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=self._request_timeout_seconds,
+        )
+        if response.status_code >= 400:
+            raise _content_understanding_error(response.status_code, None)
+        result = response.json()
+        if not isinstance(result, dict):
+            raise _content_understanding_error(response.status_code, None)
+        return result
 
     def _analyze_url(self) -> str:
         return (
