@@ -161,6 +161,7 @@ Azure Storage、Cosmos DB、Application Insights の標準暗号化を使う。�
 | `meeting.openai.prompt_tokens` | tokens |
 | `meeting.openai.completion_tokens` | tokens |
 | `meeting.minutes.schema_validation_failures` | count |
+| `meeting.activity.duration.seconds` | seconds |
 
 ### custom dimensions
 
@@ -171,6 +172,36 @@ Azure Storage、Cosmos DB、Application Insights の標準暗号化を使う。�
 - speechRegion
 - openaiDeploymentName
 - errorCode
+
+### Activity duration logs
+
+2026-06-02時点では、各Durable Functions Activity wrapperで処理時間を計測し、`meeting.activity.duration.seconds` をApplication Insightsログへ出す。ログに出すdimensionは `tenantId`, `jobId`, `activityName`, `outcome`, `chunkIndex`, `errorType`, `errorCode` のallowlistに限定し、payload全文、SAS URL、transcript、minutes、音声本文は出さない。
+
+E2Eが遅い場合は、まず次のKQLでActivity別の所要時間を確認する。
+
+```kusto
+traces
+| where timestamp > ago(24h)
+| where message has "meeting.activity.duration.seconds"
+| extend payload = parse_json(message)
+| extend dims = payload.dimensions
+| project
+    timestamp,
+    jobId = tostring(dims.jobId),
+    activityName = tostring(dims.activityName),
+    outcome = tostring(dims.outcome),
+    chunkIndex = tostring(dims.chunkIndex),
+    durationSeconds = todouble(payload.value)
+| summarize
+    count(),
+    avgDurationSeconds = avg(durationSeconds),
+    p95DurationSeconds = percentile(durationSeconds, 95),
+    maxDurationSeconds = max(durationSeconds)
+  by activityName, outcome
+| order by maxDurationSeconds desc
+```
+
+`GenerateChunkSummaryActivity` はOrchestratorで並列実行されるため、Activity durationの単純合計はE2E壁時計時間と一致しない。E2E短縮判断では、STTなど単一Activityの最大時間、chunk summaryのbatch内最大時間、OpenAI/Speechの429/5xx再試行有無を合わせて見る。
 
 ### 現在の確認実績
 

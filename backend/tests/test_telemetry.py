@@ -1,12 +1,21 @@
 from __future__ import annotations
 
+import logging
 from typing import cast
 
-from meeting_minutes_backend.telemetry import build_job_metric, safe_log_payload
+import pytest
+
+from meeting_minutes_backend import telemetry
+from meeting_minutes_backend.telemetry import (
+    ACTIVITY_DURATION_LOGGER_NAME,
+    build_job_metric,
+    measure_activity,
+    safe_log_payload,
+)
 
 
 def test_safe_log_payload_redacts_sas_url_anywhere() -> None:
-    payload = {
+    payload: dict[str, object] = {
         "links": {
             "contentUrl": (
                 "https://storage.blob.core.windows.net/audio/file.wav?"
@@ -24,7 +33,7 @@ def test_safe_log_payload_redacts_sas_url_anywhere() -> None:
 
 
 def test_safe_log_payload_redacts_embedded_sas_url() -> None:
-    payload = {
+    payload: dict[str, object] = {
         "message": (
             "Speech fetch failed for "
             "https://storage.blob.core.windows.net/audio/file.wav?SV=2024&SIG=REDACTED_TEST_VALUE"
@@ -39,7 +48,7 @@ def test_safe_log_payload_redacts_embedded_sas_url() -> None:
 
 
 def test_safe_log_payload_redacts_transcript_and_minutes_fields() -> None:
-    payload = {
+    payload: dict[str, object] = {
         "transcript": "顧客の発言全文",
         "minutes": {"summary": "議事録全文"},
         "safe": "job-a",
@@ -118,3 +127,87 @@ def test_build_job_metric_redacts_normalized_sensitive_dimension_names() -> None
 
     assert metric.dimensions["accessTokenRedacted"] == "true"
     assert metric.dimensions["tokenUsage"] == "100"
+
+
+def test_measure_activity_logs_duration_with_nested_job_context(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.INFO, logger=ACTIVITY_DURATION_LOGGER_NAME)
+    payload: dict[str, object] = {
+        "job": {"tenantId": "tenant-a", "jobId": "job-a"},
+        "chunkIndex": 2,
+        "audioUrl": "https://storage.blob.core.windows.net/audio/input.m4a?sig=SECRET",
+    }
+
+    result = measure_activity(
+        "GenerateChunkSummaryActivity",
+        payload,
+        lambda _: {"ok": True},
+    )
+
+    assert result == {"ok": True}
+    record = _single_activity_duration_record(caplog)
+    dimensions = cast(dict[str, str], record.__dict__["custom_dimensions"])
+    assert dimensions["tenantId"] == "tenant-a"
+    assert dimensions["jobId"] == "job-a"
+    assert dimensions["activityName"] == "GenerateChunkSummaryActivity"
+    assert dimensions["chunkIndex"] == "2"
+    assert dimensions["outcome"] == "success"
+    assert record.__dict__["custom_metric_name"] == "meeting.activity.duration.seconds"
+    assert cast(float, record.__dict__["custom_metric_value"]) >= 0
+    assert "SECRET" not in caplog.text
+    assert "audioUrl" not in caplog.text
+
+
+def test_measure_activity_logs_failure_and_reraises_without_message(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.INFO, logger=ACTIVITY_DURATION_LOGGER_NAME)
+    payload: dict[str, object] = {
+        "tenantId": "tenant-a",
+        "jobId": "job-a",
+        "transcript": "文字起こし全文",
+    }
+
+    def fail(_: dict[str, object]) -> dict[str, object]:
+        raise RuntimeError("文字起こし全文を含む内部エラー")
+
+    with pytest.raises(RuntimeError):
+        measure_activity("TranscribeAudioActivity", payload, fail)
+
+    record = _single_activity_duration_record(caplog)
+    dimensions = cast(dict[str, str], record.__dict__["custom_dimensions"])
+    assert dimensions["tenantId"] == "tenant-a"
+    assert dimensions["jobId"] == "job-a"
+    assert dimensions["activityName"] == "TranscribeAudioActivity"
+    assert dimensions["outcome"] == "failure"
+    assert dimensions["errorType"] == "RuntimeError"
+    assert "文字起こし全文" not in caplog.text
+    assert "内部エラー" not in caplog.text
+
+
+def test_measure_activity_telemetry_failure_does_not_affect_handler(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def broken_info(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("logger unavailable")
+
+    monkeypatch.setattr(telemetry.LOGGER, "info", broken_info)
+
+    result = measure_activity(
+        "LoadJobActivity",
+        cast(dict[str, object], {"tenantId": "tenant-a", "jobId": "job-a"}),
+        lambda _: {"jobId": "job-a"},
+    )
+
+    assert result == {"jobId": "job-a"}
+
+
+def _single_activity_duration_record(caplog: pytest.LogCaptureFixture) -> logging.LogRecord:
+    records = [
+        record
+        for record in caplog.records
+        if getattr(record, "custom_metric_name", None) == "meeting.activity.duration.seconds"
+    ]
+    assert len(records) == 1
+    return records[0]
