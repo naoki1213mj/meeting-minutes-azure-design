@@ -24,11 +24,16 @@ param chunkSummaryDeploymentName string = 'gpt-5.4-mini'
 
 param finalMergeDeploymentName string = 'gpt-5.4'
 
+param contentUnderstandingCompletionDeploymentName string = 'gpt-4.1-mini-cu'
+
 @minValue(1)
 param chunkSummaryDeploymentCapacity int = 100
 
 @minValue(1)
 param finalMergeDeploymentCapacity int = 100
+
+@minValue(1)
+param contentUnderstandingCompletionDeploymentCapacity int = 100
 
 var uniqueSuffix = uniqueString(subscription().id, resourceGroup().id, environmentName)
 var resourcePrefix = toLower('mm-${environmentName}-${uniqueSuffix}')
@@ -123,6 +128,25 @@ resource finalMergeModelDeployment 'Microsoft.CognitiveServices/accounts/deploym
       format: 'OpenAI'
       name: 'gpt-5.4'
       version: '2026-03-05'
+    }
+  }
+}
+
+resource contentUnderstandingCompletionDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
+  parent: aiServices
+  name: contentUnderstandingCompletionDeploymentName
+  dependsOn: [
+    finalMergeModelDeployment
+  ]
+  sku: {
+    name: 'GlobalStandard'
+    capacity: contentUnderstandingCompletionDeploymentCapacity
+  }
+  properties: {
+    model: {
+      format: 'OpenAI'
+      name: 'gpt-4.1-mini'
+      version: '2025-04-14'
     }
   }
 }
@@ -433,7 +457,7 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
         }
         {
           name: 'AZURE_CONTENT_UNDERSTANDING_ANALYZER_ID'
-          value: 'prebuilt-videoSearch'
+          value: 'minutes_video_ja'
         }
         {
           name: 'AZURE_CONTENT_UNDERSTANDING_API_VERSION'

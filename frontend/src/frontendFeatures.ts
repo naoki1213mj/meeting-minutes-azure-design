@@ -2,5 +2,5 @@ export const frontendFeatures = {
   transcriptApi: true,
   minutesApi: true,
   speakerMappingSave: false,
-  contentUnderstandingRoute: false,
+  contentUnderstandingRoute: true,
 } as const;

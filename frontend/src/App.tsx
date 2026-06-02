@@ -97,7 +97,7 @@ const processingRouteOptions: Array<{
   {
     id: "contentUnderstanding",
     label: "動画理解",
-    description: "Content Understandingで映像補足も比較する実験経路です。現在は準備中です。",
+    description: "Content Understandingで映像補足も取得する実験経路です。標準より時間がかかる場合があります。",
     badge: "実験",
   },
 ];
@@ -468,7 +468,7 @@ export function App() {
 
             <fieldset className="model-selector" disabled={isBusy}>
               <legend>処理方式</legend>
-              <p>標準経路は既存の安定処理です。動画理解は比較デモ用の実験経路として準備中です。</p>
+              <p>標準経路は既存の安定処理です。動画理解は比較デモ用の実験経路です。</p>
               <div className="model-selector__options">
                 {processingRouteOptions.map((option) => {
                   const isDisabled =
