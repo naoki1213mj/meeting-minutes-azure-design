@@ -8,13 +8,20 @@ Accepted
 
 Minutes Studio は最大120分程度の録音済み会議を対象にする。文字起こし経路は、すでに音声全体を Azure Speech in Foundry Tools Fast Transcription に1回投入し、diarization を有効にしている。この方式は会議全体で speaker label の一貫性を保ちやすく、音声をチャンクごとに文字起こしした場合に発生する「チャンクごとに `Speaker 1` の人物が変わる」問題を避けられる。
 
-一方、従来の議事録生成は normalized transcript をチャンク分割し、chunk summary を作り、それらを最終統合していた。50分m4aのlive E2E計測では、全体224.6秒のうち主な内訳は次のとおりだった。
+一方、従来の議事録生成は normalized transcript をチャンク分割し、chunk summary を作り、それらを最終統合していた。約55分m4aのlive E2E計測では、全体224.6秒のうち主な内訳は次のとおりだった。
 
 | Activity | Duration |
 |---|---:|
 | TranscribeAudioActivity | 97.18s |
 | GenerateChunkSummaryActivity | 6 chunks, 51.63s total |
 | GenerateFinalMinutesActivity | 76.79s |
+
+direct方式への変更後、同じ約55分m4aで次のE2E計測を実施した。いずれも1回計測であり、SLAではない。
+
+| Mode | E2E | Transcription | Minutes generation | Output shape |
+|---|---:|---:|---:|---|
+| `fast` / GPT-5.4 mini | 163.1s | 118.45s | 8.68s | topics 4 / decisions 0 / action items 3 |
+| `quality` / GPT-5.4 | 194.8s | 90.12s | 69.71s | topics 5 / decisions 2 / action items 6 |
 
 想定上限が120分であれば、通常の normalized transcript はGPT-5.4系deploymentの大きなcontextに収まる見込みが高い。chunk summary方式は長大入力への安全策としては有効だが、本線にするとLLM呼び出し回数と統合処理が増え、文脈や情報が中間要約で落ちる可能性もある。
 

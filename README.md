@@ -213,6 +213,8 @@ python -m json.tool specs\normalized-transcript.schema.json > $null
 - `docs/11-review-findings-2026-05-31.md` - レビュー結果。
 - `docs/12-copilot-cli-vibe-coding-guide.md` - Copilot CLI 作業ガイド。
 - `docs/13-deployment-plan.md` - 公開安全なデプロイ計画と runbook。
+- `docs/14-business-user-processing-guide.md` - ビジネスユーザー向けの処理説明。
+- `docs/15-azure-engineer-processing-guide.md` - Azureエンジニア向けの処理方式・運用説明。
 - `docs/adr/` - Architecture Decision Records。
 - `specs/openapi.yaml` - OpenAPI 3.1 契約。
 - `specs/*.schema.json` - JSON Schema / Structured outputs schema。

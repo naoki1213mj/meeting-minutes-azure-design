@@ -296,7 +296,7 @@ Phase 1ではUI上のキャンセルは任意。実装する場合:
 ## 14. 現在の確認実績
 
 - 短い日本語TTS音声で upload -> Durable workflow -> Fast Transcription + diarization -> normalized transcript -> direct minutes generation -> Markdown rendering -> `DONE` を確認済み。
-- 50分m4a音声で、旧chunk本線のE2Eは224.6秒、主な内訳はTranscribe 97.18秒、chunk summary合計51.63秒、final minutes 76.79秒だった。この結果を受け、direct minutes generationを本線に変更する。
+- 約55分m4a音声で、旧chunk本線のE2Eは224.6秒、主な内訳はTranscribe 97.18秒、chunk summary合計51.63秒、final minutes 76.79秒だった。この結果を受け、direct minutes generationを本線に変更する。direct方式の追加計測はADR-007を参照する。
 - `GET /api/jobs/{jobId}/transcript` と `GET /api/jobs/{jobId}/minutes` で成果物取得を確認済み。
 - raw transcript / normalized transcript / final minutes / markdown artifacts がBlobに保存されることを確認済み。
 - Application InsightsスキャンでSAS/query/audio/upload URLs、API keys、access tokens、client secrets、Bearer tokensは検出されず、Azure SDK Authorization tracesはredact済みだった。
