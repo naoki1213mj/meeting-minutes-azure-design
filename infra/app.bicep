@@ -254,6 +254,9 @@ resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
   properties: {
     databaseAccountOfferType: 'Standard'
     disableLocalAuth: true
+    publicNetworkAccess: 'Enabled'
+    isVirtualNetworkFilterEnabled: false
+    networkAclBypass: 'None'
     locations: [
       {
         locationName: location

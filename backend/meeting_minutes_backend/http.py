@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Callable
 from functools import wraps
 from typing import ParamSpec, TypeVar
@@ -18,6 +19,7 @@ from meeting_minutes_backend.errors import (
 P = ParamSpec("P")
 R = TypeVar("R", bound=func.HttpResponse)
 M = TypeVar("M", bound=BaseModel)
+LOGGER = logging.getLogger(__name__)
 
 
 def parse_json_model(req: func.HttpRequest, model_type: type[M]) -> M:
@@ -58,7 +60,8 @@ def error_boundary(handler: Callable[P, R]) -> Callable[P, func.HttpResponse]:
             return json_response(
                 to_error_response(exc, correlation_id), exc.http_status, correlation_id
             )
-        except Exception:
+        except Exception as exc:
+            LOGGER.error("Unhandled HTTP error: %s", exc.__class__.__name__)
             error = AppError(
                 code="INTERNAL_ERROR",
                 message="内部エラーが発生しました。",
