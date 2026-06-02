@@ -134,7 +134,7 @@ def build_transcript_chunks(
     return chunks
 
 
-def generate_minutes(
+def generate_minutes_from_chunk_summaries_pipeline(
     normalized: dict[str, Any],
     job_id: str,
     tenant_id: str,
@@ -182,11 +182,51 @@ def generate_final_minutes_from_summaries(
     client: OpenAIJsonClient,
     final_deployment: DeploymentCapabilities,
 ) -> dict[str, Any]:
+    return _generate_and_validate_minutes(
+        system_prompt=FINAL_MERGE_SYSTEM_PROMPT,
+        user_prompt=build_final_merge_prompt(
+            meeting_title,
+            normalized.get("speakers", []),
+            chunk_summaries,
+        ),
+        job_id=job_id,
+        tenant_id=tenant_id,
+        client=client,
+        final_deployment=final_deployment,
+    )
+
+
+def generate_minutes_from_full_transcript(
+    normalized: dict[str, Any],
+    job_id: str,
+    tenant_id: str,
+    meeting_title: str,
+    client: OpenAIJsonClient,
+    final_deployment: DeploymentCapabilities,
+) -> dict[str, Any]:
+    return _generate_and_validate_minutes(
+        system_prompt=FULL_TRANSCRIPT_SYSTEM_PROMPT,
+        user_prompt=build_full_transcript_minutes_prompt(meeting_title, normalized),
+        job_id=job_id,
+        tenant_id=tenant_id,
+        client=client,
+        final_deployment=final_deployment,
+    )
+
+
+def _generate_and_validate_minutes(
+    system_prompt: str,
+    user_prompt: str,
+    job_id: str,
+    tenant_id: str,
+    client: OpenAIJsonClient,
+    final_deployment: DeploymentCapabilities,
+) -> dict[str, Any]:
     final_schema = _load_schema(MINUTES_STRUCTURED_SCHEMA_PATH)
     save_schema = _load_schema(MINUTES_SCHEMA_PATH)
     final_result = client.generate_json(
-        FINAL_MERGE_SYSTEM_PROMPT,
-        build_final_merge_prompt(meeting_title, normalized.get("speakers", []), chunk_summaries),
+        system_prompt,
+        user_prompt,
         final_schema,
         final_deployment,
     )
@@ -270,6 +310,30 @@ def build_final_merge_prompt(
     )
 
 
+def build_full_transcript_minutes_prompt(meeting_title: str, normalized: dict[str, Any]) -> str:
+    transcript_payload = {
+        "jobId": normalized.get("jobId"),
+        "tenantId": normalized.get("tenantId"),
+        "locale": normalized.get("locale"),
+        "durationMilliseconds": normalized.get("durationMilliseconds"),
+        "speakers": normalized.get("speakers", []),
+        "phrases": normalized.get("phrases", []),
+    }
+    return (
+        "以下の normalized transcript 全文から、最終議事録を作成してください。\n\n"
+        f"会議タイトル: {meeting_title}\n"
+        "会議日時: null\n\n"
+        "厳守事項:\n"
+        "- transcriptにない事実を追加しない。\n"
+        "- 決定事項、担当者、期限を推測で補わない。\n"
+        "- 不明な担当者はnull、不明な期限はnullにする。\n"
+        "- 根拠となるsourceTimestamps/evidenceTimestampsを必ず残す。\n"
+        "- speakerLabelから実名を自動推定しない。\n"
+        "- displayNameがnullの場合はspeakerLabelをそのまま扱う。\n\n"
+        f"normalized transcript:\n{json.dumps(transcript_payload, ensure_ascii=False)}"
+    )
+
+
 def build_repair_prompt(error: ValidationError, invalid_output: dict[str, Any]) -> str:
     return (
         "前回の出力は保存用JSON Schemaに適合しませんでした。\n"
@@ -286,6 +350,10 @@ CHUNK_SUMMARY_SYSTEM_PROMPT = (
 FINAL_MERGE_SYSTEM_PROMPT = (
     "あなたは企業会議の議事録編集者です。chunk summaryにない事実を追加せず、"
     "明示されていない担当者や期限はnullのままにしてください。"
+)
+FULL_TRANSCRIPT_SYSTEM_PROMPT = (
+    "あなたは企業会議の議事録編集者です。normalized transcriptだけを根拠に、"
+    "正確で読みやすい議事録JSONを作成してください。"
 )
 REPAIR_SYSTEM_PROMPT = "保存用JSON Schemaに適合するJSONだけを返してください。"
 

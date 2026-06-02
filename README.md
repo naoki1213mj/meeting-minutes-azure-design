@@ -13,15 +13,17 @@ Minutes Studio は、録音済み音声ファイルから **話者分離付き t
 - 録音済み音声をジョブとして登録し、長時間処理を HTTP 同期で待たずに進める。
 - ブラウザから Azure Blob Storage へ直接アップロードする。
 - 全体音声を Azure Speech in Foundry Tools Fast Transcription に 1 回だけ渡し、diarization を有効にする。
-- transcript を論理チャンクに分け、議事録生成だけを Durable Functions の fan-out/fan-in で並列化する。
+- 最大120分までの transcript は、原則として全文を 1 回の Structured outputs 呼び出しに渡して議事録を生成する。
+- 長大入力や出力切れなど direct 生成で回復可能な制約に当たった場合だけ、chunk summary 方式へ自動 fallback する。
 - Structured outputs で議事録 JSON を生成し、保存前に JSON Schema で検証する。
 - Markdown は LLM に直接書かせず、検証済み JSON からアプリコードで生成する。
 - speaker ID は匿名ラベルとして扱い、実名はユーザー入力の speaker mapping で更新する。
 
 ## 価値提案
 
-- **待ち時間を見える化:** アップロード、文字起こし、チャンク要約、最終統合の進捗をジョブ状態として追跡します。
+- **待ち時間を見える化:** アップロード、文字起こし、議事録生成の進捗をジョブ状態として追跡します。
 - **話者の一貫性を優先:** 音声チャンクごとの並列文字起こしを避け、speaker ID の分断を減らします。
+- **速度と品質を選択:** 議事録生成は高速（GPT-5.4-mini）と高品質（GPT-5.4）をジョブごとに選べます。
 - **根拠を残す:** 決定事項、ToDo、未決事項、リスクに timestamp を残します。
 - **推測しない:** transcript にない事実、担当者、期限、参加者名を補完しません。
 - **Azure 標準構成:** Azure Functions、Durable Functions、Blob Storage、Cosmos DB、Application Insights、Bicep を中心に構成します。
@@ -38,8 +40,8 @@ Minutes Studio は、録音済み音声ファイルから **話者分離付き t
 | Durable Functions による非同期処理 | dev MVP 実装済み |
 | Fast Transcription + diarization | 全体音声 1 回の本線で実装 |
 | transcript 正規化と schema validation | dev MVP 実装済み |
-| transcript チャンク単位の議事録要素抽出 | dev MVP 実装済み |
-| final minutes JSON / Markdown 生成 | dev MVP 実装済み |
+| transcript全文からの direct minutes JSON / Markdown 生成 | dev MVP 実装済み |
+| chunk summary方式 | direct生成の自動fallbackとして保持 |
 | `GET /api/jobs/{jobId}` / transcript / minutes 取得 | dev MVP 実装済み |
 
 Phase 2 以降の候補:
@@ -62,8 +64,8 @@ React + Vite Web UI
   -> Durable Functions orchestration
   -> Azure Speech in Foundry Tools Fast Transcription + diarization
   -> normalized transcript
-  -> transcript chunk fan-out
   -> Azure OpenAI in Microsoft Foundry Models v1 API
+  -> direct minutes JSON generation
   -> final minutes JSON schema validation
   -> Markdown rendering
   -> Blob Storage / Cosmos DB / Application Insights
@@ -72,6 +74,8 @@ React + Vite Web UI
 重要な設計制約:
 
 - 音声チャンクごとの並列文字起こしは初期実装では行いません。
+- 最大120分までの議事録生成は、transcript全文を使う direct 生成を本線にします。
+- chunk summary は本線ではなく、direct 生成が出力切れなどで失敗した場合の fallback として扱います。
 - diarization 有効時に `channels` は指定しません。
 - Fast Transcription の本番経路では `audioUrl` を使います。inline `audio` は小さい開発・検証用に限定します。
 - Azure OpenAI in Microsoft Foundry Models は v1 API を使い、新規に dated `api-version` を追加しません。
@@ -86,10 +90,10 @@ React + Vite Web UI
 | 明示的に拒否する例 | `.mp4` などの動画ファイル |
 | 通常受付サイズ | 300MB 未満 |
 | ハード上限 | 500MB 未満 |
-| 音声長 | diarization 有効時は 2 時間未満 |
+| 音声長 | 120分まで best effort。120分超は拒否 |
 | m4a | 必要に応じて backend で 16kHz mono FLAC へ前処理 |
 
-Fast Transcription のサービス上限と UX 上限は分けて扱います。公開・本番利用の前に、対象リージョン、SKU、quota、データ所在地、代表音声での品質・処理時間・コストを確認してください。
+Fast Transcription の diarization 経路は 2 時間境界に近づくほど失敗リスクが高くなります。120分近傍は best effort とし、公開・本番利用の前に対象リージョン、SKU、quota、データ所在地、代表音声での品質・処理時間・コストを確認してください。
 
 ## セキュリティとプライバシー
 

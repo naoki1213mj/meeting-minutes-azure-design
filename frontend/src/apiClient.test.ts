@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   buildDevAuthHeaders,
+  createJob,
   isLocalApiBaseUrl,
   isLocalPlaceholderUploadUrl,
   resolveAudioContentType,
@@ -9,6 +10,10 @@ import {
 } from "./apiClient";
 
 describe("apiClient", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("detects only the exact local placeholder upload host", () => {
     expect(isLocalPlaceholderUploadUrl("https://local.blob.invalid/container/file?sig=dev")).toBe(
       true,
@@ -61,5 +66,35 @@ describe("apiClient", () => {
     expect(resolveAudioContentType({ name: "meeting.unknown", type: "" })).toBe(
       "application/octet-stream",
     );
+  });
+
+  it("sends the selected minutes model when creating a job", async () => {
+    const requests: RequestInit[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        requests.push(init);
+        return new Response(
+          JSON.stringify({
+            jobId: "job-a",
+            status: "CREATED",
+            blobName: "raw-audio/demo/job-a/meeting.mp3",
+            uploadUrl: "https://storage.example/upload",
+            uploadExpiresAt: "2026-06-02T00:00:00.000Z",
+            constraints: {
+              normalMaxFileSizeBytes: 314572800,
+              hardMaxFileSizeBytes: 524288000,
+              maxDurationSecondsWithDiarization: 7200,
+            },
+          }),
+          { status: 201, headers: { "Content-Type": "application/json" } },
+        );
+      }),
+    );
+
+    await createJob(new File(["audio"], "meeting.mp3", { type: "audio/mpeg" }), 60, "quality");
+
+    const body = JSON.parse(String(requests[0].body)) as { minutesModel: string };
+    expect(body.minutesModel).toBe("quality");
   });
 });

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { hardMaxAudioFileSizeBytes, validateAudioFile } from "./fileValidation";
+import {
+  hardMaxAudioFileSizeBytes,
+  maxAudioDurationSeconds,
+  validateAudioFile,
+} from "./fileValidation";
 
 function file(name: string, size: number, type = "audio/mpeg"): File {
   const result = new File(["x"], name, { type, lastModified: 0 });
@@ -19,5 +23,9 @@ describe("fileValidation", () => {
 
   it("rejects files over the hard limit", () => {
     expect(validateAudioFile(file("meeting.mp3", hardMaxAudioFileSizeBytes + 1)).valid).toBe(false);
+  });
+
+  it("sets the UI duration limit to 120 minutes", () => {
+    expect(maxAudioDurationSeconds).toBe(120 * 60);
   });
 });

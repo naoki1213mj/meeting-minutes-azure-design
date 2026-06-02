@@ -21,11 +21,17 @@ import {
   type CreateJobResponse,
   type JobStatus,
   type JobStatusResponse,
+  type MinutesModel,
   type MinutesResponse,
   type TranscriptResponse,
 } from "./apiClient";
 import { appTitle, heroCopy, heroHeadline, supportedAudioExtensions } from "./appConfig";
-import { getAudioDurationSeconds, hardMaxAudioFileSizeBytes, validateAudioFile } from "./fileValidation";
+import {
+  getAudioDurationSeconds,
+  hardMaxAudioFileSizeBytes,
+  maxAudioDurationSeconds,
+  validateAudioFile,
+} from "./fileValidation";
 import { frontendFeatures } from "./frontendFeatures";
 import {
   getJobPollingDelayMilliseconds,
@@ -59,6 +65,23 @@ const processSteps = [
   { label: "完了", description: "レビュー可能" },
 ] as const;
 
+const minutesModelOptions: Array<{
+  id: MinutesModel;
+  label: string;
+  description: string;
+}> = [
+  {
+    id: "fast",
+    label: "高速",
+    description: "GPT-5.4 miniで待ち時間を短縮。デモや通常会議向け。",
+  },
+  {
+    id: "quality",
+    label: "高品質",
+    description: "GPT-5.4で精度を優先。重要会議のレビュー向け。",
+  },
+];
+
 const statusLabels: Record<JobStatus, StatusDescriptor> = {
   CREATED: { label: "準備中", tone: "info" },
   UPLOADING: { label: "アップロード中", tone: "accent" },
@@ -81,6 +104,7 @@ export function App() {
   const [jobStatus, setJobStatus] = useState<JobStatusResponse | null>(null);
   const [transcript, setTranscript] = useState<TranscriptResponse | null>(null);
   const [minutes, setMinutes] = useState<MinutesResponse | null>(null);
+  const [minutesModel, setMinutesModel] = useState<MinutesModel>("fast");
   const [activeResultsTab, setActiveResultsTab] = useState<ResultsTab>("minutes");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isBusy, setIsBusy] = useState(false);
@@ -154,7 +178,12 @@ export function App() {
     try {
       setMessage("ジョブを作成しています。");
       const durationSeconds = await getAudioDurationSeconds(selectedFile);
-      const job = await createJob(selectedFile, durationSeconds);
+      if (durationSeconds !== null && durationSeconds > maxAudioDurationSeconds) {
+        setErrorMessage("120分を超える音声は対応範囲外です。音声を分割してからアップロードしてください。");
+        setMessage("音声の長さを確認してください。");
+        return;
+      }
+      const job = await createJob(selectedFile, durationSeconds, minutesModel);
       activeJobIdRef.current = job.jobId;
       setCreatedJob(job);
 
@@ -360,7 +389,7 @@ export function App() {
               <p className="section-kicker">録音</p>
               <h2>音声アップロード</h2>
               <p>
-                {supportedFormatsText} に対応。最大 {formatBytes(hardMaxAudioFileSizeBytes)} までの音声をドラッグ＆ドロップできます。
+                {supportedFormatsText} に対応。最大 {formatBytes(hardMaxAudioFileSizeBytes)} / 120分までの音声をドラッグ＆ドロップできます。
               </p>
             </div>
 
@@ -401,6 +430,28 @@ export function App() {
                 <p>ファイルを選ぶと、サイズ・形式・更新日時をここで確認できます。</p>
               </div>
             )}
+
+            <fieldset className="model-selector" disabled={isBusy}>
+              <legend>議事録生成モード</legend>
+              <p>速度重視か品質重視かを選択できます。話者分離の文字起こしはどちらも同じ精度で処理します。</p>
+              <div className="model-selector__options">
+                {minutesModelOptions.map((option) => (
+                  <label className="model-option" key={option.id}>
+                    <input
+                      checked={minutesModel === option.id}
+                      name="minutes-model"
+                      onChange={() => setMinutesModel(option.id)}
+                      type="radio"
+                      value={option.id}
+                    />
+                    <span>
+                      <strong>{option.label}</strong>
+                      <small>{option.description}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
 
             <button className="primary-action" type="submit" disabled={!selectedFile || isBusy}>
               <span>{isBusy ? "処理中..." : "アップロードして処理開始"}</span>

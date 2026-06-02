@@ -19,7 +19,7 @@
 | Frontend type/test/build | `npm run typecheck`; `npm test`; `npm run build` | 2026-06-02時点で22 tests、typecheck/build成功 |
 | API smoke | `POST /api/jobs`; `POST /api/jobs/{jobId}/upload-complete`; `GET /api/jobs/{jobId}` | dev live環境で成功 |
 | Result retrieval | `GET /api/jobs/{jobId}/transcript`; `GET /api/jobs/{jobId}/minutes` | dev live E2Eで取得成功 |
-| Live E2E | TTSで生成した短い日本語音声 | `DONE` 到達、normalized transcript / minutes schema validation成功、chunk/chunk summary Blob保存確認 |
+| Live E2E | TTSで生成した短い日本語音声 | `DONE` 到達、normalized transcript / minutes schema validation成功、direct minutes generation確認 |
 | Telemetry scan | Application Insights検索 | SAS/query/audio/upload URLs、API keys、access tokens、client secrets、Bearer tokens未検出。Azure SDK Authorization tracesはredact済み |
 
 今回のドキュメント更新ではアプリケーションコードを変更しない。コード変更時は上記の該当コマンドを再実行する。
@@ -77,8 +77,9 @@
 - Activity失敗時に `FAILED` になる。
 - retry対象エラーで再試行される。
 - 同一jobIdの二重実行が起きない。
-- `BuildTranscriptChunksActivity` 後、`GenerateChunkSummaryActivity` が `task_all` でfan-out/fan-inされる。
-- chunk summaryの一部が429/5xxになってもretry policyに従う。
+- 本線では `NormalizeTranscriptActivity` 後に `GenerateFinalMinutesActivity` がdirect generationとして呼ばれる。
+- direct generationが出力切れ・token制約・schema repair不能などで失敗した場合、chunk summary fallbackへ切り替わる。
+- fallback時のchunk summaryが429/5xxになってもretry policyに従う。
 
 ### Speech連携
 
@@ -90,7 +91,8 @@
 
 ### OpenAI連携
 
-- chunk summaryが `chunk-summary.structured-output.schema.json` に従う。
+- direct minutes generationが `minutes.structured-output.schema.json` に従う。
+- fallback時のchunk summaryが `chunk-summary.structured-output.schema.json` に従う。
 - final minutesのLLM応答が `minutes.structured-output.schema.json` に従う。
 - metadata付与後のfinal minutesが `minutes.schema.json` に従う。
 - schema validation失敗時に修復が1回実行される。
@@ -118,7 +120,7 @@
 - Fast Transcription + diarization が成功する。
 - 議事録が生成される。
 - 処理時間が分解計測される。
-- chunk summary fan-outとfinal mergeのtoken/latency/costを記録する。
+- direct minutes generationとfallback発動有無のtoken/latency/costを記録する。
 
 ### E2E-004: サイズ超過
 
@@ -171,7 +173,8 @@ PoCでは以下を測る。
 - upload seconds
 - transcription seconds
 - normalization seconds
-- chunk summary seconds
+- direct minutes seconds
+- chunk summary seconds（fallback時）
 - final merge seconds
 - total seconds
 - Speech 429回数
@@ -192,7 +195,8 @@ PoCでは以下を測る。
 
 性能回帰の初期期待値:
 
-- chunk summaryは逐次ではなくfan-out/fan-inされる。
+- 通常時はdirect generationで完了する。
+- fallback時はchunk summary fan-out/fan-inが機能する。
 - 429が発生してもretry/backoffで回復し、継続的に失敗する場合は並列度を下げられる。
 - UIポーリングは固定高頻度ではなく、状態変化が少ない区間でbackoffする。
 
@@ -221,7 +225,7 @@ PoCでは以下を測る。
 - 音声本文・transcript全文・minutes全文・SAS・token/keyがログに出ていない。
 - 失敗時のユーザー向けエラーが理解できる。
 - speaker mappingを手動で更新できる。
-- chunk summary fan-out、retry/backoff、polling backoffの性能期待値を満たす。
+- direct generation、fallback、retry/backoff、polling backoffの性能期待値を満たす。
 
 ## 10. GitHub Actions検証マトリクス
 

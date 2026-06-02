@@ -38,9 +38,9 @@
 | `CreateReadSasActivity` | job | readSasUrl | あり | 実装済み。m4aの場合は16kHz mono FLACへ前処理してからread SASを返す |
 | `TranscribeAudioActivity` | job, readSasUrl | rawTranscriptBlobUri | あり | live E2E済み |
 | `NormalizeTranscriptActivity` | rawTranscriptBlobUri | normalizedTranscriptBlobUri | あり | live E2E済み |
-| `BuildTranscriptChunksActivity` | normalizedTranscriptBlobUri | chunk descriptors | あり | live E2E済み |
-| `GenerateChunkSummaryActivity` | chunk descriptor | chunk summary blob | あり | `task_all` fan-outでlive E2E済み |
-| `GenerateFinalMinutesActivity` | chunk summaries | minutes JSON blob | あり | live E2E済み |
+| `GenerateFinalMinutesActivity` | normalizedTranscriptBlobUri | minutes JSON blob | あり | direct全文生成の本線。制約時のみchunk fallback |
+| `BuildTranscriptChunksActivity` | normalizedTranscriptBlobUri | chunk descriptors | あり | direct生成のfallback用に保持 |
+| `GenerateChunkSummaryActivity` | chunk descriptor | chunk summary blob | あり | direct生成のfallback用に保持 |
 | `RenderMarkdownActivity` | minutes JSON blob | markdown blob | あり | live E2E済み |
 | `PersistActionItemsActivity` | minutes JSON blob | action items count | あり | Phase 2で拡充 |
 | `CompleteJobActivity` | job outputs | job | あり | 実装済み |
@@ -74,18 +74,11 @@ def orchestrator(context):
         context.set_custom_status({"step": "NORMALIZING_TRANSCRIPT", "percent": 55})
         normalized_uri = yield context.call_activity("NormalizeTranscriptActivity", raw_transcript_uri)
 
-        context.set_custom_status({"step": "BUILDING_CHUNKS", "percent": 60})
-        chunks = yield context.call_activity("BuildTranscriptChunksActivity", normalized_uri)
-
-        context.set_custom_status({"step": "GENERATING_CHUNK_SUMMARIES", "percent": 65})
-        tasks = [context.call_activity_with_retry("GenerateChunkSummaryActivity", retry_options_for_openai, c) for c in chunks]
-        chunk_summary_uris = yield context.task_all(tasks)
-
-        context.set_custom_status({"step": "GENERATING_FINAL_MINUTES", "percent": 90})
+        context.set_custom_status({"step": "GENERATING_FINAL_MINUTES", "percent": 75})
         minutes_uri = yield context.call_activity_with_retry(
             "GenerateFinalMinutesActivity",
             retry_options_for_openai,
-            {"job": job, "chunkSummaryUris": chunk_summary_uris},
+            {"job": job, "normalizedTranscriptBlobUri": normalized_uri},
         )
 
         markdown_uri = yield context.call_activity("RenderMarkdownActivity", minutes_uri)
@@ -174,7 +167,28 @@ Speech API raw response。
 - UI表示用に `startTimeText` を `HH:MM:SS` で生成する。
 - transcript全体の `durationMilliseconds` を保存する。
 
-## 7. BuildTranscriptChunksActivity
+## 7. GenerateFinalMinutesActivity
+
+### 本線
+
+最大120分までの本線では、normalized transcript全文を1回のStructured outputs呼び出しに渡して議事録JSONを生成する。話者分離の正確性を優先するため、音声チャンクごとの並列文字起こしは行わない。Activity間ではBlob名だけを渡し、transcript全文をOrchestrator historyへ載せない。
+
+### fallback
+
+direct生成が出力切れ、token制約、schema repair不能などの回復可能な失敗になった場合だけ、chunk summary方式へ自動fallbackする。fallback発動はApplication Insightsへ `minutesGenerationMode=chunk_fallback` として記録する。ユーザーから見ると同じジョブとして処理を継続する。
+
+### モデル選択
+
+ジョブ作成時に議事録生成モードを選べる。
+
+| UI表示 | API値 | deployment | 用途 |
+|---|---|---|---|
+| 高速 | `fast` | `gpt-5.4-mini` | 既定。デモ・通常会議向け |
+| 高品質 | `quality` | `gpt-5.4` | 重要会議・品質重視 |
+
+Backendは許可された値だけをdeploymentへマッピングし、任意deployment名をクライアントから受け取らない。
+
+## 8. BuildTranscriptChunksActivity（fallback）
 
 ### 分割方針
 
@@ -198,7 +212,7 @@ Speech API raw response。
 ]
 ```
 
-## 8. GenerateChunkSummaryActivity
+## 9. GenerateChunkSummaryActivity（fallback）
 
 ### 出力
 
@@ -228,22 +242,23 @@ Speech API raw response。
 
 ### 並列化と性能制御
 
-- Orchestratorは `context.task_all(tasks)` でchunk summaryをfan-out/fan-inする。
+- fallback経路では、chunk summaryを必要に応じてfan-out/fan-inする。
 - 同時実行数は設定値で制御できるようにし、Azure OpenAI 429やTPM消費を見て下げられるようにする。
-- dev MVPでは `gpt-5.4-mini` / `gpt-5.4` をGlobalStandard capacity 100に増強済み。capacity 1および10ではlive smokeのfinal mergeで429が発生したため、capacity増強とバックオフが必要。
-- final mergeは長尺音声でJSONが途中切れしないよう `max_completion_tokens=32768` と `reasoning_effort=low` を設定する。`finish_reason=length` は本文をログに出さずtruncationとして扱う。
+- dev MVPでは `gpt-5.4-mini` / `gpt-5.4` をGlobalStandard capacity 100でデプロイしている。
+- direct生成とfallback final mergeは長尺音声でJSONが途中切れしないよう `max_completion_tokens=32768` と `reasoning_effort=low` を設定する。`finish_reason=length` は本文をログに出さずtruncationとして扱う。
 - chunk summary全文やtranscript全文をログに出さない。ログはchunkIndex、duration、retryCount、tokenUsageなどに限定する。
 
-## 9. GenerateFinalMinutesActivity
+## 10. GenerateFinalMinutesActivity
 
 ### 入力
 
-全chunk summary。
+normalized transcript Blob名。fallback時のみchunk summary。
 
 ### 処理
 
-- 重複する決定事項を統合する。
-- action items を統合する。
+- 本線では normalized transcript全文を1回のStructured outputs呼び出しに渡す。
+- fallback時はchunk summaryを統合する。
+- 決定事項、action items、未決事項、リスクを抽出・整理する。
 - 期限が明示されない場合は `dueDate: null` にする。
 - 推測で担当者を埋めない。明示されない場合は `owner: null`。
 - 根拠 timestamp を保持する。
@@ -251,7 +266,7 @@ Speech API raw response。
 - アプリ側で `jobId`, `tenantId`, `generatedAt`, `model` を付与する。
 - 保存前に `minutes.schema.json` で検証する。
 
-## 10. リトライ方針
+## 11. リトライ方針
 
 | 対象 | リトライ対象 | 回数 | バックオフ |
 |---|---|---:|---|
@@ -260,9 +275,9 @@ Speech API raw response。
 | Blob | 408, 429, 5xx, network | SDK既定 + 明示ログ | SDK既定 |
 | Cosmos DB | 429, 5xx | SDK既定 | SDK既定 |
 
-429が継続する場合は、単純に再試行を増やすのではなく、chunk summary並列度、UIポーリング間隔、モデルdeployment capacity、TPM/RPM quotaを見直す。
+429が継続する場合は、単純に再試行を増やすのではなく、議事録生成モデル、fallback発動状況、UIポーリング間隔、モデルdeployment capacity、TPM/RPM quotaを見直す。
 
-## 11. 失敗時の状態遷移
+## 12. 失敗時の状態遷移
 
 - Activityで復旧不能エラーが出たら `FAILED` にする。
 - `error.code`, `error.message`, `error.details`, `correlationId` を保存する。
@@ -270,7 +285,7 @@ Speech API raw response。
 - 管理者向けには詳細を表示できるようにする。
 - 失敗時もSAS URL全文、音声本文、transcript全文、minutes全文、token/keyは保存・表示・ログ出力しない。
 
-## 12. キャンセル
+## 13. キャンセル
 
 Phase 1ではUI上のキャンセルは任意。実装する場合:
 
@@ -278,9 +293,10 @@ Phase 1ではUI上のキャンセルは任意。実装する場合:
 - Durable orchestration を terminate する。
 - Blobは保持期間に従って削除する。
 
-## 13. 現在の確認実績
+## 14. 現在の確認実績
 
-- 短い日本語TTS音声で upload -> Durable workflow -> Fast Transcription + diarization -> normalized transcript -> chunk summary fan-out -> final merge -> Markdown rendering -> `DONE` を確認済み。
+- 短い日本語TTS音声で upload -> Durable workflow -> Fast Transcription + diarization -> normalized transcript -> direct minutes generation -> Markdown rendering -> `DONE` を確認済み。
+- 50分m4a音声で、旧chunk本線のE2Eは224.6秒、主な内訳はTranscribe 97.18秒、chunk summary合計51.63秒、final minutes 76.79秒だった。この結果を受け、direct minutes generationを本線に変更する。
 - `GET /api/jobs/{jobId}/transcript` と `GET /api/jobs/{jobId}/minutes` で成果物取得を確認済み。
-- chunk input / chunk summary / final minutes / markdown artifacts がBlobに保存されることを確認済み。
+- raw transcript / normalized transcript / final minutes / markdown artifacts がBlobに保存されることを確認済み。
 - Application InsightsスキャンでSAS/query/audio/upload URLs、API keys、access tokens、client secrets、Bearer tokensは検出されず、Azure SDK Authorization tracesはredact済みだった。

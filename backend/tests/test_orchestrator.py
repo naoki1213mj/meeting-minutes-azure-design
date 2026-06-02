@@ -4,7 +4,7 @@ from collections.abc import Generator
 from dataclasses import dataclass
 from pathlib import Path
 
-from MeetingMinutesOrchestrator import MAX_CHUNK_SUMMARY_BATCH_SIZE, orchestrator_function
+from MeetingMinutesOrchestrator import orchestrator_function
 
 
 @dataclass(frozen=True)
@@ -36,19 +36,11 @@ class FakeDurableContext:
         return TaskAllCall(tasks)
 
 
-def test_orchestrator_fans_out_chunk_summary_activities() -> None:
+def test_orchestrator_uses_direct_minutes_generation_path() -> None:
     context = FakeDurableContext({"tenantId": "tenant-a", "jobId": "job-a"})
     generator = orchestrator_function(context)  # type: ignore[arg-type]
     job = {"tenantId": "tenant-a", "jobId": "job-a"}
     normalized = {"normalizedTranscriptBlobName": "normalized.json"}
-    chunks = [
-        {"chunkIndex": 0, "chunkBlobName": "chunk-0.json"},
-        {"chunkIndex": 1, "chunkBlobName": "chunk-1.json"},
-    ]
-    summaries = [
-        {"chunkIndex": 0, "chunkSummaryBlobName": "summary-0.json"},
-        {"chunkIndex": 1, "chunkSummaryBlobName": "summary-1.json"},
-    ]
 
     assert _next_activity(generator).name == "LoadJobActivity"
     assert _send_activity(generator, job).name == "ValidateInputActivity"
@@ -59,64 +51,11 @@ def test_orchestrator_fans_out_chunk_summary_activities() -> None:
     assert _send_activity(generator, {"rawTranscriptBlobName": "raw.json"}).name == (
         "NormalizeTranscriptActivity"
     )
-    assert _send_activity(generator, normalized).name == "BuildTranscriptChunksActivity"
-
-    task_all = generator.send(chunks)
-    assert isinstance(task_all, TaskAllCall)
-    assert [task.name for task in task_all.tasks] == [
-        "GenerateChunkSummaryActivity",
-        "GenerateChunkSummaryActivity",
-    ]
-
-    final_call = generator.send(summaries)
-    assert isinstance(final_call, ActivityCall)
+    final_call = _send_activity(generator, normalized)
     assert final_call.name == "GenerateFinalMinutesActivity"
     assert isinstance(final_call.payload, dict)
-    assert final_call.payload["chunkSummaries"] == summaries
-
-
-def test_orchestrator_batches_chunk_summary_fan_out() -> None:
-    context = FakeDurableContext({"tenantId": "tenant-a", "jobId": "job-a"})
-    generator = orchestrator_function(context)  # type: ignore[arg-type]
-    job = {"tenantId": "tenant-a", "jobId": "job-a"}
-    normalized = {"normalizedTranscriptBlobName": "normalized.json"}
-    chunks = [
-        {"chunkIndex": index, "chunkBlobName": f"chunk-{index}.json"}
-        for index in range(MAX_CHUNK_SUMMARY_BATCH_SIZE + 2)
-    ]
-    first_summaries = [
-        {"chunkIndex": index, "chunkSummaryBlobName": f"summary-{index}.json"}
-        for index in range(MAX_CHUNK_SUMMARY_BATCH_SIZE)
-    ]
-    second_summaries = [
-        {"chunkIndex": index, "chunkSummaryBlobName": f"summary-{index}.json"}
-        for index in range(MAX_CHUNK_SUMMARY_BATCH_SIZE, MAX_CHUNK_SUMMARY_BATCH_SIZE + 2)
-    ]
-
-    assert _next_activity(generator).name == "LoadJobActivity"
-    assert _send_activity(generator, job).name == "ValidateInputActivity"
-    assert _send_activity(generator, {"valid": True}).name == "CreateReadSasActivity"
-    assert _send_activity(generator, {"audioUrl": "https://example.invalid/audio"}).name == (
-        "TranscribeAudioActivity"
-    )
-    assert _send_activity(generator, {"rawTranscriptBlobName": "raw.json"}).name == (
-        "NormalizeTranscriptActivity"
-    )
-    assert _send_activity(generator, normalized).name == "BuildTranscriptChunksActivity"
-
-    first_task_all = generator.send(chunks)
-    assert isinstance(first_task_all, TaskAllCall)
-    assert len(first_task_all.tasks) == MAX_CHUNK_SUMMARY_BATCH_SIZE
-
-    second_task_all = generator.send(first_summaries)
-    assert isinstance(second_task_all, TaskAllCall)
-    assert len(second_task_all.tasks) == 2
-
-    final_call = generator.send(second_summaries)
-    assert isinstance(final_call, ActivityCall)
-    assert final_call.name == "GenerateFinalMinutesActivity"
-    assert isinstance(final_call.payload, dict)
-    assert final_call.payload["chunkSummaries"] == [*first_summaries, *second_summaries]
+    assert "chunkSummaries" not in final_call.payload
+    assert final_call.payload == {"job": job, **normalized}
 
 
 def test_orchestrator_continues_from_final_minutes_to_markdown_and_complete() -> None:
@@ -127,8 +66,6 @@ def test_orchestrator_continues_from_final_minutes_to_markdown_and_complete() ->
         "normalizedTranscriptBlobName": "normalized.json",
         "normalizedTranscriptBlobUri": "https://storage.example/transcript/normalized.json",
     }
-    chunks = [{"chunkIndex": 0, "chunkBlobName": "chunk-0.json"}]
-    summaries = [{"chunkIndex": 0, "chunkSummaryBlobName": "summary-0.json"}]
     minutes = {
         "minutesJsonBlobName": "minutes.json",
         "minutesJsonBlobUri": "https://storage.example/minutes/minutes.json",
@@ -148,12 +85,7 @@ def test_orchestrator_continues_from_final_minutes_to_markdown_and_complete() ->
     assert _send_activity(generator, {"rawTranscriptBlobName": "raw.json"}).name == (
         "NormalizeTranscriptActivity"
     )
-    assert _send_activity(generator, normalized).name == "BuildTranscriptChunksActivity"
-    task_all = generator.send(chunks)
-    assert isinstance(task_all, TaskAllCall)
-
-    final_call = generator.send(summaries)
-    assert isinstance(final_call, ActivityCall)
+    final_call = _send_activity(generator, normalized)
     assert final_call.name == "GenerateFinalMinutesActivity"
 
     render_call = _send_activity(generator, minutes)
@@ -166,31 +98,6 @@ def test_orchestrator_continues_from_final_minutes_to_markdown_and_complete() ->
 
     assert _finish_generator(generator, complete_result) == complete_result
     assert context.statuses[-1] == {"step": "DONE", "percent": 100}
-
-
-def test_orchestrator_skips_task_all_for_empty_chunks() -> None:
-    context = FakeDurableContext({"tenantId": "tenant-a", "jobId": "job-a"})
-    generator = orchestrator_function(context)  # type: ignore[arg-type]
-    job = {"tenantId": "tenant-a", "jobId": "job-a"}
-    normalized = {"normalizedTranscriptBlobName": "normalized.json"}
-
-    assert _next_activity(generator).name == "LoadJobActivity"
-    assert _send_activity(generator, job).name == "ValidateInputActivity"
-    assert _send_activity(generator, {"valid": True}).name == "CreateReadSasActivity"
-    assert _send_activity(generator, {"audioUrl": "https://example.invalid/audio"}).name == (
-        "TranscribeAudioActivity"
-    )
-    assert _send_activity(generator, {"rawTranscriptBlobName": "raw.json"}).name == (
-        "NormalizeTranscriptActivity"
-    )
-    assert _send_activity(generator, normalized).name == "BuildTranscriptChunksActivity"
-
-    final_call = generator.send([])
-    assert isinstance(final_call, ActivityCall)
-    assert final_call.name == "GenerateFinalMinutesActivity"
-    assert isinstance(final_call.payload, dict)
-    assert final_call.payload["chunkSummaries"] == []
-
 
 def test_orchestrator_activity_names_have_v1_wrappers() -> None:
     backend_root = Path(__file__).resolve().parents[1]

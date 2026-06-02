@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import logging
 from datetime import UTC, datetime
 
 from meeting_minutes_backend.audio_preprocessing import (
@@ -13,7 +15,7 @@ from meeting_minutes_backend.minutes_generation import (
     build_transcript_chunks,
     generate_chunk_summary,
     generate_final_minutes_from_summaries,
-    generate_minutes,
+    generate_minutes_from_full_transcript,
 )
 from meeting_minutes_backend.models import ErrorObject, JobStatus, Progress
 from meeting_minutes_backend.settings import (
@@ -21,13 +23,15 @@ from meeting_minutes_backend.settings import (
     build_artifact_store,
     build_blob_sas_issuer,
     build_chunk_deployment,
-    build_final_deployment,
     build_job_repository,
+    build_minutes_deployment,
     build_openai_client,
     build_speech_client,
 )
 from meeting_minutes_backend.speech_client import TranscriptionRequest
 from meeting_minutes_backend.transcript_normalizer import normalize_transcript
+
+LOGGER = logging.getLogger(__name__)
 
 
 def load_job(payload: dict[str, object]) -> dict[str, object]:
@@ -321,6 +325,8 @@ def generate_final_minutes(payload: dict[str, object]) -> dict[str, object]:
     store = build_artifact_store(settings)
     normalized = store.read_json(settings.transcript_container_name, normalized_blob_name)
     chunk_summary_refs = payload.get("chunkSummaries")
+    client = build_openai_client(settings)
+    minutes_deployment = build_minutes_deployment(settings, record.minutesModel)
     if isinstance(chunk_summary_refs, list):
         refs = []
         for item in chunk_summary_refs:
@@ -340,19 +346,52 @@ def generate_final_minutes(payload: dict[str, object]) -> dict[str, object]:
             job_id=job_id,
             tenant_id=tenant_id,
             meeting_title=record.meetingTitle or record.originalFileName,
-            client=build_openai_client(settings),
-            final_deployment=build_final_deployment(settings),
+            client=client,
+            final_deployment=minutes_deployment,
         )
     else:
-        minutes = generate_minutes(
-            normalized,
-            job_id=job_id,
-            tenant_id=tenant_id,
-            meeting_title=record.meetingTitle or record.originalFileName,
-            client=build_openai_client(settings),
-            chunk_deployment=build_chunk_deployment(settings),
-            final_deployment=build_final_deployment(settings),
-        )
+        try:
+            minutes = generate_minutes_from_full_transcript(
+                normalized,
+                job_id=job_id,
+                tenant_id=tenant_id,
+                meeting_title=record.meetingTitle or record.originalFileName,
+                client=client,
+                final_deployment=minutes_deployment,
+            )
+            _log_minutes_generation_mode(
+                tenant_id=tenant_id,
+                job_id=job_id,
+                mode="direct",
+                minutes_model=record.minutesModel.value,
+            )
+        except AppError as error:
+            if not _should_fallback_to_chunk_minutes(error):
+                raise
+            chunk_summaries = [
+                generate_chunk_summary(
+                    chunk,
+                    client=client,
+                    chunk_deployment=build_chunk_deployment(settings),
+                )
+                for chunk in build_transcript_chunks(normalized)
+            ]
+            minutes = generate_final_minutes_from_summaries(
+                normalized,
+                chunk_summaries,
+                job_id=job_id,
+                tenant_id=tenant_id,
+                meeting_title=record.meetingTitle or record.originalFileName,
+                client=client,
+                final_deployment=minutes_deployment,
+            )
+            _log_minutes_generation_mode(
+                tenant_id=tenant_id,
+                job_id=job_id,
+                mode="chunk_fallback",
+                minutes_model=record.minutesModel.value,
+                fallback_reason=error.code,
+            )
     minutes_blob_name = f"{tenant_id}/{job_id}/minutes.json"
     minutes_uri = store.write_json(settings.minutes_container_name, minutes_blob_name, minutes)
     return {"minutesJsonBlobName": minutes_blob_name, "minutesJsonBlobUri": minutes_uri}
@@ -455,6 +494,42 @@ def _details(value: object) -> dict[str, object] | None:
     if isinstance(value, dict):
         return {str(key): cast_value for key, cast_value in value.items()}
     return None
+
+
+def _should_fallback_to_chunk_minutes(error: AppError) -> bool:
+    if error.code == "MINUTES_SCHEMA_VALIDATION_FAILED":
+        return True
+    if error.code != "OPENAI_GENERATION_FAILED":
+        return False
+    reason = error.details.get("reason")
+    status_code = error.details.get("statusCode")
+    return reason in {
+        "Response was truncated",
+        "Response content was not valid JSON",
+    } or status_code in {400, 413}
+
+
+def _log_minutes_generation_mode(
+    *,
+    tenant_id: str,
+    job_id: str,
+    mode: str,
+    minutes_model: str,
+    fallback_reason: str | None = None,
+) -> None:
+    payload: dict[str, object] = {
+        "event": "minutes_generation_mode",
+        "tenantId": tenant_id,
+        "jobId": job_id,
+        "minutesGenerationMode": mode,
+        "minutesModel": minutes_model,
+    }
+    if fallback_reason:
+        payload["fallbackReason"] = fallback_reason
+    try:
+        LOGGER.info(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    except Exception:
+        LOGGER.debug("minutes generation mode telemetry emission failed", exc_info=True)
 
 
 def _required_string(payload: dict[str, object], key: str) -> str:

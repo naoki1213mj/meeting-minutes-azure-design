@@ -25,17 +25,17 @@ Direct-to-Blob upload
 
 80分音声は、Fast Transcription の diarization 有効時条件である2時間未満に収まる。音声をチャンク分割して並列に文字起こしすると、チャンク間の speaker ID を統合する処理が必要になる。そのため、初期実装では全体音声を1回だけ Fast Transcription に投入する。
 
-### 2. 議事録生成だけを並列化する
+### 2. 議事録生成は全文一括を本線にし、chunk方式はfallbackにする
 
-文字起こし結果は speaker ID と timestamp を含む transcript として保存する。その transcript を 5〜10分相当の論理チャンクに分割し、Durable Functions の `task_all` で `GenerateChunkSummaryActivity` をfan-outする。最後に全体統合を1回行う。
+文字起こし結果は speaker ID と timestamp を含む transcript として保存する。最大120分までの本線では、normalized transcript全文を1回のStructured outputs呼び出しに渡して議事録JSONを生成する。出力切れ、token制約、schema repair不能などの回復可能な失敗時だけchunk summary方式へ自動fallbackする。
 
 ### 3. UXは「完了までの待ち時間短縮」だけでなく「途中成果物の表示」で改善する
 
-Fast Transcription 完了後、まず transcript を表示する。次にチャンク要約が終わった順に暫定要約を表示する。最後に統合版の議事録を表示する。初期実装は Durable Functions status endpoint / Cosmos状態のポーリングでよい。ポーリング間隔は状態に応じてbackoffし、必要になった段階で Azure SignalR Service へ置き換える。
+Fast Transcription 完了後、まず transcript を表示可能にする。続いてdirect議事録生成を実行し、完了後は議事録を先頭に表示する。初期実装は Durable Functions status endpoint / Cosmos状態のポーリングでよい。ポーリング間隔は状態に応じてbackoffし、必要になった段階で Azure SignalR Service へ置き換える。
 
 ### 4. 入力上限はサービス上限とUX上限を分ける
 
-サービス上限としては、Fast Transcription は500MB未満・5時間未満、diarization 有効時は2時間未満。ただし、UXの安定性を重視し、初期リリースの通常受付は300MB未満・2時間未満にする。300MB〜500MBのファイルは、管理者許可、圧縮、またはエラー誘導にする。
+サービス上限としては、Fast Transcription は500MB未満・5時間未満、diarization 有効時は2時間未満。本アプリはユーザー要件に合わせて120分までbest effortで受け付け、120分超は拒否する。120分近傍はSpeech側の2時間境界に近いため、失敗リスクをUIとドキュメントで明示する。通常受付サイズは300MB未満、ハード上限は500MB未満にする。
 
 ### 5. 本番化前に認証を切り替える
 
@@ -52,14 +52,14 @@ Fast Transcription 完了後、まず transcript を表示する。次にチャ�
 | AI resource | AIServices `<ai-services-name>` |
 | Deployments | `gpt-5.4-mini`, `gpt-5.4`、GlobalStandard capacity 100 each |
 | 実装済みAPI | `POST /api/jobs`, `POST /api/jobs/{jobId}/upload-complete`, `GET /api/jobs/{jobId}`, `GET /api/jobs/{jobId}/transcript`, `GET /api/jobs/{jobId}/minutes` |
-| E2E | 短い日本語TTS音声と55分m4a音声で `DONE`、transcript/minutes取得、chunk/chunk summary Blob保存を確認済み |
+| E2E | 短い日本語TTS音声と55分m4a音声で `DONE`、transcript/minutes取得を確認済み。55分m4aの旧chunk本線は224.6秒 |
 
 ## 初期スコープ
 
 | 項目 | 初期実装 |
 |---|---|
 | 入力 | 音声ファイル。API受付は `.mp3`, `.wav`, `.m4a`, `.ogg`, `.webm`, `.flac`。E2E確認済みは短いWAVとm4a→FLAC前処理経路 |
-| 音声長 | 2時間未満 |
+| 音声長 | 120分までbest effort。120分超は拒否 |
 | 通常ファイルサイズ | 300MB未満 |
 | 話者分離 | あり。speaker ID は匿名ラベルとして扱う |
 | 実名紐付け | UIで後から user が指定する |
@@ -84,7 +84,7 @@ Fast Transcription 完了後、まず transcript を表示する。次にチャ�
 | 音声品質が悪く文字起こし精度が下がる | 高 | 音声品質チェック、phrase list、LLM Speech比較、手動修正UI |
 | speaker ID が実名と一致しない | 高 | 実名識別しない。UIで speaker mapping を登録 |
 | 300MB超の音声で待ち時間が長い | 中 | UX上限を300MBに設定。圧縮・再アップロードを促す |
-| Azure OpenAIのTPM/RPM不足 | 高 | `gpt-5.4-mini` / `gpt-5.4` capacity 100をdevで設定済み。チャンク並列度制御、指数バックオフ、クォータ監視 |
+| Azure OpenAIのTPM/RPM不足 | 高 | `gpt-5.4-mini` / `gpt-5.4` capacity 100をdevで設定済み。direct/fallbackの発動状況、指数バックオフ、クォータ監視 |
 | Storage public endpointが無効化される | 高 | Fast Transcription `audioUrl` とブラウザ直接アップロードの前提。Bicepで `publicNetworkAccess=Enabled` を明示し、Policy/手動変更によるドリフトを監視 |
 | HTTP要求がタイムアウトする | 高 | `202 Accepted` + Durable Functions 非同期パターン |
 | Blob SAS漏えい | 高 | User Delegation SAS、短時間TTL、最小権限、HTTPSのみ。Application InsightsでSAS/query漏えいを継続スキャン |
@@ -94,7 +94,7 @@ Fast Transcription 完了後、まず transcript を表示する。次にチャ�
 完了済み:
 
 1. API: ジョブ作成、SAS発行、アップロード完了、状態取得、transcript取得、minutes取得。
-2. Durable workflow: validate -> transcribe -> normalize -> `task_all` chunk summaries -> final merge -> render/persist。
+2. Durable workflow: validate -> transcribe -> normalize -> direct minutes generation -> render/persist。chunk summary方式はfallbackとして保持。
 3. Speech client: Fast Transcription + diarization の live E2E。
    - m4aはFast Transcription直渡しでデコードできないケースがあるため、Backendで16kHz mono FLACへ前処理する。
 4. Minutes generator: Structured outputs 用schemaによるJSON固定、保存前schema検証、Markdownコード生成。
@@ -105,5 +105,5 @@ Fast Transcription 完了後、まず transcript を表示する。次にチャ�
 
 1. Microsoft Entra ID / Easy Auth 強制、demo認証の廃止、他ユーザーjobアクセス拒否テスト。
 2. 代表的な短い会議音声fixtureと品質期待値を整備し、E2E回帰テストを安定化。
-3. ポーリングbackoff、チャンク並列度、429率、total seconds の性能回帰基準を定義。
-4. 80分音声の代表E2Eで処理時間・品質・コストを測定し、本番既定モデル/容量をADR化。
+3. ポーリングbackoff、direct/fallback発動率、429率、total seconds の性能回帰基準を定義。
+4. 80〜120分音声の代表E2Eで処理時間・品質・コストを測定し、本番既定モデル/容量をADR化。

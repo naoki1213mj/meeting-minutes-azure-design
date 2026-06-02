@@ -4,7 +4,7 @@
 
 ## 状態
 
-採用
+ADR-007により本線からは置き換え。chunk summary方式は自動fallbackとして保持。
 
 ## 文脈
 

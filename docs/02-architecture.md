@@ -32,12 +32,10 @@
   |
   +--> NormalizeTranscript Activity
   |
-  +--> BuildTranscriptChunksActivity
-  |
-  +--> GenerateChunkSummaryActivity fan-out/fan-in via task_all
-  |      -> Azure OpenAI in Microsoft Foundry Models
-  |
   +--> GenerateFinalMinutes Activity
+  |      -> Azure OpenAI in Microsoft Foundry Models
+  |      -> direct full-transcript generation
+  |      -> chunk fallback only when needed
   |
   +--> RenderMarkdown / PersistOutputs Activities
   |
@@ -46,7 +44,6 @@
   - raw-audio/
   - transcript/raw/
   - transcript/normalized/
-  - minutes/chunks/
   - minutes/json/
   - minutes/markdown/
 
@@ -120,7 +117,7 @@
 ### 3.3 文字起こし
 
 1. Orchestrator が `ValidateJobInput` を実行する。
-2. 通常受付上限300MB、ハード上限500MB、2時間未満を評価する。
+2. 通常受付上限300MB、ハード上限500MB、120分以下を評価する。
 3. Fast Transcription に `definition.audioUrl` を送る。本番経路では inline `audio` を使わない。
 4. `definition` には `locales: ["ja-JP"]` と `diarization` を含める。
 5. `channels` は指定しない。diarization有効時に stereo の `[0,1]` 指定はしない。
@@ -129,13 +126,11 @@
 ### 3.4 議事録生成
 
 1. raw response を normalized transcript に変換する。
-2. transcript を5〜10分相当のチャンクに分割する。
-3. `BuildTranscriptChunksActivity` がchunk descriptorを作る。
-4. Durable Functions の `task_all` で各 `GenerateChunkSummaryActivity` を並列実行する。
-5. 各チャンクの抽出結果をBlobに保存する。
-6. 最終統合プロンプトで `minutes.structured-output.schema.json` に準拠する JSON を生成する。
-7. アプリ側で metadata を付与し、`minutes.schema.json` で保存前検証を行う。
-8. Markdownをアプリコードで生成する。
+2. 本線では normalized transcript全文を `GenerateFinalMinutesActivity` がBlobから読み込む。
+3. `minutes.structured-output.schema.json` に準拠する JSON を1回のStructured outputs呼び出しで生成する。
+4. アプリ側で metadata を付与し、`minutes.schema.json` で保存前検証を行う。
+5. direct生成が出力切れ、token制約、schema repair不能などで失敗した場合だけ、chunk summary方式へ自動fallbackする。
+6. Markdownをアプリコードで生成する。
 
 ### 3.5 結果取得とユーザーレビュー
 
@@ -189,7 +184,7 @@
 - 長時間処理のオーケストレーション。
 - リトライ。
 - custom status 更新。
-- fan-out/fan-in による議事録チャンク処理。
+- direct minutes generation と、必要時のchunk fallback。
 
 OrchestratorではI/Oを直接行わず、I/OはActivityに閉じ込める。各Activityは固定Blob pathを使い、同じ入力の再実行で破壊的副作用が起きないようにする。
 
@@ -207,15 +202,14 @@ OrchestratorではI/Oを直接行わず、I/OはActivityに閉じ込める。各
 
 責務:
 
-- transcript チャンク生成。
-- chunk summary 生成。
-- final minutes 生成。
+- normalized transcript全文からのdirect minutes生成。
+- 必要時のtranscript chunk生成とchunk summary fallback。
 - Structured outputs 用schemaによる制御と保存用JSON Schema検証。
 - Markdown変換。
 
-`gpt-5.4-mini` はchunk summary、`gpt-5.4` はfinal mergeのdev MVP既定。両deploymentはGlobalStandard capacity 100に増強済み。`temperature` 等の生成パラメーターはdeployment capabilityに基づいて送る。
+UIでは議事録生成モデルを選択できる。既定の「高速」は `gpt-5.4-mini`、「高品質」は `gpt-5.4` を使う。両deploymentはGlobalStandard capacity 100でデプロイ済み。`temperature` 等の生成パラメーターはdeployment capabilityに基づいて送る。
 
-final mergeは長尺音声でJSON出力が切れないよう `max_completion_tokens=32768` と `reasoning_effort=low` を使う。429が継続する場合はcapacity、chunk summary粒度、final prompt量を見直す。
+direct minutes generationは長尺音声でJSON出力が切れないよう `max_completion_tokens=32768` と `reasoning_effort=low` を使う。429が継続する場合はcapacity、選択モデル、fallback発動状況、prompt量を見直す。
 
 ### 4.6 Storage Repository
 

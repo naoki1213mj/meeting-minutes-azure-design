@@ -4,11 +4,12 @@ from meeting_minutes_backend.markdown_renderer import render_minutes_markdown
 from meeting_minutes_backend.minutes_generation import (
     DeploymentCapabilities,
     FakeOpenAIJsonClient,
+    build_full_transcript_minutes_prompt,
     build_structured_output_request,
     build_transcript_chunks,
     generate_chunk_summary,
     generate_final_minutes_from_summaries,
-    generate_minutes,
+    generate_minutes_from_full_transcript,
     normalize_minutes_for_save,
 )
 
@@ -118,21 +119,16 @@ def test_build_transcript_chunks_preserves_phrase_boundaries() -> None:
     assert chunks[0].speakerMapping[0]["speakerLabel"] == "Speaker 1"
 
 
-def test_generate_minutes_uses_structured_schemas_and_validates_save_schema() -> None:
-    client = FakeOpenAIJsonClient([_chunk_summary(), _chunk_summary(), _valid_final_minutes()])
-    chunk_deployment = DeploymentCapabilities(
-        deploymentName="gpt-5.4-mini",
-        modelName="gpt-5.4-mini",
-    )
+def test_generate_minutes_from_full_transcript_uses_minutes_schema_only() -> None:
+    client = FakeOpenAIJsonClient([_valid_final_minutes()])
     final_deployment = DeploymentCapabilities(deploymentName="gpt-5.4", modelName="gpt-5.4")
 
-    minutes = generate_minutes(
+    minutes = generate_minutes_from_full_transcript(
         _normalized_transcript(),
         job_id="job-a",
         tenant_id="tenant-a",
         meeting_title="会議",
         client=client,
-        chunk_deployment=chunk_deployment,
         final_deployment=final_deployment,
     )
 
@@ -140,11 +136,18 @@ def test_generate_minutes_uses_structured_schemas_and_validates_save_schema() ->
     assert minutes["tenantId"] == "tenant-a"
     assert minutes["decisions"][0]["sourceTimestamps"] == ["00:00:00"]
     assert minutes["actionItems"][0]["dueDate"] is None
-    assert [call["schemaTitle"] for call in client.calls] == [
-        "ChunkSummaryStructuredOutput",
-        "ChunkSummaryStructuredOutput",
-        "MeetingMinutesStructuredOutput",
-    ]
+    assert [call["schemaTitle"] for call in client.calls] == ["MeetingMinutesStructuredOutput"]
+
+
+def test_full_transcript_prompt_contains_speakers_phrases_and_safety_rules() -> None:
+    prompt = build_full_transcript_minutes_prompt("会議", _normalized_transcript())
+
+    assert "normalized transcript" in prompt
+    assert "Speaker 1" in prompt
+    assert "00:10:10" in prompt
+    assert "田中さんが確認します" in prompt
+    assert "transcriptにない事実を追加しない" in prompt
+    assert "speakerLabelから実名を自動推定しない" in prompt
 
 
 def test_split_generation_uses_chunk_then_final_schemas() -> None:
@@ -179,25 +182,19 @@ def test_split_generation_uses_chunk_then_final_schemas() -> None:
 
 def test_generate_minutes_repairs_once_for_structural_validation_failure() -> None:
     invalid_final = {**_valid_final_minutes(), "title": 123}
-    client = FakeOpenAIJsonClient(
-        [_chunk_summary(), _chunk_summary(), invalid_final, _valid_final_minutes()]
-    )
+    client = FakeOpenAIJsonClient([invalid_final, _valid_final_minutes()])
 
-    minutes = generate_minutes(
+    minutes = generate_minutes_from_full_transcript(
         _normalized_transcript(),
         job_id="job-a",
         tenant_id="tenant-a",
         meeting_title="会議",
         client=client,
-        chunk_deployment=DeploymentCapabilities(
-            deploymentName="gpt-5.4-mini",
-            modelName="gpt-5.4-mini",
-        ),
         final_deployment=DeploymentCapabilities(deploymentName="gpt-5.4", modelName="gpt-5.4"),
     )
 
     assert minutes["title"] == "会議"
-    assert len(client.calls) == 4
+    assert len(client.calls) == 2
 
 
 def test_repair_uses_minutes_structured_output_schema_not_save_schema() -> None:

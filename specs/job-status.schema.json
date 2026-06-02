@@ -9,6 +9,7 @@
     "jobId": { "type": "string", "minLength": 1 },
     "tenantId": { "type": "string", "minLength": 1 },
     "userId": { "type": "string" },
+    "minutesModel": { "type": "string", "enum": ["fast", "quality"], "default": "fast" },
     "status": {
       "type": "string",
       "enum": [

@@ -26,6 +26,11 @@ class JobStatus(StrEnum):
     CANCELLED = "CANCELLED"
 
 
+class MinutesModel(StrEnum):
+    FAST = "fast"
+    QUALITY = "quality"
+
+
 class InputConstraints(StrictModel):
     normalMaxFileSizeBytes: int = 314_572_800
     hardMaxFileSizeBytes: int = 524_288_000
@@ -40,6 +45,7 @@ class CreateJobRequest(StrictModel):
     meetingTitle: str | None = None
     locale: str = "ja-JP"
     maxSpeakers: int = Field(default=8, ge=2, le=30)
+    minutesModel: MinutesModel = MinutesModel.FAST
 
 
 class CreateJobResponse(StrictModel):
@@ -90,6 +96,7 @@ class JobStatusResponse(StrictModel):
     jobId: str
     tenantId: str
     userId: str
+    minutesModel: MinutesModel = MinutesModel.FAST
     status: JobStatus
     progress: Progress
     outputs: Outputs
@@ -105,6 +112,7 @@ class JobRecord(StrictModel):
     meetingTitle: str | None
     locale: str
     maxSpeakers: int
+    minutesModel: MinutesModel = MinutesModel.FAST
     status: JobStatus
     originalFileName: str
     contentType: str

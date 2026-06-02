@@ -35,6 +35,7 @@ def test_azure_settings_require_storage_and_cosmos() -> None:
         openai_base_url=None,
         chunk_summary_deployment_name="gpt-5.4-mini",
         final_merge_deployment_name="gpt-5.4",
+        speech_request_timeout_seconds=480.0,
     )
 
     with pytest.raises(AppError) as exc_info:

@@ -1,6 +1,7 @@
 import { supportedAudioExtensions } from "./appConfig";
 
 export const hardMaxAudioFileSizeBytes = 500 * 1024 * 1024;
+export const maxAudioDurationSeconds = 120 * 60;
 
 export type FileValidationResult = {
   valid: boolean;

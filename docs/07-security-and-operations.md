@@ -153,8 +153,9 @@ Azure Storage、Cosmos DB、Application Insights の標準暗号化を使う。�
 | `meeting.upload.seconds` | seconds |
 | `meeting.transcription.seconds` | seconds |
 | `meeting.normalization.seconds` | seconds |
-| `meeting.chunk_summary.seconds` | seconds |
-| `meeting.final_merge.seconds` | seconds |
+| `meeting.direct_minutes.seconds` | seconds |
+| `meeting.chunk_summary.seconds` | seconds（fallback時） |
+| `meeting.final_merge.seconds` | seconds（fallback時） |
 | `meeting.total.seconds` | seconds |
 | `meeting.speech.retry_count` | count |
 | `meeting.openai.retry_count` | count |
@@ -201,7 +202,7 @@ traces
 | order by maxDurationSeconds desc
 ```
 
-`GenerateChunkSummaryActivity` はOrchestratorで並列実行されるため、Activity durationの単純合計はE2E壁時計時間と一致しない。E2E短縮判断では、STTなど単一Activityの最大時間、chunk summaryのbatch内最大時間、OpenAI/Speechの429/5xx再試行有無を合わせて見る。
+本線では `GenerateFinalMinutesActivity` がdirect minutes generationを実行する。chunk fallback時だけ `GenerateChunkSummaryActivity` が発生する。chunk summary は並列実行され得るため、Activity durationの単純合計はE2E壁時計時間と一致しない。E2E短縮判断では、STTなど単一Activityの最大時間、direct/fallbackのどちらが使われたか、OpenAI/Speechの429/5xx再試行有無を合わせて見る。
 
 ### 現在の確認実績
 
@@ -227,13 +228,15 @@ traces
 
 - Fast Transcription はリソースあたり最大600 requests/min。
 - 音声入力は500MB未満、5時間未満。diarization有効時は2時間未満。
+- 本アプリのUX上限は120分までbest effort、120分超は拒否する。120分近傍はdiarizationの2時間境界に近いため失敗リスクをユーザーへ明示する。
 - ただし初期UX上限は300MBにする。
 
 ### Azure OpenAI in Microsoft Foundry Models
 
 - TPM/RPMはサブスクリプション、リージョン、モデルまたはデプロイ種別ごとに定義される。
 - dev MVPでは `gpt-5.4-mini` と `gpt-5.4` をGlobalStandard capacity 100に増強済み。
-- chunk summary の並列度は設定値で制御する。
+- 議事録生成はdirect全文生成を本線とし、chunk summary方式はfallbackとして使う。
+- UIでは高速（GPT-5.4-mini）を既定、高品質（GPT-5.4）を選択肢にする。
 - 429が増えたら、並列度を下げる、capacity/quotaを確認する、指数バックオフを確認する。
 
 ## 10. 障害時の対応

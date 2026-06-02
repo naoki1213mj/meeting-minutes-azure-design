@@ -259,6 +259,11 @@ components:
           minimum: 2
           maximum: 30
           default: 8
+        minutesModel:
+          type: string
+          enum: [fast, quality]
+          default: fast
+          description: fast は GPT-5.4-mini、quality は GPT-5.4 を使う議事録生成モード。
     CreateJobResponse:
       type: object
       additionalProperties: false

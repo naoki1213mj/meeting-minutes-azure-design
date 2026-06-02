@@ -58,7 +58,8 @@ Browser
 
 - 文字起こしは全体音声に対して 1 回だけ実行する。
 - diarization を有効化し、`channels` は指定しない。
-- 議事録生成だけを transcript チャンクで並列化する。
+- 議事録生成は transcript 全文を使う direct generation を本線にする。
+- chunk summary 方式は direct generation が出力切れ等で失敗した場合の自動 fallback として残す。
 - 本番経路では Fast Transcription に `audioUrl` を渡す。
 - inline `audio` は小さい開発・検証に限定する。
 - Azure OpenAI in Microsoft Foundry Models は v1 API を使い、dated `api-version` を新規追加しない。

@@ -10,6 +10,7 @@ from meeting_minutes_backend.blob_storage import AzureBlobSasIssuer
 from meeting_minutes_backend.cosmos_repository import CosmosJobRepository
 from meeting_minutes_backend.errors import AppError
 from meeting_minutes_backend.minutes_generation import DeploymentCapabilities
+from meeting_minutes_backend.models import MinutesModel
 from meeting_minutes_backend.openai_client import AzureOpenAIJsonClient
 from meeting_minutes_backend.repositories import InMemoryJobRepository, JobRepository
 from meeting_minutes_backend.speech_client import FastTranscriptionClient
@@ -29,6 +30,7 @@ class AppSettings:
     openai_base_url: str | None
     chunk_summary_deployment_name: str
     final_merge_deployment_name: str
+    speech_request_timeout_seconds: float
 
     @classmethod
     def from_env(cls) -> AppSettings:
@@ -50,6 +52,9 @@ class AppSettings:
             final_merge_deployment_name=os.getenv(
                 "AZURE_OPENAI_DEPLOYMENT_FINAL_MERGE",
                 "gpt-5.4",
+            ),
+            speech_request_timeout_seconds=float(
+                os.getenv("AZURE_SPEECH_REQUEST_TIMEOUT_SECONDS", "480")
             ),
         )
 
@@ -125,6 +130,7 @@ def build_speech_client(settings: AppSettings) -> FastTranscriptionClient:
     return FastTranscriptionClient(
         endpoint=_required(settings.speech_endpoint),
         credential=build_credential(),
+        request_timeout_seconds=settings.speech_request_timeout_seconds,
     )
 
 
@@ -148,6 +154,19 @@ def build_final_deployment(settings: AppSettings) -> DeploymentCapabilities:
     return DeploymentCapabilities(
         deploymentName=settings.final_merge_deployment_name,
         modelName=settings.final_merge_deployment_name,
+        generationParameters={"max_completion_tokens": 32768, "reasoning_effort": "low"},
+    )
+
+
+def build_minutes_deployment(
+    settings: AppSettings,
+    minutes_model: MinutesModel,
+) -> DeploymentCapabilities:
+    if minutes_model == MinutesModel.QUALITY:
+        return build_final_deployment(settings)
+    return DeploymentCapabilities(
+        deploymentName=settings.chunk_summary_deployment_name,
+        modelName=settings.chunk_summary_deployment_name,
         generationParameters={"max_completion_tokens": 32768, "reasoning_effort": "low"},
     )
 

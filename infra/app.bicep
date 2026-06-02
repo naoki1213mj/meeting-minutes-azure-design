@@ -423,6 +423,10 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
           value: aiServices.properties.endpoint
         }
         {
+          name: 'AZURE_SPEECH_REQUEST_TIMEOUT_SECONDS'
+          value: '480'
+        }
+        {
           name: 'AZURE_OPENAI_BASE_URL'
           value: '${aiServices.properties.endpoint}openai/v1/'
         }

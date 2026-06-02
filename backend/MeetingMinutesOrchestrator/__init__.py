@@ -1,5 +1,4 @@
 from collections.abc import Generator
-from typing import cast
 
 import azure.durable_functions as df
 
@@ -43,37 +42,10 @@ def orchestrator_function(
         if not isinstance(normalized, dict):
             raise TypeError("NormalizeTranscriptActivity must return an object")
 
-        context.set_custom_status({"step": "GENERATING_CHUNK_SUMMARIES", "percent": 65})
-        chunks = yield context.call_activity(
-            "BuildTranscriptChunksActivity",
-            {"job": job, **normalized},
-        )
-        if not isinstance(chunks, list):
-            raise TypeError("BuildTranscriptChunksActivity must return a list")
-
-        chunk_summaries: list[object] = []
-        if chunks:
-            for batch_start in range(0, len(chunks), MAX_CHUNK_SUMMARY_BATCH_SIZE):
-                chunk_batch = chunks[
-                    batch_start : batch_start + MAX_CHUNK_SUMMARY_BATCH_SIZE
-                ]
-                summary_tasks = [
-                    context.call_activity(
-                        "GenerateChunkSummaryActivity",
-                        {"job": job, **chunk},
-                    )
-                    for chunk in chunk_batch
-                    if isinstance(chunk, dict)
-                ]
-                chunk_summaries_result = yield context.task_all(summary_tasks)
-                if not isinstance(chunk_summaries_result, list):
-                    raise TypeError("GenerateChunkSummaryActivity must return a list")
-                chunk_summaries.extend(cast(list[object], chunk_summaries_result))
-
         context.set_custom_status({"step": "GENERATING_FINAL_MINUTES", "percent": 75})
         minutes = yield context.call_activity(
             "GenerateFinalMinutesActivity",
-            {"job": job, **normalized, "chunkSummaries": chunk_summaries},
+            {"job": job, **normalized},
         )
         if not isinstance(minutes, dict):
             raise TypeError("GenerateFinalMinutesActivity must return an object")

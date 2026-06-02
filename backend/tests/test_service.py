@@ -6,7 +6,12 @@ from meeting_minutes_backend.auth import AuthContext
 from meeting_minutes_backend.blob_sas import LocalBlobSasIssuer
 from meeting_minutes_backend.errors import AppError
 from meeting_minutes_backend.file_names import build_safe_file_name
-from meeting_minutes_backend.models import CreateJobRequest, JobStatus, UploadCompleteRequest
+from meeting_minutes_backend.models import (
+    CreateJobRequest,
+    JobStatus,
+    MinutesModel,
+    UploadCompleteRequest,
+)
 from meeting_minutes_backend.orchestration import InMemoryDurableStarter
 from meeting_minutes_backend.repositories import InMemoryJobRepository
 from meeting_minutes_backend.service import JobService
@@ -53,6 +58,17 @@ def test_create_job_initializes_created_progress_and_safe_blob_name() -> None:
     assert response.blobName.endswith("/secret-meeting.mp3")
     assert status.progress.step == "CREATED"
     assert status.progress.percent == 0
+    assert status.minutesModel == MinutesModel.FAST
+
+
+def test_create_job_persists_requested_minutes_model() -> None:
+    service = _service()
+    request = _create_request()
+    request = request.model_copy(update={"minutesModel": MinutesModel.QUALITY})
+
+    response = service.create_job(_auth(), request)
+
+    assert service.get_job(_auth(), response.jobId).minutesModel == MinutesModel.QUALITY
 
 
 def test_create_job_rejects_normal_size_limit() -> None:

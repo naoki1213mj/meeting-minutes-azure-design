@@ -13,6 +13,8 @@ export type JobStatus =
   | "FAILED"
   | "CANCELLED";
 
+export type MinutesModel = "fast" | "quality";
+
 export type CreateJobResponse = {
   jobId: string;
   status: JobStatus;
@@ -37,6 +39,7 @@ export type JobStatusResponse = {
   jobId: string;
   tenantId: string;
   userId: string;
+  minutesModel: MinutesModel;
   status: JobStatus;
   progress: {
     step: string;
@@ -217,6 +220,7 @@ export function isLocalPlaceholderUploadUrl(uploadUrl: string): boolean {
 export async function createJob(
   file: File,
   clientEstimatedDurationSeconds?: number | null,
+  minutesModel: MinutesModel = "fast",
 ): Promise<CreateJobResponse> {
   return apiFetch<CreateJobResponse>("/jobs", {
     method: "POST",
@@ -229,6 +233,7 @@ export async function createJob(
         : {}),
       locale: "ja-JP",
       maxSpeakers: 8,
+      minutesModel,
     }),
   });
 }

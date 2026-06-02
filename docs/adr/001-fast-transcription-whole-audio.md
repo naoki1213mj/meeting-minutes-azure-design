@@ -19,7 +19,7 @@
 - 80分音声は diarization 有効時の2時間未満条件に収まる。
 - 音声チャンクごとに diarization すると、`Speaker 0` がチャンク間で同じ人物を指す保証が弱くなる。
 - speaker ID 統合は実装・検証コストが高い。
-- 議事録生成だけを transcript チャンクで並列化すれば、UX改善と実装単純性を両立できる。
+- 議事録生成だけを transcript チャンクで並列化する案を当時の初期方針としたが、ADR-007により現在は transcript全文によるdirect生成を本線、chunk方式をfallbackとして扱う。
 
 ## 結果
 
