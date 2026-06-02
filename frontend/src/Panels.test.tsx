@@ -105,10 +105,11 @@ const minutes: MinutesResponse = {
 describe("ResultsWorkspace", () => {
   it("supports roving keyboard tab navigation semantics", () => {
     expect(getNextResultsTab("minutes", "ArrowRight")).toBe("transcript");
-    expect(getNextResultsTab("transcript", "ArrowRight")).toBe("minutes");
+    expect(getNextResultsTab("transcript", "ArrowRight")).toBe("visual");
+    expect(getNextResultsTab("visual", "ArrowRight")).toBe("minutes");
     expect(getNextResultsTab("transcript", "ArrowLeft")).toBe("minutes");
-    expect(getNextResultsTab("minutes", "End")).toBe("transcript");
-    expect(getNextResultsTab("transcript", "Home")).toBe("minutes");
+    expect(getNextResultsTab("minutes", "End")).toBe("visual");
+    expect(getNextResultsTab("visual", "Home")).toBe("minutes");
     expect(getNextResultsTab("minutes", "Enter")).toBeNull();
   });
 
@@ -119,6 +120,7 @@ describe("ResultsWorkspace", () => {
         jobStatus={doneJob}
         minutes={minutes}
         transcript={transcript}
+        visualContext={null}
         onTabChange={() => undefined}
       />,
     );
@@ -154,6 +156,7 @@ describe("ResultsWorkspace", () => {
         jobStatus={doneJob}
         minutes={minutes}
         transcript={transcript}
+        visualContext={null}
         onTabChange={() => undefined}
       />,
     );

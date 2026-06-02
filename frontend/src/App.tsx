@@ -16,6 +16,7 @@ import {
   getJob,
   getMinutes,
   getTranscript,
+  getVisualContext,
   terminalStatuses,
   uploadAudioFile,
   type CreateJobResponse,
@@ -25,6 +26,7 @@ import {
   type MinutesResponse,
   type ProcessingRoute,
   type TranscriptResponse,
+  type VisualContextResponse,
 } from "./apiClient";
 import { appTitle, heroCopy, heroHeadline, supportedAudioExtensions } from "./appConfig";
 import {
@@ -124,6 +126,7 @@ export function App() {
   const [jobStatus, setJobStatus] = useState<JobStatusResponse | null>(null);
   const [transcript, setTranscript] = useState<TranscriptResponse | null>(null);
   const [minutes, setMinutes] = useState<MinutesResponse | null>(null);
+  const [visualContext, setVisualContext] = useState<VisualContextResponse | null>(null);
   const [minutesModel, setMinutesModel] = useState<MinutesModel>("fast");
   const [processingRoute, setProcessingRoute] = useState<ProcessingRoute>("stable");
   const [activeResultsTab, setActiveResultsTab] = useState<ResultsTab>("minutes");
@@ -199,6 +202,7 @@ export function App() {
     setCreatedJob(null);
     setTranscript(null);
     setMinutes(null);
+    setVisualContext(null);
     setActiveResultsTab("minutes");
 
     try {
@@ -242,6 +246,7 @@ export function App() {
     let failureCount = 0;
     let transcriptLoaded = transcript !== null;
     let minutesLoaded = minutes !== null;
+    let visualContextLoaded = visualContext !== null;
     while (!signal.aborted && activeJobIdRef.current === jobId) {
       try {
         const status = await getJob(jobId);
@@ -276,6 +281,14 @@ export function App() {
           ) {
             setMinutes(await getMinutes(jobId));
             minutesLoaded = true;
+          }
+          if (
+            frontendFeatures.visualContextApi &&
+            status.outputs.visualContextBlobUri &&
+            !visualContextLoaded
+          ) {
+            setVisualContext(await getVisualContext(jobId));
+            visualContextLoaded = true;
           }
         }
       } catch (error) {
@@ -354,6 +367,7 @@ export function App() {
     setJobStatus(null);
     setTranscript(null);
     setMinutes(null);
+    setVisualContext(null);
     setActiveResultsTab("minutes");
     setUploadProgress(0);
     setRunStartedAtMs(null);
@@ -371,6 +385,7 @@ export function App() {
     setJobStatus(null);
     setTranscript(null);
     setMinutes(null);
+    setVisualContext(null);
     setActiveResultsTab("minutes");
     setUploadProgress(0);
     setRunStartedAtMs(null);
@@ -651,6 +666,7 @@ export function App() {
             jobStatus={jobStatus}
             minutes={minutes}
             transcript={transcript}
+            visualContext={visualContext}
             onTabChange={setActiveResultsTab}
           />
         </section>

@@ -1101,6 +1101,33 @@ dd {
   padding: 0 0.15rem 0 0;
 }
 
+.visual-workspace {
+  display: grid;
+  gap: 1rem;
+}
+
+.visual-summary {
+  color: #dce9ff;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.time-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.time-chip-list span {
+  background: rgb(125 211 252 / 12%);
+  border: 1px solid rgb(125 211 252 / 26%);
+  border-radius: 999px;
+  color: #bfdbfe;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 0.35rem 0.6rem;
+}
+
 .phrase-list li {
   background: rgb(255 255 255 / 6%);
   border: 1px solid rgb(255 255 255 / 9%);

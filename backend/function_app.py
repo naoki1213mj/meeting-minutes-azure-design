@@ -16,6 +16,9 @@ from meeting_minutes_backend.entrypoints import (
     get_transcript as handle_get_transcript,
 )
 from meeting_minutes_backend.entrypoints import (
+    get_visual_context as handle_get_visual_context,
+)
+from meeting_minutes_backend.entrypoints import (
     health as handle_health,
 )
 
@@ -47,6 +50,12 @@ def get_job(req: func.HttpRequest, jobId: str) -> func.HttpResponse:
 @app.route(route="jobs/{jobId}/transcript", methods=["GET"])
 def get_transcript(req: func.HttpRequest, jobId: str) -> func.HttpResponse:
     return handle_get_transcript(req, jobId)
+
+
+@app.function_name(name="get_visual_context")
+@app.route(route="jobs/{jobId}/visual-context", methods=["GET"])
+def get_visual_context(req: func.HttpRequest, jobId: str) -> func.HttpResponse:
+    return handle_get_visual_context(req, jobId)
 
 
 @app.function_name(name="get_minutes")

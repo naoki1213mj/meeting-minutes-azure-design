@@ -39,6 +39,8 @@
 | `TranscribeAudioActivity` | job, readSasUrl | rawTranscriptBlobUri | あり | live E2E済み |
 | `NormalizeTranscriptActivity` | rawTranscriptBlobUri | normalizedTranscriptBlobUri | あり | live E2E済み |
 | `GenerateFinalMinutesActivity` | normalizedTranscriptBlobUri | minutes JSON blob | あり | direct全文生成の本線。制約時のみchunk fallback |
+| `AnalyzeContentUnderstandingActivity` | job, contentUrl | raw CU result / visual context blob | あり | 動画理解（実験）経路 |
+| `NormalizeContentUnderstandingTranscriptActivity` | raw CU result | normalized transcript | あり | 動画理解（実験）経路 |
 | `BuildTranscriptChunksActivity` | normalizedTranscriptBlobUri | chunk descriptors | あり | direct生成のfallback用に保持 |
 | `GenerateChunkSummaryActivity` | chunk descriptor | chunk summary blob | あり | direct生成のfallback用に保持 |
 | `RenderMarkdownActivity` | minutes JSON blob | markdown blob | あり | live E2E済み |

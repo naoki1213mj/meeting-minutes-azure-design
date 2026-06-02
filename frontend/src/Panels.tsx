@@ -1,15 +1,21 @@
 import { Activity, useRef, type KeyboardEvent, type ReactNode } from "react";
 
-import type { JobStatusResponse, MinutesResponse, TranscriptResponse } from "./apiClient";
+import type {
+  JobStatusResponse,
+  MinutesResponse,
+  TranscriptResponse,
+  VisualContextResponse,
+} from "./apiClient";
 import { frontendFeatures } from "./frontendFeatures";
 
-export type ResultsTab = "minutes" | "transcript";
+export type ResultsTab = "minutes" | "transcript" | "visual";
 
 type ResultsWorkspaceProps = {
   activeTab: ResultsTab;
   jobStatus: JobStatusResponse | null;
   minutes: MinutesResponse | null;
   transcript: TranscriptResponse | null;
+  visualContext: VisualContextResponse | null;
   onTabChange: (tab: ResultsTab) => void;
 };
 
@@ -23,11 +29,17 @@ type MinutesPanelProps = {
   minutes: MinutesResponse | null;
 };
 
+type VisualContextPanelProps = {
+  jobStatus: JobStatusResponse | null;
+  visualContext: VisualContextResponse | null;
+};
+
 type PanelStatusTone = "muted" | "pending" | "ready" | "warning";
 
 const resultsTabs: Array<{ id: ResultsTab; label: string; description: string }> = [
   { id: "minutes", label: "議事録", description: "要点を先に確認" },
   { id: "transcript", label: "文字起こし", description: "発言の確認に使う" },
+  { id: "visual", label: "映像メモ", description: "動画理解の補足" },
 ];
 
 export function getNextResultsTab(currentTab: ResultsTab, key: string): ResultsTab | null {
@@ -55,6 +67,7 @@ export function ResultsWorkspace({
   jobStatus,
   minutes,
   transcript,
+  visualContext,
   onTabChange,
 }: ResultsWorkspaceProps) {
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -121,6 +134,18 @@ export function ResultsWorkspace({
             role="tabpanel"
           >
             <TranscriptPanel jobStatus={jobStatus} transcript={transcript} />
+          </div>
+        </Activity>
+
+        <Activity mode={activeTab === "visual" ? "visible" : "hidden"}>
+          <div
+            aria-labelledby="results-tab-visual"
+            className="results-tab-panel results-tab-panel--supplementary"
+            hidden={activeTab !== "visual"}
+            id="results-panel-visual"
+            role="tabpanel"
+          >
+            <VisualContextPanel jobStatus={jobStatus} visualContext={visualContext} />
           </div>
         </Activity>
       </div>
@@ -295,6 +320,59 @@ function PanelHeader({
   );
 }
 
+export function VisualContextPanel({ jobStatus, visualContext }: VisualContextPanelProps) {
+  const isCuRoute = jobStatus?.processingRoute === "contentUnderstanding";
+  const hasVisualContext = Boolean(isCuRoute && visualContext);
+  const summary = visualContext ? extractFieldString(visualContext.fields, "Summary") : null;
+
+  return (
+    <section className="panel result-card result-card--visual" aria-labelledby="visual-title">
+      <PanelHeader
+        eyebrow="実験機能"
+        title="映像メモ"
+        titleId="visual-title"
+        statusLabel={getVisualStatusLabel(jobStatus, hasVisualContext)}
+        statusTone={hasVisualContext ? "ready" : isCuRoute ? "pending" : "muted"}
+      />
+
+      {!isCuRoute ? (
+        <ResultPlaceholder
+          variant="visual"
+          title="動画理解モードで表示"
+          description="標準経路では映像を議事録の根拠に使いません。動画理解（実験）経路を選ぶと、映像補足を確認できます。"
+          bullets={["key frameの時刻", "カメラショット", "映像由来の補足メモ"]}
+        />
+      ) : !hasVisualContext || !visualContext ? (
+        <ResultPlaceholder
+          variant="visual"
+          title="映像メモを生成中"
+          description="Content Understanding の解析結果が保存されると、映像由来の補足情報を表示します。"
+          bullets={["議事録本文とは分離", "人物識別はしない", "映像由来として確認"]}
+        />
+      ) : (
+        <div className="visual-workspace">
+          <section className="transcript-card" aria-labelledby="visual-summary-title">
+            <div className="panel-subheader">
+              <div>
+                <h3 id="visual-summary-title">映像補足サマリー</h3>
+                <p>議事録本文とは別の参考情報です。決定事項やToDoの根拠には自動採用しません。</p>
+              </div>
+            </div>
+            <p className="visual-summary">{summary || "映像補足サマリーはありません。"}</p>
+          </section>
+          <div className="transcript-summary" aria-label="映像メモKPI">
+            <MetricTile label="key frames" value={formatCount(visualContext.keyFrameTimesMs?.length || 0)} />
+            <MetricTile label="camera shots" value={formatCount(visualContext.cameraShotTimesMs?.length || 0)} />
+            <MetricTile label="duration" value={formatMilliseconds(visualContext.endTimeMs || 0)} />
+          </div>
+          <TimeList title="Key frame timestamps" values={visualContext.keyFrameTimesMs || []} />
+          <TimeList title="Camera shot timestamps" values={visualContext.cameraShotTimesMs || []} />
+        </div>
+      )}
+    </section>
+  );
+}
+
 function ResultPlaceholder({
   bullets,
   description,
@@ -304,7 +382,7 @@ function ResultPlaceholder({
   bullets: string[];
   description: string;
   title: string;
-  variant: "minutes" | "transcript";
+  variant: "minutes" | "transcript" | "visual";
 }) {
   return (
     <div className={"result-placeholder result-placeholder--" + variant}>
@@ -414,6 +492,28 @@ function PhraseList({ phrases }: { phrases: TranscriptResponse["phrases"] }) {
   );
 }
 
+function TimeList({ title, values }: { title: string; values: number[] }) {
+  return (
+    <section className="transcript-card" aria-labelledby={title.replace(/\s+/g, "-").toLowerCase()}>
+      <div className="panel-subheader">
+        <div>
+          <h3 id={title.replace(/\s+/g, "-").toLowerCase()}>{title}</h3>
+          <p>動画の時刻に基づく補足情報です。</p>
+        </div>
+      </div>
+      {values.length > 0 ? (
+        <div className="time-chip-list">
+          {values.slice(0, 20).map((value) => (
+            <span key={value}>{formatMilliseconds(value)}</span>
+          ))}
+        </div>
+      ) : (
+        <p className="empty-state">時刻情報はありません。</p>
+      )}
+    </section>
+  );
+}
+
 function MinutesKpiGrid({ minutes }: { minutes: MinutesResponse }) {
   const kpis = [
     { label: "決定事項", value: formatCount(minutes.decisions.length), helper: "合意したこと" },
@@ -486,6 +586,28 @@ function getMinutesStatusLabel(jobStatus: JobStatusResponse | null, hasMinutes: 
     return "表示可能";
   }
   return jobStatus?.status === "DONE" ? "取得中" : "待機中";
+}
+
+function getVisualStatusLabel(
+  jobStatus: JobStatusResponse | null,
+  hasVisualContext: boolean,
+): string {
+  if (hasVisualContext) {
+    return "表示可能";
+  }
+  if (jobStatus?.processingRoute === "contentUnderstanding") {
+    return jobStatus.status === "FAILED" ? "未生成" : "生成中";
+  }
+  return "対象外";
+}
+
+function extractFieldString(fields: VisualContextResponse["fields"], fieldName: string): string | null {
+  const field = fields?.[fieldName];
+  if (typeof field !== "object" || field === null || !("valueString" in field)) {
+    return null;
+  }
+  const value = (field as { valueString?: unknown }).valueString;
+  return typeof value === "string" ? value : null;
 }
 
 function formatMilliseconds(milliseconds: number): string {

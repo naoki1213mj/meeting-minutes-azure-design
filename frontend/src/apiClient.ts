@@ -112,6 +112,18 @@ export type MinutesResponse = {
   risks: Array<{ text: string; severity: string; sourceTimestamps: string[] }>;
 };
 
+export type VisualContextResponse = {
+  kind?: string | null;
+  startTimeMs?: number | null;
+  endTimeMs?: number | null;
+  width?: number | null;
+  height?: number | null;
+  markdown?: string | null;
+  fields?: Record<string, unknown> | null;
+  keyFrameTimesMs?: number[] | null;
+  cameraShotTimesMs?: number[] | null;
+};
+
 export type DevAuthEnv = {
   VITE_DEV_TENANT_ID?: string;
   VITE_DEV_USER_ID?: string;
@@ -271,6 +283,12 @@ export async function getTranscript(jobId: string): Promise<TranscriptResponse> 
 
 export async function getMinutes(jobId: string): Promise<MinutesResponse> {
   return apiFetch<MinutesResponse>(`/jobs/${encodeURIComponent(jobId)}/minutes`, {
+    method: "GET",
+  });
+}
+
+export async function getVisualContext(jobId: string): Promise<VisualContextResponse> {
+  return apiFetch<VisualContextResponse>(`/jobs/${encodeURIComponent(jobId)}/visual-context`, {
     method: "GET",
   });
 }

@@ -63,6 +63,7 @@ def test_http_functions_are_registered() -> None:
         "create_job",
         "get_job",
         "get_transcript",
+        "get_visual_context",
         "get_minutes",
         "complete_upload",
     }

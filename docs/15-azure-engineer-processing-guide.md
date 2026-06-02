@@ -102,6 +102,12 @@ UIから選べるモード:
 
 direct生成が出力切れ、token制約、JSON破損、schema repair失敗などの回復可能な制約に当たった場合のみ、chunk summary方式へ自動fallbackする。通常のOrchestrator本線ではchunk Activityを呼ばない。
 
+## 7.1 Content Understanding動画理解経路（実験）
+
+UIでは標準経路に加え、動画理解（実験）経路を選べる。実験経路では元MP4を Content Understanding video analyzer に渡し、`transcriptPhrases` を normalized transcript に変換して既存のminutes generatorへ渡す。key frames / camera shots / visual fields / markdown は visual context artifact として保存し、UIの「映像メモ」タブに表示する。
+
+Phase 1では、映像由来の情報を議事録本文の決定事項/ToDo/期限/担当者の根拠にはしない。映像情報は補足情報として人間が確認する。
+
 ## 8. 性能と計測
 
 約55分m4aの計測例はADR-007に記録している。代表値は次の通り。1回計測であり、SLAではない。

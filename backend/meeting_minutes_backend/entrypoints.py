@@ -73,6 +73,30 @@ def _get_transcript(req: func.HttpRequest, jobId: str) -> func.HttpResponse:
     return json_response(transcript, 200, correlation_id)
 
 
+def get_visual_context(req: func.HttpRequest, jobId: str) -> func.HttpResponse:
+    return _get_visual_context(req, jobId)
+
+
+@error_boundary
+def _get_visual_context(req: func.HttpRequest, jobId: str) -> func.HttpResponse:
+    correlation_id = resolve_correlation_id(req.headers)
+    auth = resolve_auth_context(req.headers)
+    status = get_job_service().get_job(auth, jobId)
+    uri = status.outputs.visualContextBlobUri
+    if not uri:
+        raise AppError(
+            code="VISUAL_CONTEXT_NOT_READY",
+            message="映像補足はまだ準備できていません。",
+            http_status=404,
+        )
+    settings = AppSettings.from_env()
+    visual_context = build_artifact_store(settings).read_json(
+        settings.transcript_container_name,
+        _blob_name_from_url(uri, settings.transcript_container_name),
+    )
+    return json_response(visual_context, 200, correlation_id)
+
+
 def get_minutes(req: func.HttpRequest, jobId: str) -> func.HttpResponse:
     return _get_minutes(req, jobId)
 

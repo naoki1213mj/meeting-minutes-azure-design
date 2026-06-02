@@ -42,6 +42,7 @@ Minutes Studio は、録音済み音声ファイルから **話者分離付き t
 | transcript 正規化と schema validation | dev MVP 実装済み |
 | transcript全文からの direct minutes JSON / Markdown 生成 | dev MVP 実装済み |
 | chunk summary方式 | direct生成の自動fallbackとして保持 |
+| Content Understanding動画理解経路 | 実験経路。MP4の映像補足を取得・表示 |
 | `GET /api/jobs/{jobId}` / transcript / minutes 取得 | dev MVP 実装済み |
 
 Phase 2 以降の候補:

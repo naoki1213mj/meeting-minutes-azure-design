@@ -3,4 +3,5 @@ export const frontendFeatures = {
   minutesApi: true,
   speakerMappingSave: false,
   contentUnderstandingRoute: true,
+  visualContextApi: true,
 } as const;

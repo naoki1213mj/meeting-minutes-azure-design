@@ -139,6 +139,22 @@ paths:
                 type: string
         '404':
           $ref: '#/components/responses/Error'
+  /api/jobs/{jobId}/visual-context:
+    get:
+      operationId: getVisualContext
+      summary: Content Understanding映像補足取得
+      parameters:
+        - $ref: '#/components/parameters/jobId'
+      responses:
+        '200':
+          description: 映像補足
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '404':
+          $ref: '#/components/responses/Error'
   /api/jobs/{jobId}/speaker-mapping:
     put:
       operationId: updateSpeakerMapping

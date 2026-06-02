@@ -128,6 +128,42 @@ def test_get_minutes_returns_json_artifact(monkeypatch: pytest.MonkeyPatch) -> N
     assert json.loads(response.get_body()) == {"title": "議事録"}
 
 
+def test_get_visual_context_returns_json_artifact(monkeypatch: pytest.MonkeyPatch) -> None:
+    store = _FakeArtifactStore(
+        json_artifacts={
+            "transcripts/visual-context/job-a/context.json": {
+                "keyFrameTimesMs": [1000],
+                "fields": {"Summary": {"valueString": "映像補足"}},
+            }
+        },
+        text_artifacts={},
+    )
+    _patch_dependencies(
+        monkeypatch,
+        Outputs(
+            transcriptReady=True,
+            minutesReady=True,
+            visualContextBlobUri=(
+                "https://storage.blob.core.windows.net/"
+                "transcripts/visual-context/job-a/context.json"
+            ),
+        ),
+        store,
+    )
+
+    response = entrypoints.get_visual_context(
+        _request("/api/jobs/job-a/visual-context"),
+        "job-a",
+    )
+
+    assert response.status_code == 200
+    assert response.headers["x-correlation-id"] == "test-correlation"
+    assert json.loads(response.get_body()) == {
+        "keyFrameTimesMs": [1000],
+        "fields": {"Summary": {"valueString": "映像補足"}},
+    }
+
+
 def test_get_minutes_returns_markdown_artifact(monkeypatch: pytest.MonkeyPatch) -> None:
     store = _FakeArtifactStore(
         json_artifacts={},
@@ -164,6 +200,22 @@ def test_get_transcript_returns_not_ready_when_artifact_missing(
     assert response.status_code == 404
     assert response.headers["x-correlation-id"] == "test-correlation"
     assert body["error"]["code"] == "TRANSCRIPT_NOT_READY"
+
+
+def test_get_visual_context_returns_not_ready_when_artifact_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_dependencies(monkeypatch, Outputs(), _FakeArtifactStore({}, {}))
+
+    response = entrypoints.get_visual_context(
+        _request("/api/jobs/job-a/visual-context"),
+        "job-a",
+    )
+    body = json.loads(response.get_body())
+
+    assert response.status_code == 404
+    assert response.headers["x-correlation-id"] == "test-correlation"
+    assert body["error"]["code"] == "VISUAL_CONTEXT_NOT_READY"
 
 
 def test_get_minutes_returns_json_not_ready_with_correlation(
