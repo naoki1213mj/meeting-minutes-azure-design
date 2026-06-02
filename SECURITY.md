@@ -30,6 +30,18 @@
 - 実在する subscription ID、tenant ID、resource group、endpoint URL。
 - 顧客名、個人情報、社外秘情報。
 
+## 顧客デモのアクセス制御（共有キー方式）
+
+顧客デモ用に、簡易な共有キー（合言葉）でアプリ全体をゲートできます。これは個人単位の認証ではなく、URL を知られても合言葉なしでは利用・攻撃できないようにするためのものです。
+
+- フロントエンド（App Service / Express）が `/login` で合言葉を検証し、署名付き httpOnly Cookie でセッションを張ります。
+- フロントエンドは `/api/*` を Function App へリバースプロキシし、サーバー側で別の秘密値（`MEETING_MINUTES_PROXY_SECRET`）を注入します。これにより Function App URL の直叩きを防ぎます。
+- 顧客が入力する合言葉（`DEMO_ACCESS_KEY`）と、プロキシ用の秘密値（`MEETING_MINUTES_PROXY_SECRET`）は必ず別の値にします。後者はブラウザに送られません。
+- `DEMO_ACCESS_KEY` は十分長いランダム値にします（例: `openssl rand -base64 24`）。短い合言葉はオンライン総当たりに弱くなります。
+- これらの秘密値はコミットせず、デプロイ時の環境変数（`AZURE_DEMO_ACCESS_KEY` / `AZURE_PROXY_SECRET`）として与えます。
+- Azure 上でキーが未設定の場合はフェイルクローズ（フロントは 503、バックエンドは 503/401）になります。
+- この方式はデモ用の簡易ゲートであり、Entra ID / Easy Auth とユーザー単位認可の代替ではありません。
+
 ## セキュリティ設計の原則
 
 - Microsoft Entra ID と managed identity を優先します。

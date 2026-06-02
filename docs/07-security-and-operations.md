@@ -274,6 +274,10 @@ deploy/provisionは環境ごとのconcurrency groupを使い、`cancel-in-progre
 | `AZURE_LOCATION` | 例: `westus3` | `azd`/Bicepに渡す |
 | `AZURE_ENV_NAME` | `dev` または `prod` | GitHub Environment名と揃える |
 | `AZURE_PRINCIPAL_ID` | deploy service principalのobject ID | client IDではない。Bicepのrole assignmentや`azd provision`へ渡す |
+| `AZURE_DEMO_ACCESS_KEY` | 顧客デモ用の共有アクセスキー（合言葉） | 十分長いランダム値。コミット禁止。未設定だと Azure 上で fail-closed |
+| `AZURE_PROXY_SECRET` | フロントエンド→Functions 間の内部シークレット | `AZURE_DEMO_ACCESS_KEY` と別の値。ブラウザには出さない。コミット禁止 |
+
+顧客デモのアクセスゲートは、フロントエンド（App Service / Express）が合言葉を検証して署名付き httpOnly Cookie でセッションを張り、`/api/*` を Function App へリバースプロキシして `MEETING_MINUTES_PROXY_SECRET` をサーバー側で注入する方式。Function App は `x-proxy-secret` を検証し、URL 直叩きを拒否する。これは個人認証ではなくデモ用簡易ゲート。詳細は `SECURITY.md`。
 
 現行Bicepにユーザーprincipal前提の補助role assignmentが残る場合は、CI/CD化前にservice principal object IDを扱えるようにするか、該当role assignmentをbootstrap手順へ分離する。
 

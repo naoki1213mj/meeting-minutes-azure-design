@@ -108,7 +108,12 @@ azd env new dev --no-prompt
 azd env set AZURE_SUBSCRIPTION_ID "<subscription-id>"
 azd env set AZURE_LOCATION "<azure-region>"
 azd env set AZURE_PRINCIPAL_ID "<principal-object-id>"
+# 顧客デモのアクセスゲート（互いに異なる強いランダム値を設定。未設定だと Azure 上で fail-closed）
+azd env set AZURE_DEMO_ACCESS_KEY "<long-random-key>"
+azd env set AZURE_PROXY_SECRET "<another-long-random-secret>"
 ```
+
+`AZURE_DEMO_ACCESS_KEY` は顧客に伝える合言葉、`AZURE_PROXY_SECRET` はフロントエンド→Functions 間の内部シークレットです（別の値にし、ブラウザには出しません）。詳細は `SECURITY.md` の「顧客デモのアクセス制御」を参照してください。
 
 公開ドキュメント、Issue、PR には `azd env get-values` の実出力を貼らないでください。
 

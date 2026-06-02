@@ -12,6 +12,14 @@ param additionalCorsAllowedOrigins array = []
 
 param tags object = {}
 
+@description('Shared access key that customers enter to use the demo app. Provide at deploy time; never commit. When empty the frontend gate is disabled (local/dev only).')
+@secure()
+param demoAccessKey string = ''
+
+@description('Secret injected by the frontend reverse proxy when calling the Function App, distinct from demoAccessKey. Provide at deploy time; never commit.')
+@secure()
+param proxySecret string = ''
+
 param chunkSummaryDeploymentName string = 'gpt-5.4-mini'
 
 param finalMergeDeploymentName string = 'gpt-5.4'
@@ -383,6 +391,10 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
           value: 'demo-user'
         }
         {
+          name: 'MEETING_MINUTES_PROXY_SECRET'
+          value: proxySecret
+        }
+        {
           name: 'MEETING_MINUTES_SPECS_DIR'
           value: '/home/site/wwwroot/specs'
         }
@@ -573,7 +585,19 @@ resource webApp 'Microsoft.Web/sites@2022-09-01' = {
         }
         {
           name: 'VITE_API_BASE_URL'
-          value: 'https://${functionApp.properties.defaultHostName}/api'
+          value: '/api'
+        }
+        {
+          name: 'API_ORIGIN'
+          value: 'https://${functionApp.properties.defaultHostName}'
+        }
+        {
+          name: 'DEMO_ACCESS_KEY'
+          value: demoAccessKey
+        }
+        {
+          name: 'MEETING_MINUTES_PROXY_SECRET'
+          value: proxySecret
         }
       ]
     }

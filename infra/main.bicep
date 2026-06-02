@@ -16,6 +16,14 @@ param tags object = {
   owner: 'example-owner'
 }
 
+@description('Shared access key customers enter to use the demo app. Provide via the AZURE_DEMO_ACCESS_KEY environment variable; never commit.')
+@secure()
+param demoAccessKey string = ''
+
+@description('Secret used by the frontend reverse proxy to call the Function App. Provide via the AZURE_PROXY_SECRET environment variable; never commit.')
+@secure()
+param proxySecret string = ''
+
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   name: 'rg-${environmentName}'
   location: location
@@ -31,6 +39,8 @@ module app 'app.bicep' = {
     principalId: principalId
     additionalCorsAllowedOrigins: additionalCorsAllowedOrigins
     tags: tags
+    demoAccessKey: demoAccessKey
+    proxySecret: proxySecret
   }
 }
 

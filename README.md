@@ -136,6 +136,21 @@ azd env set AZURE_LOCATION "<azure-region>"
 azd env set AZURE_PRINCIPAL_ID "<principal-object-id>"
 ```
 
+#### 顧客デモのアクセスキー（任意）
+
+顧客デモでは、URL を知られても合言葉なしでは利用できないように、共有キーでアプリ全体をゲートできます（詳細は `SECURITY.md`）。デプロイ前に、互いに異なる強いランダム値を 2 つ設定します。
+
+```powershell
+# 顧客に教える合言葉（ログイン画面で入力）
+azd env set AZURE_DEMO_ACCESS_KEY "<long-random-key>"
+# フロントエンド→Functions 間の内部シークレット（ブラウザには出ない・別の値）
+azd env set AZURE_PROXY_SECRET "<another-long-random-secret>"
+```
+
+- 顧客には「アプリの URL」と「合言葉（`AZURE_DEMO_ACCESS_KEY` の値）」だけを伝えます。
+- これらの値はコミットしないでください。未設定のまま Azure にデプロイすると、ゲートは fail-closed（503）になります。
+- ローカル開発では未設定で構いません（ゲートは無効化されます）。
+
 デプロイ手順と本番化ゲートは `docs/13-deployment-plan.md` を確認してください。
 
 ## 開発・テストコマンド

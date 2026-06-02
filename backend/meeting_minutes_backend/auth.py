@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import base64
+import hmac
 import json
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 
 from meeting_minutes_backend.errors import AppError
+
+PROXY_SECRET_HEADER = "x-proxy-secret"  # noqa: S105 - HTTP header name, not a secret
 
 TENANT_CLAIM_TYPES = {
     "tid",
@@ -25,6 +28,8 @@ class AuthContext:
 
 
 def resolve_auth_context(headers: Mapping[str, str]) -> AuthContext:
+    _require_proxy_secret(headers)
+
     auth_mode = os.getenv("MEETING_MINUTES_AUTH_MODE", "").lower()
     is_local = _is_local_environment()
 
@@ -54,6 +59,34 @@ def resolve_auth_context(headers: Mapping[str, str]) -> AuthContext:
         message="認証が必要です。サインインしてから再実行してください。",
         http_status=401,
     )
+
+
+def _require_proxy_secret(headers: Mapping[str, str]) -> None:
+    """Enforce the App Service -> Functions shared secret.
+
+    The frontend reverse proxy injects ``x-proxy-secret`` so that the Functions
+    HTTP endpoints cannot be reached directly with a public URL. This secret is
+    distinct from the customer-facing access key and is never sent to browsers.
+    """
+
+    expected = os.getenv("MEETING_MINUTES_PROXY_SECRET", "").strip()
+    if not expected:
+        # Fail closed only on a real Azure host where the setting must exist.
+        if os.getenv("WEBSITE_SITE_NAME"):
+            raise AppError(
+                code="AUTH_REQUIRED",
+                message="アクセス設定が未構成です。管理者にお問い合わせください。",
+                http_status=503,
+            )
+        return
+
+    provided = headers.get(PROXY_SECRET_HEADER, "")
+    if not hmac.compare_digest(provided, expected):
+        raise AppError(
+            code="AUTH_REQUIRED",
+            message="認証が必要です。指定されたURLとアクセスキーでアクセスしてください。",
+            http_status=401,
+        )
 
 
 def _parse_easy_auth_principal(headers: Mapping[str, str]) -> AuthContext | None:
