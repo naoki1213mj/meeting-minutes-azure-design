@@ -58,6 +58,33 @@ def test_orchestrator_uses_direct_minutes_generation_path() -> None:
     assert final_call.payload == {"job": job, **normalized}
 
 
+def test_orchestrator_routes_content_understanding_jobs_to_cu_activities() -> None:
+    context = FakeDurableContext({"tenantId": "tenant-a", "jobId": "job-a"})
+    generator = orchestrator_function(context)  # type: ignore[arg-type]
+    job = {
+        "tenantId": "tenant-a",
+        "jobId": "job-a",
+        "processingRoute": "contentUnderstanding",
+    }
+    cu_raw = {
+        "rawTranscriptBlobName": "cu.json",
+        "visualContextBlobUri": "https://storage.example/visual.json",
+    }
+    normalized = {"normalizedTranscriptBlobName": "normalized.json"}
+
+    assert _next_activity(generator).name == "LoadJobActivity"
+    assert _send_activity(generator, job).name == "ValidateInputActivity"
+    assert _send_activity(generator, {"valid": True}).name == "CreateReadSasActivity"
+    analyze_call = _send_activity(generator, {"audioUrl": "https://example.invalid/video"})
+    assert analyze_call.name == "AnalyzeContentUnderstandingActivity"
+    assert analyze_call.payload == {"job": job, "contentUrl": "https://example.invalid/video"}
+    normalize_call = _send_activity(generator, cu_raw)
+    assert normalize_call.name == "NormalizeContentUnderstandingTranscriptActivity"
+    assert normalize_call.payload == {"job": job, **cu_raw}
+    final_call = _send_activity(generator, normalized)
+    assert final_call.name == "GenerateFinalMinutesActivity"
+
+
 def test_orchestrator_continues_from_final_minutes_to_markdown_and_complete() -> None:
     context = FakeDurableContext({"tenantId": "tenant-a", "jobId": "job-a"})
     generator = orchestrator_function(context)  # type: ignore[arg-type]
@@ -105,8 +132,10 @@ def test_orchestrator_activity_names_have_v1_wrappers() -> None:
         "LoadJobActivity",
         "ValidateInputActivity",
         "CreateReadSasActivity",
+        "AnalyzeContentUnderstandingActivity",
         "TranscribeAudioActivity",
         "NormalizeTranscriptActivity",
+        "NormalizeContentUnderstandingTranscriptActivity",
         "BuildTranscriptChunksActivity",
         "GenerateChunkSummaryActivity",
         "GenerateFinalMinutesActivity",

@@ -52,6 +52,7 @@
         "minutesReady": { "type": "boolean" },
         "rawTranscriptBlobUri": { "type": ["string", "null"] },
         "normalizedTranscriptBlobUri": { "type": ["string", "null"] },
+        "visualContextBlobUri": { "type": ["string", "null"] },
         "minutesJsonBlobUri": { "type": ["string", "null"] },
         "minutesMarkdownBlobUri": { "type": ["string", "null"] }
       }

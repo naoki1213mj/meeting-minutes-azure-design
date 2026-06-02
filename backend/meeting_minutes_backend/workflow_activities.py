@@ -8,6 +8,11 @@ from meeting_minutes_backend.audio_preprocessing import (
     prepare_audio_for_transcription,
     should_preprocess_audio,
 )
+from meeting_minutes_backend.content_understanding_client import ContentUnderstandingRequest
+from meeting_minutes_backend.content_understanding_normalizer import (
+    build_visual_context,
+    normalize_content_understanding_transcript,
+)
 from meeting_minutes_backend.errors import AppError
 from meeting_minutes_backend.markdown_renderer import render_minutes_markdown
 from meeting_minutes_backend.minutes_generation import (
@@ -17,12 +22,13 @@ from meeting_minutes_backend.minutes_generation import (
     generate_final_minutes_from_summaries,
     generate_minutes_from_full_transcript,
 )
-from meeting_minutes_backend.models import ErrorObject, JobStatus, Progress
+from meeting_minutes_backend.models import ErrorObject, JobStatus, ProcessingRoute, Progress
 from meeting_minutes_backend.settings import (
     AppSettings,
     build_artifact_store,
     build_blob_sas_issuer,
     build_chunk_deployment,
+    build_content_understanding_client,
     build_job_repository,
     build_minutes_deployment,
     build_openai_client,
@@ -89,7 +95,14 @@ def create_read_sas(job: dict[str, object]) -> dict[str, object]:
             http_status=404,
         )
     now = _utc_now()
-    if should_preprocess_audio(record.blobName, record.contentType):
+    if record.processingRoute == ProcessingRoute.CONTENT_UNDERSTANDING:
+        read_sas = build_blob_sas_issuer(settings).create_read_sas(record.blobName, now)
+        return {"audioUrl": read_sas.url}
+
+    if (
+        record.processingRoute != ProcessingRoute.CONTENT_UNDERSTANDING
+        and should_preprocess_audio(record.blobName, record.contentType)
+    ):
         repository.save(
             record.model_copy(
                 update={
@@ -115,6 +128,57 @@ def create_read_sas(job: dict[str, object]) -> dict[str, object]:
         now=now,
     )
     return {"audioUrl": read_sas.url}
+
+
+def analyze_content_understanding(payload: dict[str, object]) -> dict[str, object]:
+    job = _required_dict(payload, "job")
+    content_url = _required_string(payload, "contentUrl")
+    tenant_id = _required_string(job, "tenantId")
+    job_id = _required_string(job, "jobId")
+    settings = AppSettings.from_env()
+    repository = build_job_repository(settings)
+    record = repository.get(tenant_id, job_id)
+    if record is None:
+        raise AppError(
+            code="JOB_NOT_FOUND",
+            message="指定されたジョブが見つかりません。",
+            http_status=404,
+        )
+
+    now = _utc_now()
+    repository.save(
+        record.model_copy(
+            update={
+                "status": JobStatus.TRANSCRIBING,
+                "progress": Progress(
+                    step="ANALYZING_CONTENT",
+                    percent=20,
+                    message="Content Understandingで動画を解析しています。",
+                    updatedAt=now,
+                ),
+                "updatedAt": now,
+            }
+        )
+    )
+    result = build_content_understanding_client(settings).analyze_url(
+        ContentUnderstandingRequest(content_url=content_url)
+    )
+    store = build_artifact_store(settings)
+    raw_blob_name = f"raw/{tenant_id}/{job_id}/content-understanding-response.json"
+    raw_uri = store.write_json(settings.transcript_container_name, raw_blob_name, result)
+    visual_context = build_visual_context(result)
+    visual_blob_name = f"visual-context/{tenant_id}/{job_id}/content-understanding.json"
+    visual_uri = store.write_json(
+        settings.transcript_container_name,
+        visual_blob_name,
+        visual_context,
+    )
+    return {
+        "rawTranscriptBlobName": raw_blob_name,
+        "rawTranscriptBlobUri": raw_uri,
+        "visualContextBlobName": visual_blob_name,
+        "visualContextBlobUri": visual_uri,
+    }
 
 
 def transcribe_audio(payload: dict[str, object]) -> dict[str, object]:
@@ -217,6 +281,64 @@ def normalize_transcript_artifact(payload: dict[str, object]) -> dict[str, objec
     return {
         "normalizedTranscriptBlobName": normalized_blob_name,
         "normalizedTranscriptBlobUri": normalized_uri,
+    }
+
+
+def normalize_content_understanding_artifact(payload: dict[str, object]) -> dict[str, object]:
+    raw_blob_name = _required_string(payload, "rawTranscriptBlobName")
+    raw_blob_uri = _required_string(payload, "rawTranscriptBlobUri")
+    visual_context_blob_uri = _required_string(payload, "visualContextBlobUri")
+    job = _required_dict(payload, "job")
+    tenant_id = _required_string(job, "tenantId")
+    job_id = _required_string(job, "jobId")
+    settings = AppSettings.from_env()
+    store = build_artifact_store(settings)
+    raw_response = store.read_json(settings.transcript_container_name, raw_blob_name)
+    normalized = normalize_content_understanding_transcript(
+        raw_response,
+        job_id=job_id,
+        tenant_id=tenant_id,
+        locale=str(job.get("locale", "ja-JP")),
+        raw_transcript_blob_uri=raw_blob_uri,
+        api_version=settings.content_understanding_api_version,
+    )
+    normalized_blob_name = f"normalized/{tenant_id}/{job_id}/normalized-transcript.json"
+    normalized_uri = store.write_json(
+        settings.transcript_container_name,
+        normalized_blob_name,
+        normalized,
+    )
+
+    repository = build_job_repository(settings)
+    record = repository.get(tenant_id, job_id)
+    if record:
+        now = _utc_now()
+        repository.save(
+            record.model_copy(
+                update={
+                    "status": JobStatus.TRANSCRIPT_READY,
+                    "progress": Progress(
+                        step=JobStatus.TRANSCRIPT_READY.value,
+                        percent=55,
+                        message="Content Understandingの文字起こしを正規化しました。",
+                        updatedAt=now,
+                    ),
+                    "outputs": record.outputs.model_copy(
+                        update={
+                            "transcriptReady": True,
+                            "rawTranscriptBlobUri": raw_blob_uri,
+                            "normalizedTranscriptBlobUri": normalized_uri,
+                            "visualContextBlobUri": visual_context_blob_uri,
+                        }
+                    ),
+                    "updatedAt": now,
+                }
+            )
+        )
+    return {
+        "normalizedTranscriptBlobName": normalized_blob_name,
+        "normalizedTranscriptBlobUri": normalized_uri,
+        "visualContextBlobUri": visual_context_blob_uri,
     }
 
 

@@ -54,6 +54,7 @@ export type JobStatusResponse = {
     minutesReady: boolean;
     rawTranscriptBlobUri?: string | null;
     normalizedTranscriptBlobUri?: string | null;
+    visualContextBlobUri?: string | null;
     minutesJsonBlobUri?: string | null;
     minutesMarkdownBlobUri?: string | null;
   };

@@ -87,6 +87,7 @@ class Outputs(StrictModel):
     minutesReady: bool = False
     rawTranscriptBlobUri: str | None = None
     normalizedTranscriptBlobUri: str | None = None
+    visualContextBlobUri: str | None = None
     minutesJsonBlobUri: str | None = None
     minutesMarkdownBlobUri: str | None = None
 

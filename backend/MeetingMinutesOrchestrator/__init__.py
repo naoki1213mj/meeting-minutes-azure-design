@@ -26,21 +26,36 @@ def orchestrator_function(
         if not isinstance(read_sas, dict):
             raise TypeError("CreateReadSasActivity must return an object")
 
-        context.set_custom_status({"step": "TRANSCRIBING", "percent": 20})
-        raw_transcript = yield context.call_activity(
-            "TranscribeAudioActivity",
-            {"job": job, "audioUrl": read_sas["audioUrl"]},
-        )
-        if not isinstance(raw_transcript, dict):
-            raise TypeError("TranscribeAudioActivity must return an object")
+        if job.get("processingRoute") == "contentUnderstanding":
+            context.set_custom_status({"step": "ANALYZING_CONTENT", "percent": 20})
+            raw_transcript = yield context.call_activity(
+                "AnalyzeContentUnderstandingActivity",
+                {"job": job, "contentUrl": read_sas["audioUrl"]},
+            )
+            if not isinstance(raw_transcript, dict):
+                raise TypeError("AnalyzeContentUnderstandingActivity must return an object")
 
-        context.set_custom_status({"step": "NORMALIZING_TRANSCRIPT", "percent": 55})
-        normalized = yield context.call_activity(
-            "NormalizeTranscriptActivity",
-            {"job": job, **raw_transcript},
-        )
+            context.set_custom_status({"step": "NORMALIZING_TRANSCRIPT", "percent": 55})
+            normalized = yield context.call_activity(
+                "NormalizeContentUnderstandingTranscriptActivity",
+                {"job": job, **raw_transcript},
+            )
+        else:
+            context.set_custom_status({"step": "TRANSCRIBING", "percent": 20})
+            raw_transcript = yield context.call_activity(
+                "TranscribeAudioActivity",
+                {"job": job, "audioUrl": read_sas["audioUrl"]},
+            )
+            if not isinstance(raw_transcript, dict):
+                raise TypeError("TranscribeAudioActivity must return an object")
+
+            context.set_custom_status({"step": "NORMALIZING_TRANSCRIPT", "percent": 55})
+            normalized = yield context.call_activity(
+                "NormalizeTranscriptActivity",
+                {"job": job, **raw_transcript},
+            )
         if not isinstance(normalized, dict):
-            raise TypeError("NormalizeTranscriptActivity must return an object")
+            raise TypeError("Normalize transcript activity must return an object")
 
         context.set_custom_status({"step": "GENERATING_FINAL_MINUTES", "percent": 75})
         minutes = yield context.call_activity(

@@ -51,6 +51,7 @@ var durableTaskDataContributorRoleId = '0ad04412-c4d5-4796-b79c-f76d14c8d402'
 var cosmosDataContributorRoleId = '00000000-0000-0000-0000-000000000002'
 var cognitiveServicesOpenAiUserRoleId = '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
 var cognitiveServicesSpeechUserRoleId = 'f2dc8367-1007-4938-bd23-fe263f013447'
+var cognitiveServicesUserRoleId = 'a97b65f3-24c7-4388-baec-2e87135dc908'
 var aiServicesName = '${resourcePrefix}-aisvc'
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
@@ -427,6 +428,18 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
           value: '480'
         }
         {
+          name: 'AZURE_CONTENT_UNDERSTANDING_ENDPOINT'
+          value: aiServices.properties.endpoint
+        }
+        {
+          name: 'AZURE_CONTENT_UNDERSTANDING_ANALYZER_ID'
+          value: 'prebuilt-videoSearch'
+        }
+        {
+          name: 'AZURE_CONTENT_UNDERSTANDING_API_VERSION'
+          value: '2025-11-01'
+        }
+        {
           name: 'AZURE_OPENAI_BASE_URL'
           value: '${aiServices.properties.endpoint}openai/v1/'
         }
@@ -538,6 +551,16 @@ resource functionSpeechUserRole 'Microsoft.Authorization/roleAssignments@2022-04
   scope: aiServices
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', cognitiveServicesSpeechUserRoleId)
+    principalId: functionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource functionCognitiveServicesUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(aiServices.id, functionApp.id, cognitiveServicesUserRoleId)
+  scope: aiServices
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', cognitiveServicesUserRoleId)
     principalId: functionApp.identity.principalId
     principalType: 'ServicePrincipal'
   }
