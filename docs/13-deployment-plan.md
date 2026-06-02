@@ -140,7 +140,7 @@ azd deploy frontend
 - Functions package には schema validation に必要な JSON Schema を含めます。
 - Backend は Python 3.13 を前提にします。CI や runner で Python 3.14 へ上げる場合は ADR を更新してください。
 - Storage Blob data plane は、browser direct upload と Fast Transcription `audioUrl` のため public endpoint 到達性が必要です。Blob 匿名公開と shared key access は無効化し、User Delegation SAS で保護します。
-- Content Understanding の動画理解（実験）経路を使う場合は、`gpt-4.1-mini-cu` deployment、Content Understanding default model mapping、`minutes_video_ja` analyzer が必要です。BicepはdeploymentとFunction App設定を作成しますが、Content Understanding default mapping と analyzer 作成は現時点では手動/補助スクリプト手順として管理します。公開ログに endpoint、token、SAS URL、実動画名を貼らないでください。
+- Content Understanding の動画理解（実験）経路を使う場合は、`gpt-4.1-mini-cu` deployment、Content Understanding default model mapping、`minutes_video_ja` analyzer が必要です。BicepはdeploymentとFunction App設定を作成しますが、Content Understanding default mapping と analyzer 作成は現時点では手動/補助スクリプト手順として管理します。CU経路は4GB/2時間までのURL参照Analyze APIを使いますが、大容量動画はアップロード時間・解析時間・コストが大きくなります。公開ログに endpoint、token、SAS URL、実動画名を貼らないでください。
 
 ## 7. Smoke test checklist
 

@@ -25,6 +25,7 @@ export type CreateJobResponse = {
   constraints: {
     normalMaxFileSizeBytes: number;
     hardMaxFileSizeBytes: number;
+    contentUnderstandingMaxFileSizeBytes: number;
     maxDurationSecondsWithDiarization: number;
   };
 };

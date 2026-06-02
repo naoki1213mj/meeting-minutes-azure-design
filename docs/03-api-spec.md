@@ -69,8 +69,8 @@
 
 - `fileName` は必須。
 - `fileSizeBytes` は必須。
-- 通常は `fileSizeBytes < 300MB` を推奨。
-- 300MB以上は設定により許可する。既定ではエラーにする。
+- 標準経路では `fileSizeBytes < 300MB` を推奨し、500MBを超える場合は拒否する。
+- Content Understanding動画理解（実験）経路ではBlob URL参照Analyze APIの制限に合わせ、4GB未満まで許可する。
 - `contentType` と拡張子の組み合わせを検証する。`application/octet-stream` はサポート対象拡張子に限って許可する。
 - APIが受理する形式とFast TranscriptionでE2E確認済みの形式は分けて扱う。2026-06-02時点のlive E2E確認済みは短いWAVとm4a→FLAC前処理経路。
 - `locale` 未指定時は `ja-JP`。
@@ -231,6 +231,8 @@
 | `AUDIO_TOO_LARGE` | 400 | 通常上限を超過 |
 | `AUDIO_EXCEEDS_HARD_LIMIT` | 400 | Fast Transcriptionの上限を超過 |
 | `AUDIO_TOO_LONG_FOR_DIARIZATION` | 400 | 2時間以上 |
+| `CONTENT_UNDERSTANDING_VIDEO_TOO_LARGE` | 400 | 動画理解経路のファイルサイズ上限超過 |
+| `CONTENT_UNDERSTANDING_VIDEO_TOO_LONG` | 400 | 動画理解経路の時間上限超過 |
 | `JOB_NOT_FOUND` | 404 | jobIdが存在しない |
 | `JOB_ALREADY_RUNNING` | 409 | 既に実行中 |
 | `SPEECH_RATE_LIMITED` | 429 | Speech API側のレート制限 |

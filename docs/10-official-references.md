@@ -186,6 +186,9 @@ URLs:
 
 - Content Understanding は conversational audio を WebVTT transcript などに変換し、field extraction も扱える。
 - 300MB以下または2時間以下では、transcription time が大きく短縮される旨の記述がある。
+- Audioは300MB/2時間以下が高速処理の目安で、最大1GB/4時間まで対応する。
+- VideoはURL参照のAnalyze APIで最大4GB/2時間。direct binary uploadは200MB/30分。
+- Videoでは `transcriptPhrases`、key frames、camera shots、fields、markdownを取得できる。`returnDetails=true` が必要な詳細項目がある。
 - ただし今回の初期本線は、制御性を優先して Fast Transcription + Azure OpenAI の明示的なパイプラインにする。
 - 将来比較する場合は、2025-11-01 GA API など現行APIを確認する。
 

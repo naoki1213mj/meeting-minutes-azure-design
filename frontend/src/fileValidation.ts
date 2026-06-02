@@ -1,6 +1,8 @@
 import { supportedAudioExtensions } from "./appConfig";
+import type { ProcessingRoute } from "./apiClient";
 
 export const hardMaxAudioFileSizeBytes = 500 * 1024 * 1024;
+export const contentUnderstandingMaxFileSizeBytes = 4 * 1024 * 1024 * 1024;
 export const maxAudioDurationSeconds = 120 * 60;
 
 export type FileValidationResult = {
@@ -8,7 +10,10 @@ export type FileValidationResult = {
   message?: string;
 };
 
-export function validateAudioFile(file: File): FileValidationResult {
+export function validateAudioFile(
+  file: File,
+  processingRoute: ProcessingRoute = "stable",
+): FileValidationResult {
   const lowerName = file.name.toLowerCase();
   const hasSupportedExtension = supportedAudioExtensions.some((extension) =>
     lowerName.endsWith(extension),
@@ -19,13 +24,23 @@ export function validateAudioFile(file: File): FileValidationResult {
       message: `対応形式は ${supportedAudioExtensions.join(", ")} です。`,
     };
   }
-  if (file.size > hardMaxAudioFileSizeBytes) {
+  const maxFileSizeBytes = getMaxFileSizeBytes(processingRoute);
+  if (file.size > maxFileSizeBytes) {
     return {
       valid: false,
-      message: "音声ファイルが500MBを超えています。ファイルを圧縮してください。",
+      message:
+        processingRoute === "contentUnderstanding"
+          ? "動画理解経路の上限4GBを超えています。動画を圧縮してください。"
+          : "標準経路の上限500MBを超えています。大きい動画は動画理解（実験）経路を選んでください。",
     };
   }
   return { valid: true };
+}
+
+export function getMaxFileSizeBytes(processingRoute: ProcessingRoute): number {
+  return processingRoute === "contentUnderstanding"
+    ? contentUnderstandingMaxFileSizeBytes
+    : hardMaxAudioFileSizeBytes;
 }
 
 export function getAudioDurationSeconds(file: File, timeoutMilliseconds = 5000): Promise<number | null> {

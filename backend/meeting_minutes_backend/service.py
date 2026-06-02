@@ -15,6 +15,7 @@ from meeting_minutes_backend.models import (
     JobStatus,
     JobStatusResponse,
     Outputs,
+    ProcessingRoute,
     Progress,
     UploadCompleteRequest,
     UploadCompleteResponse,
@@ -97,16 +98,7 @@ class JobService:
     ) -> UploadCompleteResponse:
         record = self._get_record_or_404(auth, job_id)
 
-        if (
-            request.uploadedSizeBytes
-            and request.uploadedSizeBytes > self._constraints.hardMaxFileSizeBytes
-        ):
-            raise AppError(
-                code="AUDIO_EXCEEDS_HARD_LIMIT",
-                message="Fast Transcriptionの上限を超えています。",
-                http_status=400,
-                details={"hardMaxFileSizeBytes": self._constraints.hardMaxFileSizeBytes},
-            )
+        self._validate_uploaded_size(record.processingRoute, request.uploadedSizeBytes)
 
         if record.orchestrationInstanceId:
             return _upload_complete_response(record)
@@ -133,16 +125,7 @@ class JobService:
     ) -> UploadCompleteResponse:
         record = self._get_record_or_404(auth, job_id)
 
-        if (
-            request.uploadedSizeBytes
-            and request.uploadedSizeBytes > self._constraints.hardMaxFileSizeBytes
-        ):
-            raise AppError(
-                code="AUDIO_EXCEEDS_HARD_LIMIT",
-                message="Fast Transcriptionの上限を超えています。",
-                http_status=400,
-                details={"hardMaxFileSizeBytes": self._constraints.hardMaxFileSizeBytes},
-            )
+        self._validate_uploaded_size(record.processingRoute, request.uploadedSizeBytes)
 
         if record.orchestrationInstanceId:
             return _upload_complete_response(record)
@@ -160,15 +143,13 @@ class JobService:
         return _upload_complete_response(saved)
 
     def _validate_create_request(self, request: CreateJobRequest) -> None:
-        if request.fileSizeBytes > self._constraints.hardMaxFileSizeBytes:
-            raise AppError(
-                code="AUDIO_EXCEEDS_HARD_LIMIT",
-                message="Fast Transcriptionの上限を超えています。",
-                http_status=400,
-                details={"hardMaxFileSizeBytes": self._constraints.hardMaxFileSizeBytes},
-            )
+        if request.fileSizeBytes > self._max_file_size_bytes(request.processingRoute):
+            self._raise_file_size_limit_error(request.processingRoute)
 
-        if request.fileSizeBytes > self._constraints.normalMaxFileSizeBytes:
+        if (
+            request.processingRoute == ProcessingRoute.STABLE
+            and request.fileSizeBytes > self._constraints.normalMaxFileSizeBytes
+        ):
             raise AppError(
                 code="AUDIO_TOO_LARGE",
                 message="通常上限の300MBを超えています。音声を圧縮して再アップロードしてください。",
@@ -184,6 +165,15 @@ class JobService:
             and request.clientEstimatedDurationSeconds
             > self._constraints.maxDurationSecondsWithDiarization
         ):
+            if request.processingRoute == ProcessingRoute.CONTENT_UNDERSTANDING:
+                raise AppError(
+                    code="CONTENT_UNDERSTANDING_VIDEO_TOO_LONG",
+                    message="動画理解経路の上限時間を超えています。",
+                    http_status=400,
+                    details={
+                        "maxDurationSeconds": self._constraints.maxDurationSecondsWithDiarization
+                    },
+                )
             raise AppError(
                 code="AUDIO_TOO_LONG_FOR_DIARIZATION",
                 message="diarization有効時の上限時間を超えています。",
@@ -194,6 +184,41 @@ class JobService:
                     )
                 },
             )
+
+    def _validate_uploaded_size(
+        self,
+        processing_route: ProcessingRoute,
+        uploaded_size_bytes: int | None,
+    ) -> None:
+        if (
+            uploaded_size_bytes
+            and uploaded_size_bytes > self._max_file_size_bytes(processing_route)
+        ):
+            self._raise_file_size_limit_error(processing_route)
+
+    def _max_file_size_bytes(self, processing_route: ProcessingRoute) -> int:
+        if processing_route == ProcessingRoute.CONTENT_UNDERSTANDING:
+            return self._constraints.contentUnderstandingMaxFileSizeBytes
+        return self._constraints.hardMaxFileSizeBytes
+
+    def _raise_file_size_limit_error(self, processing_route: ProcessingRoute) -> None:
+        if processing_route == ProcessingRoute.CONTENT_UNDERSTANDING:
+            raise AppError(
+                code="CONTENT_UNDERSTANDING_VIDEO_TOO_LARGE",
+                message="動画理解経路の上限サイズを超えています。",
+                http_status=400,
+                details={
+                    "contentUnderstandingMaxFileSizeBytes": (
+                        self._constraints.contentUnderstandingMaxFileSizeBytes
+                    )
+                },
+            )
+        raise AppError(
+            code="AUDIO_EXCEEDS_HARD_LIMIT",
+            message="Fast Transcriptionの上限を超えています。",
+            http_status=400,
+            details={"hardMaxFileSizeBytes": self._constraints.hardMaxFileSizeBytes},
+        )
 
     def _get_record_or_404(self, auth: AuthContext, job_id: str) -> JobRecord:
         record = self._repository.get(auth.tenant_id, job_id)

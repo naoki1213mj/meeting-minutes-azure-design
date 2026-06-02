@@ -35,7 +35,7 @@ Fast Transcription 完了後、まず transcript を表示可能にする。続�
 
 ### 4. 入力上限はサービス上限とUX上限を分ける
 
-サービス上限としては、Fast Transcription は500MB未満・5時間未満、diarization 有効時は2時間未満。本アプリはユーザー要件に合わせて120分までbest effortで受け付け、120分超は拒否する。120分近傍はSpeech側の2時間境界に近いため、失敗リスクをUIとドキュメントで明示する。通常受付サイズは300MB未満、ハード上限は500MB未満にする。
+サービス上限としては、Fast Transcription は500MB未満・5時間未満、diarization 有効時は2時間未満。本アプリはユーザー要件に合わせて120分までbest effortで受け付け、120分超は拒否する。標準経路は通常受付300MB未満・ハード上限500MB未満にする。Content Understanding動画理解（実験）経路はBlob URL参照Analyze APIを使うため4GB未満まで許可するが、120分近傍はサービス境界に近く、アップロード時間・解析時間・コストも大きくなる。
 
 ### 5. 本番化前に認証を切り替える
 
@@ -60,7 +60,9 @@ Fast Transcription 完了後、まず transcript を表示可能にする。続�
 |---|---|
 | 入力 | 音声/動画ファイル。API受付は `.mp3`, `.wav`, `.m4a`, `.mp4`, `.ogg`, `.webm`, `.flac`。MP4は音声トラックだけを抽出して処理する。E2E確認済みは短いWAVとm4a→FLAC前処理経路 |
 | 音声長 | 120分までbest effort。120分超は拒否 |
-| 通常ファイルサイズ | 300MB未満 |
+| 標準経路の通常ファイルサイズ | 300MB未満 |
+| 標準経路のハード上限 | 500MB未満 |
+| 動画理解（実験）経路のファイルサイズ | 4GB未満 |
 | 話者分離 | あり。speaker ID は匿名ラベルとして扱う |
 | 実名紐付け | UIで後から user が指定する |
 | 文字起こし | Azure Speech in Foundry Tools Fast Transcription |
@@ -83,7 +85,7 @@ Fast Transcription 完了後、まず transcript を表示可能にする。続�
 | demo認証のまま本番利用される | 高 | 本番化ブロッカーとして明記。Microsoft Entra ID / Easy Auth とuser単位認可が完了するまで実データ利用しない |
 | 音声品質が悪く文字起こし精度が下がる | 高 | 音声品質チェック、phrase list、LLM Speech比較、手動修正UI |
 | speaker ID が実名と一致しない | 高 | 実名識別しない。UIで speaker mapping を登録 |
-| 300MB超の音声で待ち時間が長い | 中 | UX上限を300MBに設定。圧縮・再アップロードを促す |
+| 大容量音声/動画で待ち時間が長い | 中 | 標準経路は300MB/500MBで制限。CU経路は4GBまで許可するが大容量デモには注意喚起 |
 | Azure OpenAIのTPM/RPM不足 | 高 | `gpt-5.4-mini` / `gpt-5.4` capacity 100をdevで設定済み。direct/fallbackの発動状況、指数バックオフ、クォータ監視 |
 | Storage public endpointが無効化される | 高 | Fast Transcription `audioUrl` とブラウザ直接アップロードの前提。Bicepで `publicNetworkAccess=Enabled` を明示し、Policy/手動変更によるドリフトを監視 |
 | HTTP要求がタイムアウトする | 高 | `202 Accepted` + Durable Functions 非同期パターン |

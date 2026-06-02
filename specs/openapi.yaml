@@ -307,7 +307,13 @@ components:
     InputConstraints:
       type: object
       additionalProperties: false
-      required: [normalMaxFileSizeBytes, hardMaxFileSizeBytes, maxDurationSecondsWithDiarization]
+      required:
+        [
+          normalMaxFileSizeBytes,
+          hardMaxFileSizeBytes,
+          contentUnderstandingMaxFileSizeBytes,
+          maxDurationSecondsWithDiarization,
+        ]
       properties:
         normalMaxFileSizeBytes:
           type: integer
@@ -315,6 +321,9 @@ components:
         hardMaxFileSizeBytes:
           type: integer
           default: 524288000
+        contentUnderstandingMaxFileSizeBytes:
+          type: integer
+          default: 4294967296
         maxDurationSecondsWithDiarization:
           type: integer
           default: 7200

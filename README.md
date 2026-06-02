@@ -89,8 +89,9 @@ React + Vite Web UI
 | 受理する拡張子 | `.mp3`, `.wav`, `.m4a`, `.mp4`, `.ogg`, `.webm`, `.flac` |
 | `application/octet-stream` | 上記拡張子に限って受理 |
 | MP4 | 動画から音声トラックだけを抽出して前処理 |
-| 通常受付サイズ | 300MB 未満 |
-| ハード上限 | 500MB 未満 |
+| 標準経路の通常受付サイズ | 300MB 未満 |
+| 標準経路のハード上限 | 500MB 未満 |
+| 動画理解（実験）経路の上限 | 4GB 未満（Blob URL参照のCU経路のみ） |
 | 音声長 | 120分まで best effort。120分超は拒否 |
 | m4a / mp4 | 必要に応じて backend で 16kHz mono FLAC へ前処理 |
 

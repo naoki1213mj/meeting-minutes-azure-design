@@ -127,13 +127,14 @@ Activity別の時間はApplication Insightsのtraceで確認する。詳細KQL�
 | 項目 | 現在の扱い |
 |---|---|
 | 音声長 | 120分までbest effort、120分超は拒否 |
-| 通常サイズ | 300MB未満 |
-| ハード上限 | 500MB未満 |
+| 標準経路の通常サイズ | 300MB未満 |
+| 標準経路のハード上限 | 500MB未満 |
+| Content Understanding経路のファイルサイズ | 4GB未満（Blob URL参照Analyze API） |
 | Speech timeout | 480秒 |
 | リアルタイム音声 | 対象外 |
 | 音声チャンク並列STT | 話者分離品質リスクのため本線では不採用 |
 
-120分はFast Transcription diarizationの2時間境界に近い。120分近傍はサービス制限やファイル内容により失敗する可能性がある。
+120分はFast Transcription diarizationおよびContent Understanding video URL参照の2時間境界に近い。120分近傍はサービス制限やファイル内容により失敗する可能性がある。4GB級の動画は単一PUTアップロードの失敗時に再開できないため、実用上はより小さい動画でのデモを推奨する。
 
 ## 10. 運用チェックリスト
 

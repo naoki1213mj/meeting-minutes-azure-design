@@ -31,7 +31,7 @@ import {
 import { appTitle, heroCopy, heroHeadline, supportedAudioExtensions } from "./appConfig";
 import {
   getAudioDurationSeconds,
-  hardMaxAudioFileSizeBytes,
+  getMaxFileSizeBytes,
   maxAudioDurationSeconds,
   validateAudioFile,
 } from "./fileValidation";
@@ -160,6 +160,7 @@ export function App() {
   const supportedFormatsText = supportedAudioExtensions
     .map((extension) => extension.replace(".", "").toUpperCase())
     .join(" / ");
+  const selectedRouteMaxFileSizeBytes = getMaxFileSizeBytes(processingRoute);
 
   useEffect(() => {
     return () => {
@@ -182,9 +183,9 @@ export function App() {
       setErrorMessage("音声ファイルを選択してください。");
       return;
     }
-    const validation = validateAudioFile(selectedFile);
+    const validation = validateAudioFile(selectedFile, processingRoute);
     if (!validation.valid) {
-      setErrorMessage(validation.message || "音声ファイルを確認してください。");
+      setErrorMessage(validation.message || "音声または動画ファイルを確認してください。");
       return;
     }
 
@@ -209,8 +210,8 @@ export function App() {
       setMessage("ジョブを作成しています。");
       const durationSeconds = await getAudioDurationSeconds(selectedFile);
       if (durationSeconds !== null && durationSeconds > maxAudioDurationSeconds) {
-        setErrorMessage("120分を超える音声は対応範囲外です。音声を分割してからアップロードしてください。");
-        setMessage("音声の長さを確認してください。");
+        setErrorMessage("120分を超える音声/動画は対応範囲外です。分割してからアップロードしてください。");
+        setMessage("音声/動画の長さを確認してください。");
         setRunStartedAtMs(null);
         setRunFinishedAtMs(null);
         return;
@@ -351,10 +352,10 @@ export function App() {
   }
 
   function acceptSelectedFile(file: File) {
-    const validation = validateAudioFile(file);
+    const validation = validateAudioFile(file, processingRoute);
     if (!validation.valid) {
       clearSelectedFile(false);
-      setErrorMessage(validation.message || "音声ファイルを確認してください。");
+      setErrorMessage(validation.message || "音声または動画ファイルを確認してください。");
       setMessage("ファイル形式またはサイズを確認してください。");
       return;
     }
@@ -439,7 +440,8 @@ export function App() {
               <p className="section-kicker">録音</p>
               <h2>音声アップロード</h2>
               <p>
-                {supportedFormatsText} に対応。最大 {formatBytes(hardMaxAudioFileSizeBytes)} / 120分までの音声をドラッグ＆ドロップできます。
+                {supportedFormatsText} に対応。選択中の処理方式では最大{" "}
+                {formatBytes(selectedRouteMaxFileSizeBytes)} / 120分までアップロードできます。
               </p>
             </div>
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  contentUnderstandingMaxFileSizeBytes,
   hardMaxAudioFileSizeBytes,
   maxAudioDurationSeconds,
   validateAudioFile,
@@ -22,8 +23,20 @@ describe("fileValidation", () => {
     expect(validateAudioFile(file("meeting.txt", 1024)).valid).toBe(false);
   });
 
-  it("rejects files over the hard limit", () => {
+  it("rejects stable-route files over the hard limit", () => {
     expect(validateAudioFile(file("meeting.mp3", hardMaxAudioFileSizeBytes + 1)).valid).toBe(false);
+  });
+
+  it("allows larger videos for the Content Understanding route", () => {
+    expect(
+      validateAudioFile(file("meeting.mp4", hardMaxAudioFileSizeBytes + 1, "video/mp4"), "contentUnderstanding").valid,
+    ).toBe(true);
+    expect(
+      validateAudioFile(
+        file("meeting.mp4", contentUnderstandingMaxFileSizeBytes + 1, "video/mp4"),
+        "contentUnderstanding",
+      ).valid,
+    ).toBe(false);
   });
 
   it("sets the UI duration limit to 120 minutes", () => {

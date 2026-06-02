@@ -100,6 +100,7 @@ describe("apiClient", () => {
             constraints: {
               normalMaxFileSizeBytes: 314572800,
               hardMaxFileSizeBytes: 524288000,
+              contentUnderstandingMaxFileSizeBytes: 4294967296,
               maxDurationSecondsWithDiarization: 7200,
             },
           }),
