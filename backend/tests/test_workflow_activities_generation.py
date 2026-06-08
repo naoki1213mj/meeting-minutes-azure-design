@@ -81,14 +81,23 @@ def test_create_read_sas_uses_original_mp4_for_content_understanding(
     monkeypatch.setattr(
         workflow_activities.AppSettings,
         "from_env",
-        lambda: SimpleNamespace(storage_container_name="audio"),
+        lambda: SimpleNamespace(ingest_container_name="audio"),
     )
     monkeypatch.setattr(workflow_activities, "build_job_repository", lambda _settings: repo)
-    monkeypatch.setattr(workflow_activities, "build_blob_sas_issuer", lambda _settings: issuer)
+    monkeypatch.setattr(
+        workflow_activities,
+        "build_ingest_blob_sas_issuer",
+        lambda _settings: issuer,
+    )
     monkeypatch.setattr(
         workflow_activities,
         "build_artifact_store",
         lambda _settings: (_ for _ in ()).throw(AssertionError("artifact store not needed")),
+    )
+    monkeypatch.setattr(
+        workflow_activities,
+        "build_ingest_blob_store",
+        lambda _settings: (_ for _ in ()).throw(AssertionError("ingest store not needed")),
     )
 
     result = create_read_sas({"tenantId": "tenant-a", "jobId": "job-a"})
@@ -98,3 +107,78 @@ def test_create_read_sas_uses_original_mp4_for_content_understanding(
     )
     assert issuer.blob_names == ["raw-audio/tenant-a/job-a/input.mp4"]
     assert not repo.saved
+
+
+def test_create_read_sas_preprocesses_stable_media_in_ingest_storage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeRecord:
+        blobName = "raw-audio/tenant-a/job-a/input.m4a"
+        contentType = "audio/x-m4a"
+        processingRoute = ProcessingRoute.STABLE
+        update: dict[str, object] | None = None
+
+        def model_copy(self, update: dict[str, object]) -> FakeRecord:
+            self.update = update
+            return self
+
+    class FakeRepository:
+        def __init__(self) -> None:
+            self.record = FakeRecord()
+            self.saved_records: list[FakeRecord] = []
+
+        def get(self, tenant_id: str, job_id: str) -> FakeRecord:
+            assert (tenant_id, job_id) == ("tenant-a", "job-a")
+            return self.record
+
+        def save(self, record: FakeRecord) -> None:
+            self.saved_records.append(record)
+
+    class FakeSasIssuer:
+        pass
+
+    repo = FakeRepository()
+    issuer = FakeSasIssuer()
+    ingest_store = object()
+    monkeypatch.setattr(
+        workflow_activities.AppSettings,
+        "from_env",
+        lambda: SimpleNamespace(ingest_container_name="ingest-audio"),
+    )
+    monkeypatch.setattr(workflow_activities, "build_job_repository", lambda _settings: repo)
+    monkeypatch.setattr(
+        workflow_activities,
+        "build_ingest_blob_sas_issuer",
+        lambda _settings: issuer,
+    )
+    monkeypatch.setattr(
+        workflow_activities,
+        "build_ingest_blob_store",
+        lambda _settings: ingest_store,
+    )
+    monkeypatch.setattr(
+        workflow_activities,
+        "build_artifact_store",
+        lambda _settings: (_ for _ in ()).throw(AssertionError("artifact store not needed")),
+    )
+
+    def fake_prepare_audio_for_transcription(**kwargs: object) -> UploadSas:
+        assert kwargs["container_name"] == "ingest-audio"
+        assert kwargs["store"] is ingest_store
+        assert kwargs["sas_issuer"] is issuer
+        return UploadSas(
+            url="https://ingest.example/preprocessed/tenant-a/job-a/input.flac?sig=redacted",
+            expires_at=datetime(2026, 6, 1, tzinfo=UTC),
+        )
+
+    monkeypatch.setattr(
+        workflow_activities,
+        "prepare_audio_for_transcription",
+        fake_prepare_audio_for_transcription,
+    )
+
+    result = create_read_sas({"tenantId": "tenant-a", "jobId": "job-a"})
+
+    expected_url = "https://ingest.example/preprocessed/tenant-a/job-a/input.flac?sig=redacted"
+    assert result == {"audioUrl": expected_url}
+    assert repo.saved_records == [repo.record]

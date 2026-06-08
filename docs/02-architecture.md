@@ -13,7 +13,7 @@
   |
   | User Delegation SAS
   v
-[Azure Blob Storage: raw-audio]
+[Public Ingest Storage: raw-audio / preprocessed]
   ^
   |
   | direct upload from browser
@@ -40,12 +40,17 @@
   +--> RenderMarkdown / PersistOutputs Activities
   |
   v
-[Blob Storage]
-  - raw-audio/
-  - transcript/raw/
-  - transcript/normalized/
-  - minutes/json/
-  - minutes/markdown/
+[Storage]
+  Public Ingest Storage
+    - raw-audio/
+    - preprocessed/
+  Private Artifact Storage (mid-term)
+    - transcript/raw/
+    - transcript/normalized/
+    - transcript/chunks/
+    - minutes/json/
+    - minutes/markdown/
+    - visual-context/
 
 [Cosmos DB]
   - jobs
@@ -66,7 +71,8 @@
 | Azure App Service | React Web UI配信 | デプロイ済み: `<web-app-name>` |
 | Azure Functions Premium EP1 | APIとDurable Functions | デプロイ済み: `<function-app-name>` |
 | Durable Functions / Durable Task Scheduler | 長時間ジョブの状態管理 | デプロイ済み。orchestrator/activity は v1 `function.json` wrappersで登録 |
-| Azure Blob Storage | 音声・前処理済み音声・transcript・議事録ファイル保存 | デプロイ済み。public endpoint有効、共有キー/Blob匿名公開は無効 |
+| Ingest Blob Storage | raw upload、Speech/CUが取得する入力、標準経路の前処理済みFLAC保存 | dev MVPでは既存Storageを使用。public endpoint有効、共有キー/Blob匿名公開は無効 |
+| Artifact Storage | raw transcript response、normalized transcript、chunk、minutes JSON/Markdown、visual contextなどの成果物保存 | 中期対策でPrivate Endpoint付きの別Storage accountへ分離 |
 | Azure Cosmos DB for NoSQL | ジョブ状態・speaker mapping保存 | デプロイ済み |
 | AIServices `<ai-services-name>` | Speech/OpenAI統合リソース | デプロイ済み。local auth disabled |
 | Azure Speech in Foundry Tools | Fast Transcription + diarization | AIServices endpointを使用 |
@@ -87,9 +93,21 @@
 ### 2.2 アーキテクチャ図
 
 - `docs/diagrams/azure-resource-architecture.drawio`: Azureサービスアイコン付きのリソース構成図。
+- `docs/diagrams/azure-network-architecture.drawio`: public ingest と Private Endpoint / Private DNS の境界を示すネットワーク構成図。
 - `docs/diagrams/azure-architecture.drawio`: 主要フローを簡潔に示す概要図。
 
-### 2.3 Function registration
+### 2.3 中期ネットワークハードニング
+
+中期対策では、Storageを public ingest と private artifact に分ける。
+
+- public ingest Storage: ブラウザ直接アップロード、Speech/CUが取得する raw input、標準経路の前処理済みFLACを置く。
+- private Artifact Storage: raw transcript response、normalized transcript、chunk、minutes JSON/Markdown、visual contextを置く。
+- Cosmos DB: Functions VNet Integration と Private Endpoint / Private DNS 経由にして、到達性検証後に public network access を無効化する。
+- AI Services: Speech/CUのURL fetch制約があるため、この段階ではprivate化しない。
+
+この対策は完全閉域化ではない。Ingest Storageのpublic endpointは残るが、匿名公開とShared Keyは無効のまま、User Delegation SASの短TTLと限定CORSで保護する。
+
+### 2.4 Function registration
 
 - Azure上は v1 `function.json` wrappers を使い、Python 3.13環境で安定して関数をindexさせる。
 - `function_app.py` はローカル・テスト用であり、`.funcignore` によりデプロイパッケージから除外する。
@@ -121,12 +139,12 @@
 3. Fast Transcription に `definition.audioUrl` を送る。本番経路では inline `audio` を使わない。
 4. `definition` には `locales: ["ja-JP"]` と `diarization` を含める。
 5. `channels` は指定しない。diarization有効時に stereo の `[0,1]` 指定はしない。
-6. Speech API の raw response を Blob に保存する。
+6. Speech API の raw response を Artifact Storage（分離前のdev MVPでは既存Storage）に保存する。
 
 ### 3.4 議事録生成
 
 1. raw response を normalized transcript に変換する。
-2. 本線では normalized transcript全文を `GenerateFinalMinutesActivity` がBlobから読み込む。
+2. 本線では normalized transcript全文を `GenerateFinalMinutesActivity` がArtifact Storage（分離前のdev MVPでは既存Storage）から読み込む。
 3. `minutes.structured-output.schema.json` に準拠する JSON を1回のStructured outputs呼び出しで生成する。
 4. アプリ側で metadata を付与し、`minutes.schema.json` で保存前検証を行う。
 5. direct生成が出力切れ、token制約、schema repair不能などで失敗した場合だけ、chunk summary方式へ自動fallbackする。
@@ -217,7 +235,7 @@ direct minutes generationは長尺音声でJSON出力が切れないよう `max_
 
 - Blob への保存・読み取り。
 - SAS発行。
-- m4a/mp4から音声トラックをFast Transcription用の16kHz mono FLACへ前処理し、`preprocessed/{tenantId}/{jobId}/input.flac` に保存する。
+- m4a/mp4から音声トラックをFast Transcription用の16kHz mono FLACへ前処理し、Speechが読む入力として public ingest Storage の `preprocessed/{tenantId}/{jobId}/input.flac` に保存する。
 - Cosmos DB への job state 保存。
 - 同一 jobId の冪等性保証。
 

@@ -20,6 +20,24 @@ param demoAccessKey string = ''
 @secure()
 param proxySecret string = ''
 
+@description('When true, new transcript/minutes/visual artifacts are written to a private artifact Storage account through Private Endpoint. Keep false for the current dev-compatible topology.')
+param enablePrivateArtifacts bool = false
+
+@description('When true, create a Cosmos DB Private Endpoint and private DNS link while keeping public access enabled unless lockDownCosmosPublicAccess is also true.')
+param enableCosmosPrivateEndpoint bool = false
+
+@description('When true, disable Cosmos DB public network access. Use only after Function App private connectivity has been validated.')
+param lockDownCosmosPublicAccess bool = false
+
+@description('Address prefix for the VNet used by Function App VNet Integration and Private Endpoints.')
+param vnetAddressPrefix string = '10.42.0.0/24'
+
+@description('Subnet prefix delegated to Microsoft.Web/serverFarms for Function App VNet Integration.')
+param functionIntegrationSubnetPrefix string = '10.42.0.0/27'
+
+@description('Subnet prefix for Private Endpoints.')
+param privateEndpointSubnetPrefix string = '10.42.0.32/27'
+
 param chunkSummaryDeploymentName string = 'gpt-5.4-mini'
 
 param finalMergeDeploymentName string = 'gpt-5.4'
@@ -38,6 +56,7 @@ param contentUnderstandingCompletionDeploymentCapacity int = 100
 var uniqueSuffix = uniqueString(subscription().id, resourceGroup().id, environmentName)
 var resourcePrefix = toLower('mm-${environmentName}-${uniqueSuffix}')
 var safeStorageName = toLower('stmm${uniqueSuffix}')
+var artifactStorageName = toLower('stmmart${uniqueSuffix}')
 var webAppName = '${resourcePrefix}-web'
 var webAppOrigin = 'https://${webAppName}.azurewebsites.net'
 var allowedCorsOrigins = union([
@@ -58,6 +77,9 @@ var cognitiveServicesOpenAiUserRoleId = '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
 var cognitiveServicesSpeechUserRoleId = 'f2dc8367-1007-4938-bd23-fe263f013447'
 var cognitiveServicesUserRoleId = 'a97b65f3-24c7-4388-baec-2e87135dc908'
 var aiServicesName = '${resourcePrefix}-aisvc'
+var enableCosmosPrivateAccess = enableCosmosPrivateEndpoint || lockDownCosmosPublicAccess
+var enablePrivateNetwork = enablePrivateArtifacts || enableCosmosPrivateAccess
+var blobPrivateDnsZoneName = 'privatelink.blob.${environment().suffixes.storage}'
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: '${resourcePrefix}-log'
@@ -246,6 +268,57 @@ resource deploymentPackageContainer 'Microsoft.Storage/storageAccounts/blobServi
   }
 }
 
+resource artifactStorageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+  name: artifactStorageName
+  location: location
+  tags: commonTags
+  sku: {
+    name: 'Standard_LRS'
+  }
+  kind: 'StorageV2'
+  properties: {
+    allowBlobPublicAccess: false
+    allowSharedKeyAccess: false
+    minimumTlsVersion: 'TLS1_2'
+    publicNetworkAccess: enablePrivateArtifacts ? 'Disabled' : 'Enabled'
+    networkAcls: {
+      bypass: 'AzureServices'
+      defaultAction: enablePrivateArtifacts ? 'Deny' : 'Allow'
+    }
+    supportsHttpsTrafficOnly: true
+  }
+}
+
+resource artifactBlobService 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = {
+  parent: artifactStorageAccount
+  name: 'default'
+  properties: {}
+}
+
+resource artifactTranscriptContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  parent: artifactBlobService
+  name: 'transcript'
+  properties: {
+    publicAccess: 'None'
+  }
+}
+
+resource artifactMinutesContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  parent: artifactBlobService
+  name: 'minutes'
+  properties: {
+    publicAccess: 'None'
+  }
+}
+
+resource privateArtifactsContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  parent: artifactBlobService
+  name: 'artifacts'
+  properties: {
+    publicAccess: 'None'
+  }
+}
+
 resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
   name: '${resourcePrefix}-cosmos'
   location: location
@@ -254,9 +327,11 @@ resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
   properties: {
     databaseAccountOfferType: 'Standard'
     disableLocalAuth: true
-    publicNetworkAccess: 'Enabled'
+    publicNetworkAccess: lockDownCosmosPublicAccess ? 'Disabled' : 'Enabled'
     isVirtualNetworkFilterEnabled: false
     networkAclBypass: 'None'
+    enableAutomaticFailover: true
+    minimalTlsVersion: 'Tls12'
     locations: [
       {
         locationName: location
@@ -317,6 +392,154 @@ resource speakerMappingsContainer 'Microsoft.DocumentDB/databaseAccounts/sqlData
   }
 }
 
+resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-11-01' = if (enablePrivateNetwork) {
+  name: '${resourcePrefix}-vnet'
+  location: location
+  tags: commonTags
+  properties: {
+    addressSpace: {
+      addressPrefixes: [
+        vnetAddressPrefix
+      ]
+    }
+  }
+}
+
+resource functionIntegrationSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' = if (enablePrivateNetwork) {
+  parent: virtualNetwork
+  name: 'functions-outbound'
+  properties: {
+    addressPrefix: functionIntegrationSubnetPrefix
+    delegations: [
+      {
+        name: 'web-serverfarms'
+        properties: {
+          serviceName: 'Microsoft.Web/serverFarms'
+        }
+      }
+    ]
+  }
+}
+
+resource privateEndpointSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' = if (enablePrivateNetwork) {
+  parent: virtualNetwork
+  name: 'private-endpoints'
+  properties: {
+    addressPrefix: privateEndpointSubnetPrefix
+    privateEndpointNetworkPolicies: 'Disabled'
+  }
+}
+
+resource blobPrivateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = if (enablePrivateNetwork) {
+  name: blobPrivateDnsZoneName
+  location: 'global'
+  tags: commonTags
+}
+
+resource cosmosPrivateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = if (enablePrivateNetwork) {
+  name: 'privatelink.documents.azure.com'
+  location: 'global'
+  tags: commonTags
+}
+
+resource blobPrivateDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = if (enablePrivateNetwork) {
+  parent: blobPrivateDnsZone
+  name: '${resourcePrefix}-blob-link'
+  location: 'global'
+  properties: {
+    registrationEnabled: false
+    virtualNetwork: {
+      id: virtualNetwork.id
+    }
+  }
+}
+
+resource cosmosPrivateDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = if (enablePrivateNetwork) {
+  parent: cosmosPrivateDnsZone
+  name: '${resourcePrefix}-cosmos-link'
+  location: 'global'
+  properties: {
+    registrationEnabled: false
+    virtualNetwork: {
+      id: virtualNetwork.id
+    }
+  }
+}
+
+resource artifactBlobPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-11-01' = if (enablePrivateArtifacts) {
+  name: '${resourcePrefix}-artifact-blob-pe'
+  location: location
+  tags: commonTags
+  properties: {
+    subnet: {
+      id: privateEndpointSubnet.id
+    }
+    privateLinkServiceConnections: [
+      {
+        name: 'artifact-blob'
+        properties: {
+          privateLinkServiceId: artifactStorageAccount.id
+          groupIds: [
+            'blob'
+          ]
+        }
+      }
+    ]
+  }
+}
+
+resource artifactBlobPrivateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-11-01' = if (enablePrivateArtifacts) {
+  parent: artifactBlobPrivateEndpoint
+  name: 'default'
+  properties: {
+    privateDnsZoneConfigs: [
+      {
+        name: 'blob'
+        properties: {
+          privateDnsZoneId: blobPrivateDnsZone.id
+        }
+      }
+    ]
+  }
+}
+
+resource cosmosPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-11-01' = if (enableCosmosPrivateAccess) {
+  name: '${resourcePrefix}-cosmos-pe'
+  location: location
+  tags: commonTags
+  properties: {
+    subnet: {
+      id: privateEndpointSubnet.id
+    }
+    privateLinkServiceConnections: [
+      {
+        name: 'cosmos-sql'
+        properties: {
+          privateLinkServiceId: cosmosAccount.id
+          groupIds: [
+            'Sql'
+          ]
+        }
+      }
+    ]
+  }
+}
+
+resource cosmosPrivateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-11-01' = if (enableCosmosPrivateAccess) {
+  parent: cosmosPrivateEndpoint
+  name: 'default'
+  properties: {
+    privateDnsZoneConfigs: [
+      {
+        name: 'cosmos'
+        properties: {
+          privateDnsZoneId: cosmosPrivateDnsZone.id
+        }
+      }
+    ]
+  }
+}
+
 resource scheduler 'Microsoft.DurableTask/schedulers@2025-11-01' = {
   name: '${resourcePrefix}-dts'
   location: location
@@ -363,9 +586,11 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
   properties: {
     serverFarmId: functionPlan.id
     httpsOnly: true
+    virtualNetworkSubnetId: enablePrivateNetwork ? functionIntegrationSubnet.id : null
     siteConfig: {
       linuxFxVersion: 'PYTHON|3.13'
       alwaysOn: true
+      vnetRouteAllEnabled: enablePrivateNetwork
       cors: {
         allowedOrigins: allowedCorsOrigins
         supportCredentials: false
@@ -386,6 +611,14 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
         {
           name: 'AzureWebJobsStorage__credential'
           value: 'managedidentity'
+        }
+        {
+          name: 'WEBSITE_VNET_ROUTE_ALL'
+          value: enablePrivateNetwork ? '1' : '0'
+        }
+        {
+          name: 'WEBSITE_DNS_SERVER'
+          value: '168.63.129.16'
         }
         {
           name: 'WEBSITE_USE_PLACEHOLDER'
@@ -434,6 +667,30 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
         {
           name: 'AZURE_STORAGE_CONTAINER_NAME'
           value: audioContainer.name
+        }
+        {
+          name: 'AZURE_INGEST_STORAGE_ACCOUNT_URL'
+          value: storageAccount.properties.primaryEndpoints.blob
+        }
+        {
+          name: 'AZURE_INGEST_CONTAINER_NAME'
+          value: audioContainer.name
+        }
+        {
+          name: 'AZURE_ARTIFACT_STORAGE_ACCOUNT_URL'
+          value: enablePrivateArtifacts ? artifactStorageAccount.properties.primaryEndpoints.blob : storageAccount.properties.primaryEndpoints.blob
+        }
+        {
+          name: 'AZURE_PRIVATE_ARTIFACT_STORAGE_ACCOUNT_URL'
+          value: artifactStorageAccount.properties.primaryEndpoints.blob
+        }
+        {
+          name: 'AZURE_TRANSCRIPT_CONTAINER_NAME'
+          value: enablePrivateArtifacts ? artifactTranscriptContainer.name : transcriptContainer.name
+        }
+        {
+          name: 'AZURE_MINUTES_CONTAINER_NAME'
+          value: enablePrivateArtifacts ? artifactMinutesContainer.name : minutesContainer.name
         }
         {
           name: 'AZURE_COSMOS_ENDPOINT'
@@ -487,6 +744,16 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
 resource functionStorageOwner 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(storageAccount.id, functionApp.id, storageBlobDataOwnerRoleId)
   scope: storageAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataOwnerRoleId)
+    principalId: functionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource functionArtifactStorageOwner 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(artifactStorageAccount.id, functionApp.id, storageBlobDataOwnerRoleId)
+  scope: artifactStorageAccount
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataOwnerRoleId)
     principalId: functionApp.identity.principalId
@@ -664,6 +931,7 @@ output functionAppUrl string = 'https://${functionApp.properties.defaultHostName
 output webAppName string = webApp.name
 output webAppUrl string = 'https://${webApp.properties.defaultHostName}'
 output storageAccountName string = storageAccount.name
+output artifactStorageAccountName string = artifactStorageAccount.name
 output cosmosEndpoint string = cosmosAccount.properties.documentEndpoint
 output applicationInsightsConnectionString string = appInsights.properties.ConnectionString
 output aiServicesName string = aiServices.name

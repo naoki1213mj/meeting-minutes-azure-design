@@ -4,7 +4,7 @@ from meeting_minutes_backend.orchestration import InMemoryDurableStarter
 from meeting_minutes_backend.service import JobService
 from meeting_minutes_backend.settings import (
     AppSettings,
-    build_blob_sas_issuer,
+    build_ingest_blob_sas_issuer,
     build_job_repository,
 )
 
@@ -18,7 +18,7 @@ def get_job_service() -> JobService:
         settings = AppSettings.from_env()
         _job_service = JobService(
             build_job_repository(settings),
-            build_blob_sas_issuer(settings),
+            build_ingest_blob_sas_issuer(settings),
             _durable_starter,
         )
     return _job_service

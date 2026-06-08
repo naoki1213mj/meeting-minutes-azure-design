@@ -26,9 +26,11 @@ from meeting_minutes_backend.models import ErrorObject, JobStatus, ProcessingRou
 from meeting_minutes_backend.settings import (
     AppSettings,
     build_artifact_store,
-    build_blob_sas_issuer,
+    build_artifact_store_for_uri,
     build_chunk_deployment,
     build_content_understanding_client,
+    build_ingest_blob_sas_issuer,
+    build_ingest_blob_store,
     build_job_repository,
     build_minutes_deployment,
     build_openai_client,
@@ -96,8 +98,11 @@ def create_read_sas(job: dict[str, object]) -> dict[str, object]:
         )
     now = _utc_now()
     if record.processingRoute == ProcessingRoute.CONTENT_UNDERSTANDING:
-        read_sas = build_blob_sas_issuer(settings).create_read_sas(record.blobName, now)
-        return {"audioUrl": read_sas.url}
+            read_sas = build_ingest_blob_sas_issuer(settings).create_read_sas(
+                record.blobName,
+                now,
+            )
+            return {"audioUrl": read_sas.url}
 
     if (
         record.processingRoute != ProcessingRoute.CONTENT_UNDERSTANDING
@@ -122,9 +127,9 @@ def create_read_sas(job: dict[str, object]) -> dict[str, object]:
         job_id=job_id,
         blob_name=record.blobName,
         content_type=record.contentType,
-        container_name=settings.storage_container_name,
-        store=build_artifact_store(settings),
-        sas_issuer=build_blob_sas_issuer(settings),
+        container_name=settings.ingest_container_name,
+        store=build_ingest_blob_store(settings),
+        sas_issuer=build_ingest_blob_sas_issuer(settings),
         now=now,
     )
     return {"audioUrl": read_sas.url}
@@ -258,7 +263,7 @@ def normalize_transcript_artifact(payload: dict[str, object]) -> dict[str, objec
     tenant_id = _required_string(job, "tenantId")
     job_id = _required_string(job, "jobId")
     settings = AppSettings.from_env()
-    store = build_artifact_store(settings)
+    store = build_artifact_store_for_uri(settings, raw_blob_uri)
     raw_response = store.read_json(settings.transcript_container_name, raw_blob_name)
     normalized = normalize_transcript(
         raw_response,
@@ -314,7 +319,7 @@ def normalize_content_understanding_artifact(payload: dict[str, object]) -> dict
     tenant_id = _required_string(job, "tenantId")
     job_id = _required_string(job, "jobId")
     settings = AppSettings.from_env()
-    store = build_artifact_store(settings)
+    store = build_artifact_store_for_uri(settings, raw_blob_uri)
     raw_response = store.read_json(settings.transcript_container_name, raw_blob_name)
     normalized = normalize_content_understanding_transcript(
         raw_response,
@@ -367,10 +372,11 @@ def normalize_content_understanding_artifact(payload: dict[str, object]) -> dict
 def build_transcript_chunks_artifact(payload: dict[str, object]) -> list[dict[str, object]]:
     job = _required_dict(payload, "job")
     normalized_blob_name = _required_string(payload, "normalizedTranscriptBlobName")
+    normalized_blob_uri = _required_string(payload, "normalizedTranscriptBlobUri")
     tenant_id = _required_string(job, "tenantId")
     job_id = _required_string(job, "jobId")
     settings = AppSettings.from_env()
-    store = build_artifact_store(settings)
+    store = build_artifact_store_for_uri(settings, normalized_blob_uri)
     normalized = store.read_json(settings.transcript_container_name, normalized_blob_name)
 
     repository = build_job_repository(settings)
@@ -414,10 +420,11 @@ def generate_chunk_summary_artifact(payload: dict[str, object]) -> dict[str, obj
     job = _required_dict(payload, "job")
     chunk_index = _required_int(payload, "chunkIndex")
     chunk_blob_name = _required_string(payload, "chunkBlobName")
+    chunk_blob_uri = _required_string(payload, "chunkBlobUri")
     tenant_id = _required_string(job, "tenantId")
     job_id = _required_string(job, "jobId")
     settings = AppSettings.from_env()
-    store = build_artifact_store(settings)
+    store = build_artifact_store_for_uri(settings, chunk_blob_uri)
     chunk = TranscriptChunk.model_validate(
         store.read_json(settings.transcript_container_name, chunk_blob_name)
     )
@@ -438,6 +445,7 @@ def generate_chunk_summary_artifact(payload: dict[str, object]) -> dict[str, obj
 def generate_final_minutes(payload: dict[str, object]) -> dict[str, object]:
     job = _required_dict(payload, "job")
     normalized_blob_name = _required_string(payload, "normalizedTranscriptBlobName")
+    normalized_blob_uri = _required_string(payload, "normalizedTranscriptBlobUri")
     tenant_id = _required_string(job, "tenantId")
     job_id = _required_string(job, "jobId")
     settings = AppSettings.from_env()
@@ -466,7 +474,7 @@ def generate_final_minutes(payload: dict[str, object]) -> dict[str, object]:
         )
     )
 
-    store = build_artifact_store(settings)
+    store = build_artifact_store_for_uri(settings, normalized_blob_uri)
     normalized = store.read_json(settings.transcript_container_name, normalized_blob_name)
     chunk_summary_refs = payload.get("chunkSummaries")
     client = build_openai_client(settings)
@@ -478,7 +486,10 @@ def generate_final_minutes(payload: dict[str, object]) -> dict[str, object]:
                 raise TypeError("chunkSummaries items must be objects")
             refs.append(item)
         chunk_summaries = [
-            store.read_json(
+            build_artifact_store_for_uri(
+                settings,
+                _required_string(ref, "chunkSummaryBlobUri"),
+            ).read_json(
                 settings.minutes_container_name,
                 _required_string(ref, "chunkSummaryBlobName"),
             )
@@ -548,7 +559,7 @@ def render_markdown(payload: dict[str, object]) -> dict[str, object]:
     tenant_id = _required_string(job, "tenantId")
     job_id = _required_string(job, "jobId")
     settings = AppSettings.from_env()
-    store = build_artifact_store(settings)
+    store = build_artifact_store_for_uri(settings, minutes_uri)
     minutes = store.read_json(settings.minutes_container_name, minutes_blob_name)
     markdown = render_minutes_markdown(minutes)
     markdown_blob_name = f"{tenant_id}/{job_id}/minutes.md"

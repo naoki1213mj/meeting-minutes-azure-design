@@ -103,6 +103,8 @@ Fast Transcription の diarization 経路は 2 時間境界に近づくほど失
 - SAS は User Delegation SAS を使い、Storage account key を使った SAS は新規実装しません。
 - SAS は短い TTL と最小権限で発行します。
 - Blob 匿名公開と共有キーアクセスは無効化する方針です。
+- 中期ハードニングでは、Speech/CUが読む raw input は public ingest Storage に限定し、transcript / minutes / visual context などの artifact は Private Endpoint 経由の別Storageへ分離します。
+- Cosmos DB は Functions VNet Integration + Private Endpoint でprivate化する計画です。ただし Speech/CU の URL fetch 制約があるため、ingest Storage の public endpoint は残ります。
 - 音声本文、transcript 全文、議事録全文、SAS URL 全文、アクセストークン、API key、Storage account key をログに出しません。
 - speaker ID から実名を自動推定しません。
 - 脆弱性報告は `SECURITY.md` を参照してください。公開 Issue に秘密情報や実データを貼らないでください。
@@ -200,6 +202,7 @@ python -m json.tool specs\normalized-transcript.schema.json > $null
 ## ドキュメント索引
 
 - `docs/diagrams/azure-resource-architecture.drawio` - Azureサービスアイコン付きリソース構成図。
+- `docs/diagrams/azure-network-architecture.drawio` - public ingest と Private Endpoint / Private DNS の境界を示すネットワーク構成図。
 - `docs/diagrams/azure-architecture.drawio` - シンプルなAzureアーキテクチャ概要図。
 - `docs/00-design-summary.md` - 設計サマリーと現在の dev MVP 状態。
 - `docs/01-requirements.md` - 要件。
@@ -217,17 +220,18 @@ python -m json.tool specs\normalized-transcript.schema.json > $null
 - `docs/13-deployment-plan.md` - 公開安全なデプロイ計画と runbook。
 - `docs/14-business-user-processing-guide.md` - ビジネスユーザー向けの処理説明。
 - `docs/15-azure-engineer-processing-guide.md` - Azureエンジニア向けの処理方式・運用説明。
-- `docs/adr/` - Architecture Decision Records。
+- `docs/adr/` - Architecture Decision Records。ADR-008でpublic ingest + private artifactsの中期ネットワーク方針を記録。
 - `specs/openapi.yaml` - OpenAPI 3.1 契約。
 - `specs/*.schema.json` - JSON Schema / Structured outputs schema。
 
 ## ロードマップ
 
 1. Microsoft Entra ID / Easy Auth、demo 認証廃止、ユーザー単位認可テスト。
-2. 代表的な短い会議音声 fixture と品質期待値の整備。
-3. 80 分級音声を含む性能・コスト・429 率の測定と ADR 化。
-4. UI ポーリング backoff、retry、cancel、regenerate、job 一覧の整備。
-5. Application Insights での機密ログ漏えい回帰スキャン自動化。
+2. public ingest Storage と private Artifact Storage / private Cosmos DB の段階的ハードニング。
+3. 代表的な短い会議音声 fixture と品質期待値の整備。
+4. 80 分級音声を含む性能・コスト・429 率の測定と ADR 化。
+5. UI ポーリング backoff、retry、cancel、regenerate、job 一覧の整備。
+6. Application Insights での機密ログ漏えい回帰スキャン自動化。
 6. 必要に応じて Azure SignalR Service、Azure AI Search、Azure Container Apps Jobs を追加。
 
 ## コントリビュート

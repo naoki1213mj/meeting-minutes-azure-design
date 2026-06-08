@@ -166,7 +166,9 @@ PoCでは以下を測る。
 | capacity変更 | `gpt-5.4-mini` / `gpt-5.4` capacity 100で429率を確認 |
 | polling backoff | UI/API呼び出し回数と体感UXを確認 |
 | m4a/mp4前処理 | m4a/mp4から音声トラックを16kHz mono FLACへ変換し、Fast Transcriptionが完了すること |
-| Storage public endpoint drift | `publicNetworkAccess=Enabled`, `allowSharedKeyAccess=false`, `allowBlobPublicAccess=false` が維持され、User Delegation SAS発行が403にならないこと |
+| Ingest Storage public endpoint drift | ingest側で `publicNetworkAccess=Enabled`, `allowSharedKeyAccess=false`, `allowBlobPublicAccess=false` が維持され、User Delegation SAS発行が403にならないこと |
+| Private artifact connectivity | Function AppからPrivate Endpoint経由でtranscript/minutes/visual contextを保存・取得できること |
+| Cosmos private rollout | Private Endpoint疎通確認後にだけCosmos public accessを無効化し、job作成/status更新が成功すること |
 
 計測値:
 
@@ -189,7 +191,7 @@ PoCでは以下を測る。
 
 - `POST /api/jobs` が `.m4a` / `audio/x-m4a` を `201` で受け付ける。
 - `POST /api/jobs` が `.mp4` / `video/mp4` を `201` で受け付ける。
-- m4a/mp4は `PREPROCESSING` を経由し、`preprocessed/{tenantId}/{jobId}/input.flac` が `audio/flac` で保存される。
+- m4a/mp4は `PREPROCESSING` を経由し、Speechが読む public ingest Storage の `preprocessed/{tenantId}/{jobId}/input.flac` に `audio/flac` で保存される。
 - `DONE` 後に transcript と minutes を取得できる。
 - 音声トラックがないMP4は `AUDIO_PREPROCESS_FAILED` で拒否される。
 - 既に `FAILED` になったジョブはretry API未実装のため、同じファイルを再アップロードして確認する。

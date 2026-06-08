@@ -24,11 +24,42 @@ param demoAccessKey string = ''
 @secure()
 param proxySecret string = ''
 
+@description('When true, new transcript/minutes/visual artifacts are written to a private artifact Storage account through Private Endpoint.')
+@allowed([
+  'true'
+  'false'
+])
+param enablePrivateArtifacts string = 'false'
+
+@description('When true, create a Cosmos DB Private Endpoint and private DNS link while keeping public access enabled unless lockDownCosmosPublicAccess is also true.')
+@allowed([
+  'true'
+  'false'
+])
+param enableCosmosPrivateEndpoint string = 'false'
+
+@description('When true, disable Cosmos DB public network access after private connectivity has been validated.')
+@allowed([
+  'true'
+  'false'
+])
+param lockDownCosmosPublicAccess string = 'false'
+
+param vnetAddressPrefix string = '10.42.0.0/24'
+
+param functionIntegrationSubnetPrefix string = '10.42.0.0/27'
+
+param privateEndpointSubnetPrefix string = '10.42.0.32/27'
+
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   name: 'rg-${environmentName}'
   location: location
   tags: tags
 }
+
+var enablePrivateArtifactsBool = toLower(enablePrivateArtifacts) == 'true'
+var enableCosmosPrivateEndpointBool = toLower(enableCosmosPrivateEndpoint) == 'true'
+var lockDownCosmosPublicAccessBool = toLower(lockDownCosmosPublicAccess) == 'true'
 
 module app 'app.bicep' = {
   name: 'app-${environmentName}'
@@ -41,6 +72,12 @@ module app 'app.bicep' = {
     tags: tags
     demoAccessKey: demoAccessKey
     proxySecret: proxySecret
+    enablePrivateArtifacts: enablePrivateArtifactsBool
+    enableCosmosPrivateEndpoint: enableCosmosPrivateEndpointBool
+    lockDownCosmosPublicAccess: lockDownCosmosPublicAccessBool
+    vnetAddressPrefix: vnetAddressPrefix
+    functionIntegrationSubnetPrefix: functionIntegrationSubnetPrefix
+    privateEndpointSubnetPrefix: privateEndpointSubnetPrefix
   }
 }
 
@@ -50,6 +87,7 @@ output RESOURCE_GROUP_ID string = resourceGroup.id
 output AZURE_FUNCTION_APP_NAME string = app.outputs.functionAppName
 output AZURE_WEB_APP_NAME string = app.outputs.webAppName
 output AZURE_STORAGE_ACCOUNT_NAME string = app.outputs.storageAccountName
+output AZURE_ARTIFACT_STORAGE_ACCOUNT_NAME string = app.outputs.artifactStorageAccountName
 output AZURE_COSMOS_ENDPOINT string = app.outputs.cosmosEndpoint
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = app.outputs.applicationInsightsConnectionString
 output AZURE_AI_SERVICES_NAME string = app.outputs.aiServicesName

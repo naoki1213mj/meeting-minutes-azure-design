@@ -79,7 +79,11 @@ def _patch_dependencies(
             minutes_container_name="minutes",
         ),
     )
-    monkeypatch.setattr(entrypoints, "build_artifact_store", lambda settings: store)
+    monkeypatch.setattr(
+        entrypoints,
+        "build_artifact_store_for_uri",
+        lambda settings, uri: store,
+    )
 
 
 def test_get_transcript_returns_normalized_artifact(monkeypatch: pytest.MonkeyPatch) -> None:

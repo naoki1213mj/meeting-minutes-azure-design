@@ -16,6 +16,24 @@
     },
     "proxySecret": {
       "value": "${AZURE_PROXY_SECRET}"
+    },
+    "enablePrivateArtifacts": {
+      "value": "true"
+    },
+    "enableCosmosPrivateEndpoint": {
+      "value": "true"
+    },
+    "lockDownCosmosPublicAccess": {
+      "value": "true"
+    },
+    "vnetAddressPrefix": {
+      "value": "10.42.0.0/24"
+    },
+    "functionIntegrationSubnetPrefix": {
+      "value": "10.42.0.0/27"
+    },
+    "privateEndpointSubnetPrefix": {
+      "value": "10.42.0.32/27"
     }
   }
 }

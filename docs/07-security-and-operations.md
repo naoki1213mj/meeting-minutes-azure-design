@@ -81,15 +81,31 @@ SAS URL全文はAPIレスポンスで必要な場面を除き、ログ、例外�
 
 ## 4. ネットワーク
 
-初期PoCでは public endpoint + Entra ID / SAS でよい。dev MVPのdemo認証モードは公開本番向けではない。現在のFast Transcription経路は `audioUrl` を使うため、Storage Blobのデータ面は公開エンドポイントで到達可能である必要がある。Storageは `publicNetworkAccess=Enabled` / `defaultAction=Allow` で、データ面は公衆網から到達可能である。共有キーとBlob匿名公開は無効化し、User Delegation SASと短いTTLで保護する。`bypass=AzureServices` は補助設定であり、Azureサービスだけに限定する制御ではない。厳格な閉域要件がある場合は、Fast Transcription `audioUrl` 経路のままではなく、Batch TranscriptionなどStorage private endpointとmanaged identityアクセスに対応できる別経路を設計する。
+初期PoCでは public endpoint + Entra ID / SAS でよい。dev MVPのdemo認証モードは公開本番向けではない。現在のFast Transcription経路は `audioUrl` を使うため、現行単一Storageまたは中期分離後のIngest Storage Blobデータ面は公開エンドポイントで到達可能である必要がある。Ingest Storageは `publicNetworkAccess=Enabled` / `defaultAction=Allow` で、データ面は公衆網から到達可能である。共有キーとBlob匿名公開は無効化し、User Delegation SASと短いTTLで保護する。`bypass=AzureServices` は補助設定であり、Azureサービスだけに限定する制御ではない。厳格な閉域要件がある場合は、Fast Transcription `audioUrl` 経路のままではなく、Batch TranscriptionなどStorage private endpointとmanaged identityアクセスに対応できる別経路を設計する。
 
-Storage public endpoint は過去にIaC外で `Disabled` へドリフトし、User Delegation SAS発行が403になって `POST /api/jobs` が500になった。Bicepでは `publicNetworkAccess=Enabled` と `networkAcls.defaultAction=Allow` を明示する。Azure Policyは2026-06-02時点でauditのみ確認済みだが、Policy/手動変更による再ドリフトを監視する。
+Ingest Storage（分離前は現行単一Storage）の public endpoint は過去にIaC外で `Disabled` へドリフトし、User Delegation SAS発行が403になって `POST /api/jobs` が500になった。Bicepではingest側の `publicNetworkAccess=Enabled` と `networkAcls.defaultAction=Allow` を明示する。Azure Policyは2026-06-02時点でauditのみ確認済みだが、Policy/手動変更による再ドリフトを監視する。
 
-### 4.1 m4a/mp4前処理
+### 4.1 中期ネットワークハードニング
+
+中期対策では、public endpointを必要最小限のingest用途へ限定し、成果物とmetadataをprivate側へ寄せる。
+
+| 対象 | ネットワーク方針 | 補足 |
+|---|---|---|
+| Ingest Storage | public endpoint維持 | ブラウザupload、Speech/CU URL fetch、前処理FLAC用。匿名公開とShared Keyは無効 |
+| Artifact Storage | Private Endpoint + Private DNS | transcript、minutes、visual contextなどユーザー成果物を保存 |
+| Cosmos DB | Private Endpoint + Private DNS | Functions疎通確認後にpublic accessを無効化 |
+| Functions | VNet Integration | `WEBSITE_DNS_SERVER=168.63.129.16` と route-all をprivate構成時に有効化 |
+| AI Services | public endpoint維持 | Speech/CUのBlob URL fetch制約があるためPhase 1ではprivate化しない |
+
+Artifact とは、raw transcript response、normalized transcript、chunk、minutes JSON/Markdown、visual contextなど、ユーザーへ直接Blob URLを公開しない処理成果物を指す。標準経路のm4a/mp4前処理で生成するFLACはSpeechが読むためartifactではなくingest側へ保存する。
+
+Cosmosの `publicNetworkAccess=Disabled` は、VNet Integration、Private Endpoint、Private DNSの到達性確認後に別デプロイで切り替える。単一デプロイでpublic accessを閉じると、FunctionsがCosmosへ到達できずジョブ作成やstatus更新が失敗する可能性がある。
+
+### 4.2 m4a/mp4前処理
 
 m4a/mp4はFast Transcription直渡しで `InvalidAudioFormat` になるケースがあるため、Backend Activity内で音声トラックだけを16kHz mono FLACへ変換してから `audioUrl` を渡す。変換は `imageio-ffmpeg` が同梱するffmpegバイナリをsubprocess実行する。MP4に音声トラックがない場合は変換エラーにする。ffmpeg stderr、ローカル一時パス、SAS URL、音声内容はエラーdetailsやログへ出さない。
 
-### 4.2 CORS
+### 4.3 CORS
 
 2026-06-02時点のlive確認では、Function App と Storage Blob のCORS設定をIaCで明示し、frontend App Service originだけを既定許可している。ブラウザからの現行dev MVPを安全に動かすため、IaCでは次を維持する。
 

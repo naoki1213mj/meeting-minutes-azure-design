@@ -12,7 +12,7 @@ from meeting_minutes_backend.health import build_health_payload
 from meeting_minutes_backend.http import error_boundary, json_response, parse_json_model
 from meeting_minutes_backend.models import CreateJobRequest, UploadCompleteRequest
 from meeting_minutes_backend.services import get_job_service
-from meeting_minutes_backend.settings import AppSettings, build_artifact_store
+from meeting_minutes_backend.settings import AppSettings, build_artifact_store_for_uri
 
 
 def health(req: func.HttpRequest) -> func.HttpResponse:
@@ -66,7 +66,7 @@ def _get_transcript(req: func.HttpRequest, jobId: str) -> func.HttpResponse:
             http_status=404,
         )
     settings = AppSettings.from_env()
-    transcript = build_artifact_store(settings).read_json(
+    transcript = build_artifact_store_for_uri(settings, uri).read_json(
         settings.transcript_container_name,
         _blob_name_from_url(uri, settings.transcript_container_name),
     )
@@ -90,7 +90,7 @@ def _get_visual_context(req: func.HttpRequest, jobId: str) -> func.HttpResponse:
             http_status=404,
         )
     settings = AppSettings.from_env()
-    visual_context = build_artifact_store(settings).read_json(
+    visual_context = build_artifact_store_for_uri(settings, uri).read_json(
         settings.transcript_container_name,
         _blob_name_from_url(uri, settings.transcript_container_name),
     )
@@ -117,7 +117,7 @@ def _get_minutes(req: func.HttpRequest, jobId: str) -> func.HttpResponse:
                 http_status=404,
             )
         blob_name = _blob_name_from_url(uri, settings.minutes_container_name)
-        markdown = build_artifact_store(settings).read_text(
+        markdown = build_artifact_store_for_uri(settings, uri).read_text(
             settings.minutes_container_name, blob_name
         )
         return func.HttpResponse(
@@ -134,7 +134,7 @@ def _get_minutes(req: func.HttpRequest, jobId: str) -> func.HttpResponse:
             message="議事録はまだ準備できていません。",
             http_status=404,
         )
-    minutes = build_artifact_store(settings).read_json(
+    minutes = build_artifact_store_for_uri(settings, uri).read_json(
         settings.minutes_container_name,
         _blob_name_from_url(uri, settings.minutes_container_name),
     )

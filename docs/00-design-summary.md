@@ -87,7 +87,8 @@ Fast Transcription 完了後、まず transcript を表示可能にする。続�
 | speaker ID が実名と一致しない | 高 | 実名識別しない。UIで speaker mapping を登録 |
 | 大容量音声/動画で待ち時間が長い | 中 | 標準経路は300MB/500MBで制限。CU経路は4GBまで許可するが大容量デモには注意喚起 |
 | Azure OpenAIのTPM/RPM不足 | 高 | `gpt-5.4-mini` / `gpt-5.4` capacity 100をdevで設定済み。direct/fallbackの発動状況、指数バックオフ、クォータ監視 |
-| Storage public endpointが無効化される | 高 | Fast Transcription `audioUrl` とブラウザ直接アップロードの前提。Bicepで `publicNetworkAccess=Enabled` を明示し、Policy/手動変更によるドリフトを監視 |
+| Ingest Storage public endpointが無効化される | 高 | Fast Transcription `audioUrl`、Content Understanding URL参照、ブラウザ直接アップロードの前提。Bicepでingest側の `publicNetworkAccess=Enabled` を明示し、成果物はprivate Artifact Storageへ分離する |
+| Cosmos public accessをPrivate Endpoint疎通前に閉じる | 高 | Functionsがjob metadataへ到達できず処理停止。VNet Integration/Private DNS/Private Endpoint疎通確認後に別デプロイでlockdownする |
 | HTTP要求がタイムアウトする | 高 | `202 Accepted` + Durable Functions 非同期パターン |
 | Blob SAS漏えい | 高 | User Delegation SAS、短時間TTL、最小権限、HTTPSのみ。Application InsightsでSAS/query漏えいを継続スキャン |
 

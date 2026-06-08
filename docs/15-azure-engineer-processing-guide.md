@@ -13,16 +13,16 @@ Browser
   -> App Service / Express access-key gate
   -> Functions API
   -> User Delegation SAS発行
-  -> Browser direct PUT to Blob Storage
+  -> Browser direct PUT to Public Ingest Storage
   -> upload-complete
   -> Durable Functions orchestration
-  -> m4a/mp4 preprocessing if needed
+  -> m4a/mp4 preprocessing to ingest FLAC if needed
   -> Fast Transcription audioUrl + diarization
-  -> normalized transcript保存
+  -> normalized transcriptをArtifact Storageへ保存（分離前は既存Storage）
   -> direct minutes generation
   -> minutes schema validation
   -> Markdown rendering
-  -> Blob / Cosmos DBへ結果保存
+  -> Artifact Storage（分離前は既存Storage）/ Cosmos DBへ結果保存
   -> UI pollingで表示
 ```
 
@@ -33,7 +33,8 @@ Browser
 | Azure App Service | React UI配信、共有アクセスキーのゲート、`/api` reverse proxy |
 | Azure Functions Premium | HTTP API、Durable Functions Activity/Orchestrator |
 | Durable Task Scheduler | orchestration state、checkpoint、retry管理 |
-| Azure Blob Storage | raw audio、前処理済み音声、raw/normalized transcript、minutes JSON/Markdown |
+| Public Ingest Storage | raw audio、Speech/CUが読む入力、標準経路の前処理済みFLAC |
+| Private Artifact Storage（中期/有効化時） | raw/normalized transcript、minutes JSON/Markdown、visual context |
 | Azure Cosmos DB for NoSQL | job state、progress、outputs、speaker mapping |
 | Azure Speech in Foundry Tools | Fast Transcription + diarization |
 | Azure OpenAI in Microsoft Foundry Models | direct minutes generation、chunk fallback |
@@ -142,12 +143,14 @@ Activity別の時間はApplication Insightsのtraceで確認する。詳細KQL�
 
 1. App Serviceの共有アクセスキーとFunctions用proxy secretが別値で設定されている。
 2. Functionsのmanaged identityにStorage/Cosmos DB/Speech/OpenAIの必要ロールがある。
-3. Blob public endpointが、ブラウザ直接アップロードとSpeech `audioUrl` 取得に必要な範囲で有効。
-4. Storage account keyを使ったSAS発行をしていない。
-5. Function App CORS / Storage CORSがfrontend originに限定されている。
-6. Application InsightsにSAS URL全文、token、key、音声本文、transcript全文、minutes全文が出ていない。
-7. 短い音声でE2E smokeを実施し、`DONE`、transcript取得、minutes取得を確認する。
-8. 代表的な長尺音声でfast/qualityの時間と品質を確認する。
+3. Ingest Blob public endpointが、ブラウザ直接アップロード、Speech `audioUrl`、Content Understanding URL参照に必要な範囲で有効。
+4. private Artifact Storageを有効化する場合、Functions VNet Integration、Private DNS、Blob Private Endpoint経由でtranscript/minutes/visual contextを保存・取得できる。
+5. Cosmos DBをprivate化する場合、Private Endpoint疎通確認後にpublic accessを無効化している。
+6. Storage account keyを使ったSAS発行をしていない。
+7. Function App CORS / Storage CORSがfrontend originに限定されている。
+8. Application InsightsにSAS URL全文、token、key、音声本文、transcript全文、minutes全文が出ていない。
+9. 短い音声でE2E smokeを実施し、`DONE`、transcript取得、minutes取得を確認する。
+10. 代表的な長尺音声でfast/qualityの時間と品質を確認する。
 
 ## 11. 詳細ドキュメントへのリンク
 

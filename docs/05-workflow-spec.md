@@ -100,7 +100,7 @@ def orchestrator(context):
         })
 ```
 
-`CreateReadSasActivity` は名前上はSAS発行だが、dev MVPではm4a/mp4互換性対応もここで行う。標準経路では、入力がm4aまたはmp4の場合、Cosmosのprogressを `PREPROCESSING` にし、`imageio-ffmpeg` のffmpegで音声トラックだけを16kHz mono FLACへ変換し、audio container内の `preprocessed/{tenantId}/{jobId}/input.flac` に保存してから、そのBlobのread SASを返す。その他の対応音声形式は元のraw audio Blobのread SASを返す。Content Understanding実験経路では、映像情報を使うため元MP4 Blobのread SASを渡す。
+`CreateReadSasActivity` は名前上はSAS発行だが、dev MVPではm4a/mp4互換性対応もここで行う。標準経路では、入力がm4aまたはmp4の場合、Cosmosのprogressを `PREPROCESSING` にし、`imageio-ffmpeg` のffmpegで音声トラックだけを16kHz mono FLACへ変換し、Speechが読む入力として public ingest Storage の audio container 内 `preprocessed/{tenantId}/{jobId}/input.flac` に保存してから、そのBlobのread SASを返す。その他の対応音声形式は元のraw audio Blobのread SASを返す。Content Understanding実験経路では、映像情報を使うため元MP4 Blobのread SASを渡す。
 
 Content Understanding実験経路では、`AnalyzeContentUnderstandingActivity` は解析開始だけを行い、operation URLを返す。OrchestratorはDurable timerで待機し、`PollContentUnderstandingActivity` を繰り返し呼ぶ。これにより、大きい動画の解析中にActivityが長時間ブロックしてtimeoutすることを避ける。
 

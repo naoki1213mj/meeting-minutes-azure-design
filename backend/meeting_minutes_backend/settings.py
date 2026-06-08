@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 from meeting_minutes_backend.azure_credentials import build_credential
 from meeting_minutes_backend.blob_artifacts import BlobArtifactStore
@@ -37,13 +38,22 @@ class AppSettings:
     chunk_summary_deployment_name: str
     final_merge_deployment_name: str
     speech_request_timeout_seconds: float
+    ingest_storage_account_url: str | None = None
+    artifact_storage_account_url: str | None = None
+    private_artifact_storage_account_url: str | None = None
+    ingest_container_name: str = "audio"
 
     @classmethod
     def from_env(cls) -> AppSettings:
+        legacy_storage_account_url = os.getenv("AZURE_STORAGE_ACCOUNT_URL")
+        ingest_container_name = os.getenv(
+            "AZURE_INGEST_CONTAINER_NAME",
+            os.getenv("AZURE_STORAGE_CONTAINER_NAME", "audio"),
+        )
         return cls(
             environment=os.getenv("MEETING_MINUTES_ENV", os.getenv("ENVIRONMENT", "local")).lower(),
-            storage_account_url=os.getenv("AZURE_STORAGE_ACCOUNT_URL"),
-            storage_container_name=os.getenv("AZURE_STORAGE_CONTAINER_NAME", "audio"),
+            storage_account_url=legacy_storage_account_url,
+            storage_container_name=os.getenv("AZURE_STORAGE_CONTAINER_NAME", ingest_container_name),
             transcript_container_name=os.getenv("AZURE_TRANSCRIPT_CONTAINER_NAME", "transcript"),
             minutes_container_name=os.getenv("AZURE_MINUTES_CONTAINER_NAME", "minutes"),
             cosmos_endpoint=os.getenv("AZURE_COSMOS_ENDPOINT"),
@@ -80,16 +90,38 @@ class AppSettings:
             speech_request_timeout_seconds=float(
                 os.getenv("AZURE_SPEECH_REQUEST_TIMEOUT_SECONDS", "480")
             ),
+            ingest_storage_account_url=os.getenv(
+                "AZURE_INGEST_STORAGE_ACCOUNT_URL",
+                legacy_storage_account_url,
+            ),
+            artifact_storage_account_url=os.getenv(
+                "AZURE_ARTIFACT_STORAGE_ACCOUNT_URL",
+                legacy_storage_account_url,
+            ),
+            private_artifact_storage_account_url=os.getenv(
+                "AZURE_PRIVATE_ARTIFACT_STORAGE_ACCOUNT_URL"
+            ),
+            ingest_container_name=ingest_container_name,
         )
 
     @property
     def is_local(self) -> bool:
         return self.environment == "local"
 
+    @property
+    def resolved_ingest_storage_account_url(self) -> str | None:
+        return self.ingest_storage_account_url or self.storage_account_url
+
+    @property
+    def resolved_artifact_storage_account_url(self) -> str | None:
+        return self.artifact_storage_account_url or self.storage_account_url
+
     def validate_for_azure(self) -> None:
         missing = []
-        if not self.storage_account_url:
-            missing.append("AZURE_STORAGE_ACCOUNT_URL")
+        if not self.resolved_ingest_storage_account_url:
+            missing.append("AZURE_INGEST_STORAGE_ACCOUNT_URL or AZURE_STORAGE_ACCOUNT_URL")
+        if not self.resolved_artifact_storage_account_url:
+            missing.append("AZURE_ARTIFACT_STORAGE_ACCOUNT_URL or AZURE_STORAGE_ACCOUNT_URL")
         if not self.cosmos_endpoint:
             missing.append("AZURE_COSMOS_ENDPOINT")
         if missing:
@@ -138,14 +170,26 @@ def build_job_repository(settings: AppSettings) -> JobRepository:
     )
 
 
-def build_blob_sas_issuer(settings: AppSettings) -> BlobSasIssuer:
+def build_ingest_blob_sas_issuer(settings: AppSettings) -> BlobSasIssuer:
     if settings.is_local:
         return LocalBlobSasIssuer()
 
     settings.validate_for_azure()
     return AzureBlobSasIssuer(
-        account_url=_required(settings.storage_account_url),
-        container_name=settings.storage_container_name,
+        account_url=_required(settings.resolved_ingest_storage_account_url),
+        container_name=settings.ingest_container_name,
+        credential=build_credential(),
+    )
+
+
+def build_blob_sas_issuer(settings: AppSettings) -> BlobSasIssuer:
+    return build_ingest_blob_sas_issuer(settings)
+
+
+def build_ingest_blob_store(settings: AppSettings) -> BlobArtifactStore:
+    settings.validate_for_azure()
+    return BlobArtifactStore(
+        account_url=_required(settings.resolved_ingest_storage_account_url),
         credential=build_credential(),
     )
 
@@ -153,7 +197,18 @@ def build_blob_sas_issuer(settings: AppSettings) -> BlobSasIssuer:
 def build_artifact_store(settings: AppSettings) -> BlobArtifactStore:
     settings.validate_for_azure()
     return BlobArtifactStore(
-        account_url=_required(settings.storage_account_url),
+        account_url=_required(settings.resolved_artifact_storage_account_url),
+        credential=build_credential(),
+    )
+
+
+def build_artifact_store_for_uri(
+    settings: AppSettings,
+    artifact_uri: str,
+) -> BlobArtifactStore:
+    settings.validate_for_azure()
+    return BlobArtifactStore(
+        account_url=_required(_storage_account_url_for_artifact_uri(settings, artifact_uri)),
         credential=build_credential(),
     )
 
@@ -220,3 +275,19 @@ def _required(value: str | None) -> str:
     if not value:
         raise RuntimeError("Expected non-empty setting after validation")
     return value
+
+
+def _storage_account_url_for_artifact_uri(
+    settings: AppSettings,
+    artifact_uri: str,
+) -> str | None:
+    uri_host = urlparse(artifact_uri).netloc.lower()
+    for candidate in (
+        settings.resolved_artifact_storage_account_url,
+        settings.private_artifact_storage_account_url,
+        settings.storage_account_url,
+        settings.resolved_ingest_storage_account_url,
+    ):
+        if candidate and uri_host == urlparse(candidate).netloc.lower():
+            return candidate
+    return settings.resolved_artifact_storage_account_url

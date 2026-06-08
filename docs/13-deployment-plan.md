@@ -139,7 +139,10 @@ azd deploy frontend
 - `azure.yaml` の backend package hook は root `specs/` を package に含めるために必要です。
 - Functions package には schema validation に必要な JSON Schema を含めます。
 - Backend は Python 3.13 を前提にします。CI や runner で Python 3.14 へ上げる場合は ADR を更新してください。
-- Storage Blob data plane は、browser direct upload と Fast Transcription `audioUrl` のため public endpoint 到達性が必要です。Blob 匿名公開と shared key access は無効化し、User Delegation SAS で保護します。
+- Ingest Storage Blob data plane（分離前のdevではingestを兼ねる既存Storage）は、browser direct upload と Fast Transcription `audioUrl` のため public endpoint 到達性が必要です。Blob 匿名公開と shared key access は無効化し、User Delegation SAS で保護します。
+- 中期ネットワークハードニングでは `enablePrivateArtifacts` と `enableCosmosPrivateEndpoint` を先に有効化し、Function App のPrivate Endpoint到達性を検証してから `lockDownCosmosPublicAccess` を有効化します。一括でCosmos public accessを閉じないでください。
+- `enablePrivateArtifacts=true` の場合、transcript/minutes/visual contextなどのartifactはprivate Artifact Storageへ保存します。Speech/CUが読むraw inputと前処理済みFLACはpublic ingest Storageに残します。
+- 現在の `infra/main.parameters.json` は、検証済みdev環境に合わせて private Artifact Storage と Cosmos public access lockdown を有効化した最終値を保持しています。既存public構成へ段階的に適用する場合は、最初のprovisionだけ `lockDownCosmosPublicAccess` を `false` にして疎通確認後に戻してください。
 - Content Understanding の動画理解（実験）経路を使う場合は、`gpt-4.1-mini-cu` deployment、Content Understanding default model mapping、`minutes_video_ja` analyzer が必要です。BicepはdeploymentとFunction App設定を作成しますが、Content Understanding default mapping と analyzer 作成は現時点では手動/補助スクリプト手順として管理します。CU経路は4GB/2時間までのURL参照Analyze APIを使いますが、大容量動画はアップロード時間・解析時間・コストが大きくなります。256MB超のブラウザアップロードはブロック分割アップロードを使います。公開ログに endpoint、token、SAS URL、実動画名を貼らないでください。
 
 ## 7. Smoke test checklist
