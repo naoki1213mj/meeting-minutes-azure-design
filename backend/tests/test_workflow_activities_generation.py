@@ -11,7 +11,7 @@ import pytest
 import meeting_minutes_backend.workflow_activities as workflow_activities
 from meeting_minutes_backend.blob_sas import UploadSas
 from meeting_minutes_backend.errors import AppError
-from meeting_minutes_backend.models import ProcessingRoute
+from meeting_minutes_backend.models import ProcessingRoute, Progress
 from meeting_minutes_backend.workflow_activities import (
     _should_fallback_to_chunk_minutes,
     create_read_sas,
@@ -295,3 +295,61 @@ def test_poll_content_understanding_http_error_logs_sanitized_details(
     logged = json.loads(log_records[0].message)
     assert logged["details"]["statusCode"] == 502
     assert logged["details"]["operationError"]["code"] == "BadGateway"
+
+
+def test_poll_content_understanding_running_updates_progress(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeRecord:
+        def __init__(self) -> None:
+            self.saved_update: dict[str, object] | None = None
+
+        def model_copy(self, update: dict[str, object]) -> FakeRecord:
+            self.saved_update = update
+            return self
+
+    class FakeRepository:
+        def __init__(self) -> None:
+            self.record = FakeRecord()
+            self.saved: FakeRecord | None = None
+
+        def get(self, tenant_id: str, job_id: str) -> FakeRecord:
+            assert (tenant_id, job_id) == ("tenant-a", "job-a")
+            return self.record
+
+        def save(self, record: FakeRecord) -> None:
+            self.saved = record
+
+    class FakeClient:
+        def get_result(self, operation_url: str) -> dict[str, object]:
+            assert operation_url == "https://foundry.example/operations/op-a"
+            return {"status": "Running"}
+
+    repo = FakeRepository()
+    monkeypatch.setattr(
+        workflow_activities.AppSettings,
+        "from_env",
+        lambda: SimpleNamespace(),
+    )
+    monkeypatch.setattr(
+        workflow_activities,
+        "build_content_understanding_client",
+        lambda _settings: FakeClient(),
+    )
+    monkeypatch.setattr(workflow_activities, "build_job_repository", lambda _settings: repo)
+
+    result = poll_content_understanding_analysis(
+        {
+            "job": {"tenantId": "tenant-a", "jobId": "job-a"},
+            "operationUrl": "https://foundry.example/operations/op-a",
+            "pollAttempt": 3,
+        }
+    )
+
+    assert result == {"status": "Running"}
+    assert repo.saved is repo.record
+    assert repo.record.saved_update is not None
+    progress = repo.record.saved_update["progress"]
+    assert isinstance(progress, Progress)
+    expected_message = "Content Understandingで動画を解析しています。状態: Running（確認 3 回目）"
+    assert progress.message == expected_message

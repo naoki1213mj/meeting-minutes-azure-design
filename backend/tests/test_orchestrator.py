@@ -94,12 +94,13 @@ def test_orchestrator_routes_content_understanding_jobs_to_cu_activities() -> No
     assert analyze_call.payload == {"job": job, "contentUrl": "https://example.invalid/video"}
     poll_call = _send_activity(generator, operation)
     assert poll_call.name == "PollContentUnderstandingActivity"
-    assert poll_call.payload == {"job": job, **operation}
+    assert poll_call.payload == {"job": job, "pollAttempt": 1, **operation}
     timer = generator.send(running)
     assert isinstance(timer, TimerCall)
     second_poll_call = generator.send(None)
     assert isinstance(second_poll_call, ActivityCall)
     assert second_poll_call.name == "PollContentUnderstandingActivity"
+    assert second_poll_call.payload == {"job": job, "pollAttempt": 2, **operation}
     normalize_call = _send_activity(generator, cu_raw)
     assert normalize_call.name == "NormalizeContentUnderstandingTranscriptActivity"
     assert normalize_call.payload == {"job": job, **cu_raw}

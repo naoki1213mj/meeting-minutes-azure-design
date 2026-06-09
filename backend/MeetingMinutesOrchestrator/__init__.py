@@ -42,10 +42,10 @@ def orchestrator_function(
                 _raise_content_understanding_failure(operation)
 
             raw_transcript: object = None
-            for _attempt in range(CONTENT_UNDERSTANDING_MAX_POLLS):
+            for attempt in range(CONTENT_UNDERSTANDING_MAX_POLLS):
                 poll_result = yield context.call_activity(
                     "PollContentUnderstandingActivity",
-                    {"job": job, **operation},
+                    {"job": job, "pollAttempt": attempt + 1, **operation},
                 )
                 if not isinstance(poll_result, dict):
                     raise TypeError("PollContentUnderstandingActivity must return an object")

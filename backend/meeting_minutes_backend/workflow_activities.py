@@ -187,6 +187,7 @@ def start_content_understanding_analysis(payload: dict[str, object]) -> dict[str
 def poll_content_understanding_analysis(payload: dict[str, object]) -> dict[str, object]:
     job = _required_dict(payload, "job")
     operation_url = _required_string(payload, "operationUrl")
+    poll_attempt = _optional_int(payload, "pollAttempt")
     tenant_id = _required_string(job, "tenantId")
     job_id = _required_string(job, "jobId")
     settings = AppSettings.from_env()
@@ -211,6 +212,13 @@ def poll_content_understanding_analysis(payload: dict[str, object]) -> dict[str,
                 details=operation_details,
             )
             return {"status": str(status), "error": operation_details}
+        _update_content_understanding_poll_progress(
+            settings=settings,
+            tenant_id=tenant_id,
+            job_id=job_id,
+            operation_status=str(status or "Running"),
+            poll_attempt=poll_attempt,
+        )
         return {"status": str(status or "Running")}
 
     store = build_artifact_store(settings)
@@ -739,6 +747,37 @@ def _log_content_understanding_failure(
         LOGGER.debug("content understanding failure telemetry emission failed", exc_info=True)
 
 
+def _update_content_understanding_poll_progress(
+    *,
+    settings: AppSettings,
+    tenant_id: str,
+    job_id: str,
+    operation_status: str,
+    poll_attempt: int | None,
+) -> None:
+    repository = build_job_repository(settings)
+    record = repository.get(tenant_id, job_id)
+    if record is None:
+        return
+    now = _utc_now()
+    suffix = f"（確認 {poll_attempt} 回目）" if poll_attempt else ""
+    message = f"Content Understandingで動画を解析しています。状態: {operation_status}{suffix}"
+    repository.save(
+        record.model_copy(
+            update={
+                "status": JobStatus.TRANSCRIBING,
+                "progress": Progress(
+                    step="ANALYZING_CONTENT",
+                    percent=20,
+                    message=message,
+                    updatedAt=now,
+                ),
+                "updatedAt": now,
+            }
+        )
+    )
+
+
 def _required_string(payload: dict[str, object], key: str) -> str:
     value = payload.get(key)
     if not isinstance(value, str) or not value:
@@ -758,6 +797,11 @@ def _required_int(payload: dict[str, object], key: str) -> int:
     if not isinstance(value, int):
         raise TypeError(f"{key} must be an integer")
     return value
+
+
+def _optional_int(payload: dict[str, object], key: str) -> int | None:
+    value = payload.get(key)
+    return value if isinstance(value, int) else None
 
 
 def _utc_now() -> datetime:
