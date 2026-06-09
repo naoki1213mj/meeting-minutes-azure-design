@@ -34,6 +34,9 @@
     },
     "privateEndpointSubnetPrefix": {
       "value": "10.42.0.32/27"
+    },
+    "foundryProjectName": {
+      "value": "minutes-studio"
     }
   }
 }

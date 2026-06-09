@@ -74,7 +74,8 @@
 | Ingest Blob Storage | raw upload、Speech/CUが取得する入力、標準経路の前処理済みFLAC保存 | dev MVPでは既存Storageを使用。public endpoint有効、共有キー/Blob匿名公開は無効 |
 | Artifact Storage | raw transcript response、normalized transcript、chunk、minutes JSON/Markdown、visual contextなどの成果物保存 | 中期対策でPrivate Endpoint付きの別Storage accountへ分離 |
 | Azure Cosmos DB for NoSQL | ジョブ状態・speaker mapping保存 | デプロイ済み |
-| AIServices `<ai-services-name>` | Speech/OpenAI統合リソース | デプロイ済み。local auth disabled |
+| AIServices `<ai-services-name>` | Speech/OpenAI/CU統合のMicrosoft Foundry resource | デプロイ済み。local auth disabled、project management enabled |
+| Microsoft Foundry project `minutes-studio` | new Foundry portalでのデモ/実験用project child resource | デプロイ済み。classic `Microsoft.MachineLearningServices/workspaces` hub/projectは使わない |
 | Azure Speech in Foundry Tools | Fast Transcription + diarization | AIServices endpointを使用 |
 | Azure OpenAI in Microsoft Foundry Models | 議事録生成 | `gpt-5.4-mini`, `gpt-5.4`、GlobalStandard capacity 100 each |
 | Application Insights + Log Analytics | 監視・トレース | デプロイ済み。機密ログ漏えいスキャン実施済み |

@@ -51,6 +51,9 @@ param functionIntegrationSubnetPrefix string = '10.42.0.0/27'
 
 param privateEndpointSubnetPrefix string = '10.42.0.32/27'
 
+@description('Microsoft Foundry project child resource name for the new Foundry portal.')
+param foundryProjectName string = 'minutes-studio'
+
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   name: 'rg-${environmentName}'
   location: location
@@ -78,6 +81,7 @@ module app 'app.bicep' = {
     vnetAddressPrefix: vnetAddressPrefix
     functionIntegrationSubnetPrefix: functionIntegrationSubnetPrefix
     privateEndpointSubnetPrefix: privateEndpointSubnetPrefix
+    foundryProjectName: foundryProjectName
   }
 }
 
@@ -93,3 +97,5 @@ output APPLICATIONINSIGHTS_CONNECTION_STRING string = app.outputs.applicationIns
 output AZURE_AI_SERVICES_NAME string = app.outputs.aiServicesName
 output AZURE_SPEECH_ENDPOINT string = app.outputs.aiServicesEndpoint
 output AZURE_OPENAI_BASE_URL string = app.outputs.openAiBaseUrl
+output AZURE_FOUNDRY_PROJECT_NAME string = app.outputs.foundryProjectName
+output AZURE_FOUNDRY_PROJECT_ID string = app.outputs.foundryProjectId

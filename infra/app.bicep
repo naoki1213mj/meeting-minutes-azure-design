@@ -44,6 +44,9 @@ param finalMergeDeploymentName string = 'gpt-5.4'
 
 param contentUnderstandingCompletionDeploymentName string = 'gpt-4.1-mini-cu'
 
+@description('Microsoft Foundry project child resource name for the new Foundry portal. Runtime APIs continue to use account-level endpoints.')
+param foundryProjectName string = 'minutes-studio'
+
 @minValue(1)
 param chunkSummaryDeploymentCapacity int = 100
 
@@ -115,7 +118,26 @@ resource aiServices 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
   properties: {
     customSubDomainName: aiServicesName
     disableLocalAuth: true
+    allowProjectManagement: true
+    defaultProject: foundryProjectName
+    associatedProjects: [
+      foundryProjectName
+    ]
     publicNetworkAccess: 'Enabled'
+  }
+}
+
+resource foundryProject 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
+  parent: aiServices
+  name: foundryProjectName
+  location: location
+  tags: commonTags
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    displayName: 'Minutes Studio'
+    description: 'Microsoft Foundry project for Minutes Studio demos and experiments.'
   }
 }
 
@@ -937,3 +959,5 @@ output applicationInsightsConnectionString string = appInsights.properties.Conne
 output aiServicesName string = aiServices.name
 output aiServicesEndpoint string = aiServices.properties.endpoint
 output openAiBaseUrl string = '${aiServices.properties.endpoint}openai/v1/'
+output foundryProjectName string = foundryProject.name
+output foundryProjectId string = foundryProject.id

@@ -26,7 +26,7 @@ Minutes Studio は、録音済み音声ファイルから **話者分離付き t
 - **速度と品質を選択:** 議事録生成は高速（GPT-5.4-mini）と高品質（GPT-5.4）をジョブごとに選べます。
 - **根拠を残す:** 決定事項、ToDo、未決事項、リスクに timestamp を残します。
 - **推測しない:** transcript にない事実、担当者、期限、参加者名を補完しません。
-- **Azure 標準構成:** Azure Functions、Durable Functions、Blob Storage、Cosmos DB、Application Insights、Bicep を中心に構成します。
+- **Azure 標準構成:** Azure Functions、Durable Functions、Blob Storage、Cosmos DB、Microsoft Foundry project、Application Insights、Bicep を中心に構成します。
 
 ## dev MVP の実装範囲
 

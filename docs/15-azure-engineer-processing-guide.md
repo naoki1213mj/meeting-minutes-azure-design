@@ -38,6 +38,7 @@ Browser
 | Azure Cosmos DB for NoSQL | job state、progress、outputs、speaker mapping |
 | Azure Speech in Foundry Tools | Fast Transcription + diarization |
 | Azure OpenAI in Microsoft Foundry Models | direct minutes generation、chunk fallback |
+| Microsoft Foundry project `minutes-studio` | new Foundry portalでのデモ/実験整理。runtime APIはAIServices account-level endpointを継続 |
 | Application Insights / Log Analytics | traces、duration telemetry、障害調査 |
 | Managed Identity / Azure RBAC | Storage/Cosmos/Speech/OpenAIへのkeylessアクセス |
 
