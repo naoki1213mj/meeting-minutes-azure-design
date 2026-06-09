@@ -1,205 +1,242 @@
 <mxfile host="65bd71144e">
-    <diagram id="azure-network-architecture" name="Azure network architecture">
-        <mxGraphModel dx="2000" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1500" math="0" shadow="0">
-            <root>
-                <mxCell id="0"/>
-                <mxCell id="1" parent="0"/>
-                <mxCell id="title" value="Minutes Studio - Network-aware Azure Architecture" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0078D4;strokeColor=#005A9E;fontColor=#ffffff;fontSize=24;fontStyle=1;align=center;verticalAlign=middle;spacing=12;" parent="1" vertex="1">
-                    <mxGeometry x="40" y="30" width="1820" height="60" as="geometry"/>
-                </mxCell>
-                <mxCell id="subtitle" value="Public ingest stays reachable for browser upload and Speech/CU URL fetch; artifacts and Cosmos use Private Endpoint + Private DNS." style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontColor=#605E5C;" parent="1" vertex="1">
-                    <mxGeometry x="250" y="98" width="1400" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="zone-public" value="Public ingress and app endpoints" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FC;strokeColor=#0078D4;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
-                    <mxGeometry x="40" y="150" width="1040" height="260" as="geometry"/>
-                </mxCell>
-                <mxCell id="zone-ai" value="AIServices public endpoints" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8F0FF;strokeColor=#5C2D91;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
-                    <mxGeometry x="1120" y="150" width="360" height="260" as="geometry"/>
-                </mxCell>
-                <mxCell id="zone-obs" value="Observability managed services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#605E5C;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
-                    <mxGeometry x="1530" y="150" width="330" height="260" as="geometry"/>
-                </mxCell>
-                <mxCell id="network-note" value="Network isolation notes&lt;br&gt;VNets: thick border&lt;br&gt;Subnets: dashed border&lt;br&gt;Private DNS zones link to VNet, not subnets&lt;br&gt;PE NICs live in the Private Endpoint subnet&lt;br&gt;Ingest Storage public endpoint remains enabled" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9CC;strokeColor=#D6B656;fontSize=12;align=left;verticalAlign=top;spacing=10;strokeWidth=2;" parent="1" vertex="1">
-                    <mxGeometry x="40" y="440" width="310" height="220" as="geometry"/>
-                </mxCell>
-                <mxCell id="vnet" value="App VNet - 10.42.0.0/24" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;verticalAlign=top;fontSize=18;fontStyle=1;align=center;spacingTop=16;strokeWidth=4;" parent="1" vertex="1">
-                    <mxGeometry x="390" y="480" width="1010" height="690" as="geometry"/>
-                </mxCell>
-                <mxCell id="subnet-functions" value="functions-outbound - 10.42.0.0/27&lt;br&gt;Delegated to Microsoft.Web/serverFarms&lt;br&gt;Functions Premium outbound VNet integration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6F4EA;strokeColor=#82B366;verticalAlign=top;fontSize=13;fontStyle=1;align=center;spacingTop=10;strokeWidth=2;dashed=1;dashPattern=8 8;" parent="1" vertex="1">
-                    <mxGeometry x="430" y="560" width="420" height="410" as="geometry"/>
-                </mxCell>
-                <mxCell id="subnet-private-endpoints" value="private-endpoints - 10.42.0.32/27&lt;br&gt;Private Endpoint NICs only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF7FF;strokeColor=#6C8EBF;verticalAlign=top;fontSize=13;fontStyle=1;align=center;spacingTop=10;strokeWidth=2;dashed=1;dashPattern=8 8;" parent="1" vertex="1">
-                    <mxGeometry x="910" y="560" width="440" height="410" as="geometry"/>
-                </mxCell>
-                <mxCell id="vnet-icon" value="VNet" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=11;verticalLabelPosition=bottom;verticalAlign=top;image=img/lib/azure2/networking/Virtual_Networks.svg;" parent="1" vertex="1">
-                    <mxGeometry x="1290" y="500" width="64" height="64" as="geometry"/>
-                </mxCell>
-                <mxCell id="browser" value="Browser / User&lt;br&gt;upload and review" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/general/Browser.svg;" parent="1" vertex="1">
-                    <mxGeometry x="130" y="225" width="92" height="92" as="geometry"/>
-                </mxCell>
-                <mxCell id="app-service" value="App Service&lt;br&gt;React frontend" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/app_services/App_Services.svg;" parent="1" vertex="1">
-                    <mxGeometry x="465" y="220" width="92" height="92" as="geometry"/>
-                </mxCell>
-                <mxCell id="ingest-storage" value="Public ingest Storage&lt;br&gt;raw audio / preprocessed FLAC&lt;br&gt;public endpoint ENABLED&lt;br&gt;anonymous/shared key disabled" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/storage/Storage_Accounts.svg;" parent="1" vertex="1">
-                    <mxGeometry x="820" y="210" width="96" height="96" as="geometry"/>
-                </mxCell>
-                <mxCell id="functions" value="Azure Functions Premium&lt;br&gt;HTTP API + Durable Functions&lt;br&gt;outbound through delegated subnet" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/compute/Function_Apps.svg;" parent="1" vertex="1">
-                    <mxGeometry x="590" y="655" width="110" height="110" as="geometry"/>
-                </mxCell>
-                <mxCell id="managed-identity" value="Managed identity&lt;br&gt;+ Azure RBAC" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/identity/Managed_Identities.svg;" parent="1" vertex="1">
-                    <mxGeometry x="595" y="835" width="96" height="96" as="geometry"/>
-                </mxCell>
-                <mxCell id="pe-artifact" value="PE NIC&lt;br&gt;Artifact Storage" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/networking/Private_Endpoint.svg;" parent="1" vertex="1">
-                    <mxGeometry x="970" y="675" width="86" height="86" as="geometry"/>
-                </mxCell>
-                <mxCell id="pe-cosmos" value="PE NIC&lt;br&gt;Cosmos DB" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/networking/Private_Endpoint.svg;" parent="1" vertex="1">
-                    <mxGeometry x="1155" y="675" width="86" height="86" as="geometry"/>
-                </mxCell>
-                <mxCell id="pe-note" value="Private Endpoint subnet contains NICs only.&lt;br&gt;Private services remain Azure managed services outside the VNet." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
-                    <mxGeometry x="965" y="840" width="330" height="70" as="geometry"/>
-                </mxCell>
-                <mxCell id="speech" value="Azure Speech in Foundry Tools&lt;br&gt;Fast Transcription + diarization" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=11;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/ai_machine_learning/Speech_Services.svg;" parent="1" vertex="1">
-                    <mxGeometry x="1155" y="215" width="76" height="76" as="geometry"/>
-                </mxCell>
-                <mxCell id="openai" value="Azure OpenAI in Microsoft Foundry Models&lt;br&gt;minutes generation" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=11;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/ai_machine_learning/Azure_OpenAI.svg;" parent="1" vertex="1">
-                    <mxGeometry x="1265" y="215" width="76" height="76" as="geometry"/>
-                </mxCell>
-                <mxCell id="cu" value="Content Understanding&lt;br&gt;video context" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=11;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/ai_machine_learning/Cognitive_Services.svg;" parent="1" vertex="1">
-                    <mxGeometry x="1370" y="215" width="76" height="76" as="geometry"/>
-                </mxCell>
-                <mxCell id="ai-note" value="Public service endpoints.&lt;br&gt;Speech/CU fetch media by audioUrl from public ingest Storage.&lt;br&gt;OpenAI receives transcript text via Functions." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5C2D91;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
-                    <mxGeometry x="1150" y="335" width="300" height="58" as="geometry"/>
-                </mxCell>
-                <mxCell id="appinsights" value="Application Insights&lt;br&gt;traces / metrics" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/devops/Application_Insights.svg;" parent="1" vertex="1">
-                    <mxGeometry x="1590" y="220" width="82" height="82" as="geometry"/>
-                </mxCell>
-                <mxCell id="loganalytics" value="Log Analytics&lt;br&gt;workspace" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/analytics/Log_Analytics_Workspaces.svg;" parent="1" vertex="1">
-                    <mxGeometry x="1740" y="220" width="82" height="82" as="geometry"/>
-                </mxCell>
-                <mxCell id="obs-note" value="Telemetry only.&lt;br&gt;No audio, transcript, minutes, SAS URL, or tokens in logs." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#605E5C;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
-                    <mxGeometry x="1575" y="345" width="240" height="48" as="geometry"/>
-                </mxCell>
-                <mxCell id="zone-private-data" value="Private data services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F0;strokeColor=#D83B01;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
-                    <mxGeometry x="1460" y="560" width="400" height="330" as="geometry"/>
-                </mxCell>
-                <mxCell id="artifact-storage" value="Private Artifact Storage&lt;br&gt;transcripts / minutes / visual context&lt;br&gt;public network access disabled" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/storage/Storage_Accounts.svg;" parent="1" vertex="1">
-                    <mxGeometry x="1525" y="635" width="92" height="92" as="geometry"/>
-                </mxCell>
-                <mxCell id="cosmos" value="Azure Cosmos DB for NoSQL&lt;br&gt;job metadata / speaker mapping&lt;br&gt;public access locked down after verification" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/databases/Azure_Cosmos_DB.svg;" parent="1" vertex="1">
-                    <mxGeometry x="1710" y="635" width="92" height="92" as="geometry"/>
-                </mxCell>
-                <mxCell id="dns-zone-container" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF7FF;strokeColor=#6C8EBF;verticalAlign=top;fontSize=12;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
-                    <mxGeometry x="1460" y="930" width="400" height="220" as="geometry"/>
-                </mxCell>
-                <mxCell id="dns-zones" value="Private DNS zones&lt;br&gt;privatelink.blob.core.windows.net&lt;br&gt;privatelink.documents.azure.com&lt;br&gt;A records point to PE NIC private IPs" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/networking/DNS_Zones.svg;" parent="1" vertex="1">
-                    <mxGeometry x="1600" y="980" width="94" height="94" as="geometry"/>
-                </mxCell>
-                <mxCell id="rollout-note" value="Rollout gates&lt;br&gt;1. enablePrivateArtifacts = true&lt;br&gt;2. enableCosmosPrivateEndpoint = true&lt;br&gt;3. Verify Functions reaches Artifact Storage and Cosmos via Private DNS + PE&lt;br&gt;4. lockDownCosmosPublicAccess = true only after verification&lt;br&gt;Keep ingest Storage public for browser upload and Speech/CU URL fetch." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF4CE;strokeColor=#FFB900;fontSize=13;align=left;verticalAlign=top;spacing=10;strokeWidth=3;" parent="1" vertex="1">
-                    <mxGeometry x="700" y="1220" width="660" height="230" as="geometry"/>
-                </mxCell>
-                <mxCell id="traffic-legend" value="Traffic legend&lt;br&gt;Red solid: public HTTPS 443 browser/app/ingest&lt;br&gt;Purple solid: AIServices HTTPS 443&lt;br&gt;Blue solid: Private Endpoint HTTPS 443&lt;br&gt;Orange dashed: managed identity / RBAC&lt;br&gt;Gray dashed: telemetry HTTPS 443&lt;br&gt;Blue dashed: Private DNS VNet link / A records" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#605E5C;fontSize=13;align=left;verticalAlign=top;spacing=10;strokeWidth=3;" parent="1" vertex="1">
-                    <mxGeometry x="40" y="1220" width="620" height="230" as="geometry"/>
-                </mxCell>
-                <mxCell id="public-rule" value="Public/private boundary&lt;br&gt;Public ingest: direct browser upload + Speech/CU URL fetch.&lt;br&gt;Private artifacts/Cosmos: Functions resolves private FQDNs to PE NIC IPs through VNet-linked Private DNS." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#107C10;fontSize=13;align=left;verticalAlign=top;spacing=10;strokeWidth=2;" parent="1" vertex="1">
-                    <mxGeometry x="1400" y="1220" width="460" height="230" as="geometry"/>
-                </mxCell>
-                <mxCell id="e-browser-app" value="HTTPS 443&lt;br&gt;Web UI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#D83B01;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.45;exitDx=0;exitDy=0;entryX=0;entryY=0.45;entryDx=0;entryDy=0;" parent="1" source="browser" target="app-service" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="e-browser-ingest" value="HTTPS 443&lt;br&gt;direct upload&lt;br&gt;User Delegation SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#D83B01;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.72;exitDx=0;exitDy=0;entryX=0;entryY=0.55;entryDx=0;entryDy=0;" parent="1" source="browser" target="ingest-storage" edge="1">
-                    <mxGeometry relative="1" y="14" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="350" y="340"/>
-                            <mxPoint x="730" y="340"/>
-                        </Array>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="e-app-functions" value="HTTPS 443&lt;br&gt;jobs API / upload-complete" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#D83B01;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.35;entryY=0;entryDx=0;entryDy=0;" parent="1" source="app-service" target="functions" edge="1">
-                    <mxGeometry relative="1" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="510" y="455"/>
-                            <mxPoint x="628" y="455"/>
-                        </Array>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="e-functions-ingest" value="HTTPS 443&lt;br&gt;SAS issue + HEAD/GET raw input&lt;br&gt;public endpoint" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#D83B01;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.65;exitY=0;exitDx=0;exitDy=0;entryX=0.35;entryY=1;entryDx=0;entryDy=0;" parent="1" source="functions" target="ingest-storage" edge="1">
-                    <mxGeometry relative="1" x="-0.2" y="-10" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="660" y="455"/>
-                            <mxPoint x="850" y="455"/>
-                        </Array>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="e-ai-ingest" value="HTTPS 443&lt;br&gt;Speech/CU audioUrl fetch&lt;br&gt;public endpoint" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#5C2D91;fontSize=11;labelBackgroundColor=#ffffff;exitX=0;exitY=0.35;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;" parent="1" source="zone-ai" target="ingest-storage" edge="1">
-                    <mxGeometry relative="1" x="0.1" y="-12" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="1088" y="230"/>
-                        </Array>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="e-functions-ai" value="HTTPS 443&lt;br&gt;Speech/OpenAI/CU APIs&lt;br&gt;managed identity / RBAC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#5C2D91;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0.15;entryY=1;entryDx=0;entryDy=0;" parent="1" source="functions" target="zone-ai" edge="1">
-                    <mxGeometry relative="1" x="-0.15" y="-8" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="735" y="455"/>
-                            <mxPoint x="1175" y="455"/>
-                        </Array>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="e-functions-pe-artifact" value="Private Endpoint&lt;br&gt;HTTPS 443 + MI/RBAC&lt;br&gt;artifact read/write" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#0078D4;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.42;exitDx=0;exitDy=0;entryX=0;entryY=0.45;entryDx=0;entryDy=0;" parent="1" source="functions" target="pe-artifact" edge="1">
-                    <mxGeometry relative="1" x="-0.25" y="-12" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="875" y="710"/>
-                        </Array>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="e-functions-pe-cosmos" value="Private Endpoint&lt;br&gt;HTTPS 443 + MI/RBAC&lt;br&gt;job metadata" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#0078D4;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.62;exitDx=0;exitDy=0;entryX=0;entryY=0.62;entryDx=0;entryDy=0;" parent="1" source="functions" target="pe-cosmos" edge="1">
-                    <mxGeometry relative="1" x="-0.1" y="12" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="875" y="790"/>
-                            <mxPoint x="1120" y="790"/>
-                        </Array>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="e-pe-artifact-storage" value="Private Link&lt;br&gt;privatelink.blob.core.windows.net" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#0078D4;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.42;exitDx=0;exitDy=0;entryX=0;entryY=0.45;entryDx=0;entryDy=0;" parent="1" source="pe-artifact" target="artifact-storage" edge="1">
-                    <mxGeometry relative="1" x="0.2" y="-12" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="1415" y="710"/>
-                        </Array>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="e-pe-cosmos-service" value="Private Link&lt;br&gt;privatelink.documents.azure.com" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#0078D4;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.62;exitDx=0;exitDy=0;entryX=0;entryY=0.65;entryDx=0;entryDy=0;" parent="1" source="pe-cosmos" target="cosmos" edge="1">
-                    <mxGeometry relative="1" x="0.1" y="12" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="1415" y="790"/>
-                            <mxPoint x="1660" y="790"/>
-                        </Array>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="e-dns-vnet" value="Private DNS VNet link&lt;br&gt;A records resolve private FQDNs to PE NIC IPs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#6C8EBF;fontSize=11;labelBackgroundColor=#ffffff;dashed=1;dashPattern=8 8;exitX=0;exitY=0.55;exitDx=0;exitDy=0;entryX=1;entryY=0.82;entryDx=0;entryDy=0;" parent="1" source="dns-zones" target="vnet" edge="1">
-                    <mxGeometry relative="1" x="-0.1" y="10" as="geometry"/>
-                </mxCell>
-                <mxCell id="e-functions-identity" value="managed identity / RBAC&lt;br&gt;no storage account keys" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#D79B00;fontSize=11;labelBackgroundColor=#ffffff;dashed=1;dashPattern=8 8;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="functions" target="managed-identity" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="e-functions-telemetry" value="telemetry&lt;br&gt;HTTPS 443" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontSize=11;labelBackgroundColor=#ffffff;dashed=1;dashPattern=8 8;exitX=0.55;exitY=0;exitDx=0;exitDy=0;entryX=0.15;entryY=1;entryDx=0;entryDy=0;" parent="1" source="functions" target="appinsights" edge="1">
-                    <mxGeometry relative="1" x="0.2" y="10" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="652" y="435"/>
-                            <mxPoint x="1602" y="435"/>
-                        </Array>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="e-app-telemetry" value="telemetry&lt;br&gt;HTTPS 443" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontSize=11;labelBackgroundColor=#ffffff;dashed=1;dashPattern=8 8;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.2;entryDx=0;entryDy=0;" parent="1" source="app-service" target="appinsights" edge="1">
-                    <mxGeometry relative="1" x="-0.2" y="-14" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="1110" y="235"/>
-                        </Array>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="e-ai-telemetry" value="dependency telemetry&lt;br&gt;no payload bodies" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontSize=11;labelBackgroundColor=#ffffff;dashed=1;dashPattern=8 8;exitX=1;exitY=0.55;exitDx=0;exitDy=0;entryX=0;entryY=0.55;entryDx=0;entryDy=0;" parent="1" source="appinsights" target="loganalytics" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-            </root>
-        </mxGraphModel>
-    </diagram>
+  <diagram id="azure-network-architecture" name="Azure network architecture">
+    <mxGraphModel dx="1900" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="Minutes Studio - Network Architecture" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0078D4;strokeColor=#005A9E;fontColor=#ffffff;fontSize=24;fontStyle=1;align=center;verticalAlign=middle;spacing=12;" parent="1" vertex="1">
+          <mxGeometry x="40" y="30" width="1820" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="subtitle" value="Only ingest remains public for browser upload and Speech/CU URL fetch. Artifacts and Cosmos use Private Endpoint + Private DNS." style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontColor=#605E5C;" parent="1" vertex="1">
+          <mxGeometry x="240" y="98" width="1420" height="30" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="zone-public" value="Public entry and managed PaaS endpoints" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FC;strokeColor=#0078D4;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="40" y="150" width="1820" height="240" as="geometry"/>
+        </mxCell>
+        <mxCell id="vnet" value="App VNet - 10.42.0.0/24" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;verticalAlign=top;fontSize=18;fontStyle=1;align=center;spacingTop=16;strokeWidth=4;" parent="1" vertex="1">
+          <mxGeometry x="360" y="450" width="900" height="370" as="geometry"/>
+        </mxCell>
+        <mxCell id="subnet-functions" value="functions-outbound - 10.42.0.0/27&lt;br&gt;Delegated to Microsoft.Web/serverFarms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6F4EA;strokeColor=#82B366;verticalAlign=top;fontSize=13;fontStyle=1;align=center;spacingTop=10;strokeWidth=2;dashed=1;dashPattern=8 8;" parent="1" vertex="1">
+          <mxGeometry x="400" y="520" width="360" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="subnet-private-endpoints" value="private-endpoints - 10.42.0.32/27&lt;br&gt;Private Endpoint NICs only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF7FF;strokeColor=#6C8EBF;verticalAlign=top;fontSize=13;fontStyle=1;align=center;spacingTop=10;strokeWidth=2;dashed=1;dashPattern=8 8;" parent="1" vertex="1">
+          <mxGeometry x="820" y="520" width="390" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="zone-private-data" value="Private managed data services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F0;strokeColor=#D83B01;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="1320" y="560" width="520" height="240" as="geometry"/>
+        </mxCell>
+        <mxCell id="zone-dns" value="Private DNS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF7FF;strokeColor=#6C8EBF;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="1320" y="430" width="520" height="95" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="card-browser" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0078D4;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="80" y="205" width="245" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="icon-browser" value="" style="image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/general/Browser.svg;" parent="1" vertex="1">
+          <mxGeometry x="105" y="238" width="56" height="56" as="geometry"/>
+        </mxCell>
+        <mxCell id="label-browser" value="Browser / User&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;upload and review&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#201F1E;" parent="1" vertex="1">
+          <mxGeometry x="175" y="230" width="130" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="card-frontend" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0078D4;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="390" y="205" width="245" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="icon-frontend" value="" style="image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/app_services/App_Services.svg;" parent="1" vertex="1">
+          <mxGeometry x="415" y="238" width="56" height="56" as="geometry"/>
+        </mxCell>
+        <mxCell id="label-frontend" value="App Service&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;React frontend + proxy&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#201F1E;" parent="1" vertex="1">
+          <mxGeometry x="485" y="230" width="130" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="card-ingest" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF4F4;strokeColor=#D83B01;strokeWidth=3;" parent="1" vertex="1">
+          <mxGeometry x="700" y="195" width="285" height="140" as="geometry"/>
+        </mxCell>
+        <mxCell id="tag-ingest" value="PUBLIC ENDPOINT ON" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D83B01;strokeColor=#A4262C;fontColor=#ffffff;fontSize=11;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+          <mxGeometry x="720" y="207" width="150" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="icon-ingest" value="" style="image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/storage/Storage_Accounts.svg;" parent="1" vertex="1">
+          <mxGeometry x="728" y="252" width="62" height="62" as="geometry"/>
+        </mxCell>
+        <mxCell id="label-ingest" value="Ingest Storage&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;raw audio / input FLAC&lt;br&gt;anonymous + shared key disabled&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#201F1E;" parent="1" vertex="1">
+          <mxGeometry x="805" y="242" width="160" height="82" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="card-ai" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8F0FF;strokeColor=#5C2D91;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="1080" y="205" width="285" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="icon-ai" value="" style="image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/ai_machine_learning/Cognitive_Services.svg;" parent="1" vertex="1">
+          <mxGeometry x="1105" y="238" width="56" height="56" as="geometry"/>
+        </mxCell>
+        <mxCell id="label-ai" value="AIServices&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;Speech / OpenAI / CU&lt;br&gt;public service endpoints&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#201F1E;" parent="1" vertex="1">
+          <mxGeometry x="1175" y="226" width="165" height="78" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="card-observability" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#605E5C;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="1470" y="205" width="320" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="icon-appinsights" value="" style="image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/devops/Application_Insights.svg;" parent="1" vertex="1">
+          <mxGeometry x="1500" y="238" width="52" height="52" as="geometry"/>
+        </mxCell>
+        <mxCell id="icon-loganalytics" value="" style="image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/analytics/Log_Analytics_Workspaces.svg;" parent="1" vertex="1">
+          <mxGeometry x="1570" y="238" width="52" height="52" as="geometry"/>
+        </mxCell>
+        <mxCell id="label-observability" value="Observability&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;App Insights + Log Analytics&lt;br&gt;metadata only&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#201F1E;" parent="1" vertex="1">
+          <mxGeometry x="1640" y="226" width="130" height="78" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="card-functions" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#107C10;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="455" y="590" width="240" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="icon-functions" value="" style="image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/compute/Function_Apps.svg;" parent="1" vertex="1">
+          <mxGeometry x="480" y="620" width="56" height="56" as="geometry"/>
+        </mxCell>
+        <mxCell id="label-functions" value="Azure Functions Premium&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;API + Durable Functions&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#201F1E;" parent="1" vertex="1">
+          <mxGeometry x="550" y="610" width="125" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="card-pe-artifact" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="850" y="575" width="145" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="icon-pe-artifact" value="" style="image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/networking/Private_Endpoint.svg;" parent="1" vertex="1">
+          <mxGeometry x="865" y="597" width="38" height="38" as="geometry"/>
+        </mxCell>
+        <mxCell id="label-pe-artifact" value="PE NIC&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Artifact Blob&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#201F1E;" parent="1" vertex="1">
+          <mxGeometry x="912" y="590" width="70" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="card-pe-cosmos" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="1030" y="575" width="145" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="icon-pe-cosmos" value="" style="image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/networking/Private_Endpoint.svg;" parent="1" vertex="1">
+          <mxGeometry x="1045" y="597" width="38" height="38" as="geometry"/>
+        </mxCell>
+        <mxCell id="label-pe-cosmos" value="PE NIC&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;Cosmos SQL&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#201F1E;" parent="1" vertex="1">
+          <mxGeometry x="1092" y="590" width="70" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="card-dns" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="1360" y="462" width="430" height="48" as="geometry"/>
+        </mxCell>
+        <mxCell id="icon-dns" value="" style="image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/networking/DNS_Zones.svg;" parent="1" vertex="1">
+          <mxGeometry x="1375" y="470" width="34" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="label-dns" value="privatelink.blob.core.windows.net + privatelink.documents.azure.com" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#201F1E;" parent="1" vertex="1">
+          <mxGeometry x="1420" y="467" width="350" height="38" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="card-artifact" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3FFF1;strokeColor=#107C10;strokeWidth=3;" parent="1" vertex="1">
+          <mxGeometry x="1370" y="625" width="200" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="tag-artifact" value="PUBLIC ACCESS OFF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#107C10;strokeColor=#0B6A0B;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+          <mxGeometry x="1385" y="637" width="130" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="icon-artifact" value="" style="image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/storage/Storage_Accounts.svg;" parent="1" vertex="1">
+          <mxGeometry x="1395" y="675" width="48" height="48" as="geometry"/>
+        </mxCell>
+        <mxCell id="label-artifact" value="Artifact Storage&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;transcript / minutes / visual context&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#201F1E;" parent="1" vertex="1">
+          <mxGeometry x="1453" y="670" width="100" height="58" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="card-cosmos" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3FFF1;strokeColor=#107C10;strokeWidth=3;" parent="1" vertex="1">
+          <mxGeometry x="1605" y="625" width="200" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="tag-cosmos" value="PUBLIC ACCESS OFF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#107C10;strokeColor=#0B6A0B;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+          <mxGeometry x="1620" y="637" width="130" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="icon-cosmos" value="" style="image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/databases/Azure_Cosmos_DB.svg;" parent="1" vertex="1">
+          <mxGeometry x="1630" y="675" width="48" height="48" as="geometry"/>
+        </mxCell>
+        <mxCell id="label-cosmos" value="Cosmos DB&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;job metadata / speaker mapping&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontStyle=1;fontColor=#201F1E;" parent="1" vertex="1">
+          <mxGeometry x="1688" y="670" width="98" height="58" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="note-security" value="Key security posture&lt;br&gt;* Storage account key is not used&lt;br&gt;* Data access uses managed identity + RBAC&lt;br&gt;* Ingest remains public only for upload and AI media fetch&lt;br&gt;* Artifacts and Cosmos are private after verification" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9CC;strokeColor=#D6B656;fontSize=13;align=left;verticalAlign=top;spacing=10;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="60" y="900" width="420" height="210" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend" value="Traffic legend&lt;br&gt;Red: public HTTPS 443&lt;br&gt;Purple: AIServices HTTPS 443&lt;br&gt;Blue: Private Endpoint HTTPS 443&lt;br&gt;Blue dashed: Private DNS VNet link&lt;br&gt;Gray dashed: telemetry only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#605E5C;fontSize=13;align=left;verticalAlign=top;spacing=10;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="520" y="900" width="380" height="210" as="geometry"/>
+        </mxCell>
+        <mxCell id="rollout" value="Rollout order&lt;br&gt;1. enablePrivateArtifacts = true&lt;br&gt;2. enableCosmosPrivateEndpoint = true&lt;br&gt;3. Verify Function App private connectivity&lt;br&gt;4. lockDownCosmosPublicAccess = true&lt;br&gt;CU remains explicit experimental route" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF4CE;strokeColor=#FFB900;fontSize=13;align=left;verticalAlign=top;spacing=10;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="940" y="900" width="400" height="210" as="geometry"/>
+        </mxCell>
+        <mxCell id="note-private-link" value="Private Link boundary&lt;br&gt;Private Endpoint NICs are inside the VNet.&lt;br&gt;Artifact Storage and Cosmos DB remain Azure managed services outside the VNet.&lt;br&gt;Private DNS maps service FQDNs to PE private IPs." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=13;align=left;verticalAlign=top;spacing=10;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="1380" y="900" width="460" height="210" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e-browser-frontend" value="HTTPS 443" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#D83B01;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="card-browser" target="card-frontend" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-browser-ingest" value="direct upload&lt;br&gt;HTTPS 443 + SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#D83B01;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.78;entryX=0;entryY=0.78;" parent="1" source="card-browser" target="card-ingest" edge="1">
+          <mxGeometry relative="1" y="12" as="geometry">
+            <Array as="points">
+              <mxPoint x="360" y="350"/>
+              <mxPoint x="660" y="350"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-frontend-functions" value="API proxy&lt;br&gt;HTTPS 443" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#D83B01;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.35;entryY=0;" parent="1" source="card-frontend" target="card-functions" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="512" y="420"/>
+              <mxPoint x="540" y="420"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-functions-ingest" value="SAS issue / raw read&lt;br&gt;HTTPS 443" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#D83B01;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.7;exitY=0;entryX=0.35;entryY=1;" parent="1" source="card-functions" target="card-ingest" edge="1">
+          <mxGeometry relative="1" x="-0.2" y="-10" as="geometry">
+            <Array as="points">
+              <mxPoint x="620" y="420"/>
+              <mxPoint x="800" y="420"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-ai-ingest" value="audioUrl fetch&lt;br&gt;HTTPS 443 + SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#5C2D91;fontSize=11;labelBackgroundColor=#ffffff;exitX=0;exitY=0.45;entryX=1;entryY=0.45;" parent="1" source="card-ai" target="card-ingest" edge="1">
+          <mxGeometry relative="1" x="0.1" y="-10" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-functions-ai" value="AI APIs&lt;br&gt;HTTPS 443 + MI/RBAC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#5C2D91;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.85;exitY=0;entryX=0.25;entryY=1;" parent="1" source="card-functions" target="card-ai" edge="1">
+          <mxGeometry relative="1" x="-0.2" y="-10" as="geometry">
+            <Array as="points">
+              <mxPoint x="660" y="405"/>
+              <mxPoint x="1150" y="405"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-functions-artifact-pe" value="artifact I/O&lt;br&gt;Private Endpoint" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#0078D4;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.38;entryX=0;entryY=0.5;" parent="1" source="card-functions" target="card-pe-artifact" edge="1">
+          <mxGeometry relative="1" x="-0.2" y="-12" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-functions-cosmos-pe" value="job metadata&lt;br&gt;Private Endpoint" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#0078D4;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.68;entryX=0;entryY=0.5;" parent="1" source="card-functions" target="card-pe-cosmos" edge="1">
+          <mxGeometry relative="1" x="-0.2" y="12" as="geometry">
+            <Array as="points">
+              <mxPoint x="790" y="675"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-pe-artifact-service" value="Private Link" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#0078D4;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="card-pe-artifact" target="card-artifact" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-pe-cosmos-service" value="Private Link" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#0078D4;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="card-pe-cosmos" target="card-cosmos" edge="1">
+          <mxGeometry relative="1" x="-0.2" y="12" as="geometry">
+            <Array as="points">
+              <mxPoint x="1265" y="615"/>
+              <mxPoint x="1265" y="685"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-dns-vnet" value="Private DNS VNet link&lt;br&gt;FQDN -&gt; PE private IP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;dashed=1;dashPattern=8 8;strokeColor=#0078D4;fontSize=11;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;entryX=1;entryY=0.2;" parent="1" source="card-dns" target="vnet" edge="1">
+          <mxGeometry relative="1" x="-0.25" y="-8" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-telemetry" value="telemetry&lt;br&gt;HTTPS 443" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;dashed=1;dashPattern=6 6;strokeColor=#605E5C;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.18;exitY=0;entryX=0.72;entryY=1;" parent="1" source="card-functions" target="card-observability" edge="1">
+          <mxGeometry relative="1" x="0.15" y="-18" as="geometry">
+            <Array as="points">
+              <mxPoint x="500" y="380"/>
+              <mxPoint x="1700" y="380"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
 </mxfile>
