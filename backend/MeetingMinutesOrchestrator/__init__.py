@@ -3,6 +3,7 @@ from datetime import timedelta
 
 import azure.durable_functions as df
 
+from meeting_minutes_backend.errors import AppError
 from meeting_minutes_backend.workflow import serialize_workflow_error
 
 MAX_CHUNK_SUMMARY_BATCH_SIZE = 3
@@ -37,6 +38,8 @@ def orchestrator_function(
             )
             if not isinstance(operation, dict):
                 raise TypeError("AnalyzeContentUnderstandingActivity must return an object")
+            if operation.get("status") in {"Failed", "Canceled"}:
+                _raise_content_understanding_failure(operation)
 
             raw_transcript: object = None
             for _attempt in range(CONTENT_UNDERSTANDING_MAX_POLLS):
@@ -49,6 +52,8 @@ def orchestrator_function(
                 if poll_result.get("status") == "Succeeded":
                     raw_transcript = poll_result
                     break
+                if poll_result.get("status") in {"Failed", "Canceled"}:
+                    _raise_content_understanding_failure(poll_result)
                 deadline = context.current_utc_datetime + timedelta(
                     seconds=CONTENT_UNDERSTANDING_POLL_INTERVAL_SECONDS
                 )
@@ -120,3 +125,17 @@ def orchestrator_function(
 
 
 main = df.Orchestrator.create(orchestrator_function)
+
+
+def _raise_content_understanding_failure(result: dict[str, object]) -> None:
+    status = str(result.get("status") or "Failed")
+    raw_error = result.get("error")
+    details = raw_error if isinstance(raw_error, dict) else {"operationStatus": status}
+    if "operationStatus" not in details:
+        details = {"operationStatus": status, **details}
+    raise AppError(
+        code="CONTENT_UNDERSTANDING_FAILED",
+        message="Content Understanding による動画解析に失敗しました。",
+        http_status=502,
+        details=details,
+    )

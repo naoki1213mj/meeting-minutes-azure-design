@@ -107,6 +107,46 @@ def test_orchestrator_routes_content_understanding_jobs_to_cu_activities() -> No
     assert final_call.name == "GenerateFinalMinutesActivity"
 
 
+def test_orchestrator_persists_content_understanding_failure_details() -> None:
+    context = FakeDurableContext({"tenantId": "tenant-a", "jobId": "job-a"})
+    generator = orchestrator_function(context)  # type: ignore[arg-type]
+    job = {
+        "tenantId": "tenant-a",
+        "jobId": "job-a",
+        "processingRoute": "contentUnderstanding",
+    }
+    operation = {"operationUrl": "https://example.invalid/operation"}
+    failed = {
+        "status": "Failed",
+        "error": {
+            "operationStatus": "Failed",
+            "operationError": {"code": "InternalServerError"},
+        },
+    }
+
+    assert _next_activity(generator).name == "LoadJobActivity"
+    assert _send_activity(generator, job).name == "ValidateInputActivity"
+    assert _send_activity(generator, {"valid": True}).name == "CreateReadSasActivity"
+    assert _send_activity(generator, {"audioUrl": "https://example.invalid/video"}).name == (
+        "AnalyzeContentUnderstandingActivity"
+    )
+    poll_call = _send_activity(generator, operation)
+    assert poll_call.name == "PollContentUnderstandingActivity"
+    fail_call = generator.send(failed)
+    assert isinstance(fail_call, ActivityCall)
+    assert fail_call.name == "FailJobActivity"
+    assert fail_call.payload == {
+        "tenantId": "tenant-a",
+        "jobId": "job-a",
+        "error": {
+            "code": "CONTENT_UNDERSTANDING_FAILED",
+            "message": "Content Understanding による動画解析に失敗しました。",
+            "correlationId": "job-a",
+            "details": failed["error"],
+        },
+    }
+
+
 def test_orchestrator_continues_from_final_minutes_to_markdown_and_complete() -> None:
     context = FakeDurableContext({"tenantId": "tenant-a", "jobId": "job-a"})
     generator = orchestrator_function(context)  # type: ignore[arg-type]

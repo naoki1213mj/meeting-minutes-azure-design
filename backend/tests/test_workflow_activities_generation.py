@@ -218,17 +218,18 @@ def test_poll_content_understanding_failed_result_preserves_sanitized_details(
 
     caplog.set_level(logging.ERROR, logger=workflow_activities.LOGGER.name)
 
-    with pytest.raises(AppError) as exc_info:
-        poll_content_understanding_analysis(
-            {
-                "job": {"tenantId": "tenant-a", "jobId": "job-a"},
-                "operationUrl": "https://foundry.example/operations/op-a",
-            }
-        )
+    result = poll_content_understanding_analysis(
+        {
+            "job": {"tenantId": "tenant-a", "jobId": "job-a"},
+            "operationUrl": "https://foundry.example/operations/op-a",
+        }
+    )
 
-    assert exc_info.value.code == "CONTENT_UNDERSTANDING_FAILED"
-    assert exc_info.value.details["operationStatus"] == "Failed"
-    operation_error = exc_info.value.details["operationError"]
+    assert result["status"] == "Failed"
+    error = result["error"]
+    assert isinstance(error, dict)
+    assert error["operationStatus"] == "Failed"
+    operation_error = error["operationError"]
     assert isinstance(operation_error, dict)
     assert operation_error["code"] == "InvalidContent"
     assert operation_error["message"] == "Could not fetch [REDACTED_SAS_URL]"
@@ -277,15 +278,16 @@ def test_poll_content_understanding_http_error_logs_sanitized_details(
 
     caplog.set_level(logging.ERROR, logger=workflow_activities.LOGGER.name)
 
-    with pytest.raises(AppError) as exc_info:
-        poll_content_understanding_analysis(
-            {
-                "job": {"tenantId": "tenant-a", "jobId": "job-a"},
-                "operationUrl": "https://foundry.example/operations/op-a",
-            }
-        )
+    result = poll_content_understanding_analysis(
+        {
+            "job": {"tenantId": "tenant-a", "jobId": "job-a"},
+            "operationUrl": "https://foundry.example/operations/op-a",
+        }
+    )
 
-    assert exc_info.value.details["statusCode"] == 502
+    error = result["error"]
+    assert isinstance(error, dict)
+    assert error["statusCode"] == 502
     log_records = [
         record for record in caplog.records if "content_understanding_failed" in record.message
     ]

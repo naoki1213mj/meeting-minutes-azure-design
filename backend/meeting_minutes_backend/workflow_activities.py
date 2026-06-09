@@ -174,12 +174,13 @@ def start_content_understanding_analysis(payload: dict[str, object]) -> dict[str
             ContentUnderstandingRequest(content_url=content_url)
         )
     except AppError as error:
+        details = error.details or {"operationStatus": "StartFailed"}
         _log_content_understanding_failure(
             tenant_id=tenant_id,
             job_id=job_id,
-            details=error.details or {"operationStatus": "StartFailed"},
+            details=details,
         )
-        raise
+        return {"status": "Failed", "error": details}
     return {"operationUrl": operation_url}
 
 
@@ -192,28 +193,24 @@ def poll_content_understanding_analysis(payload: dict[str, object]) -> dict[str,
     try:
         result = build_content_understanding_client(settings).get_result(operation_url)
     except AppError as error:
+        details = error.details or {"operationStatus": "PollFailed"}
         _log_content_understanding_failure(
             tenant_id=tenant_id,
             job_id=job_id,
-            details=error.details or {"operationStatus": "PollFailed"},
+            details=details,
         )
-        raise
+        return {"status": "Failed", "error": details}
     status = result.get("status")
     if status != "Succeeded":
         if status in {"Failed", "Canceled"}:
-            details: dict[str, object] = {"operationStatus": str(status)}
-            details.update(sanitized_content_understanding_error_details(result))
+            operation_details: dict[str, object] = {"operationStatus": str(status)}
+            operation_details.update(sanitized_content_understanding_error_details(result))
             _log_content_understanding_failure(
                 tenant_id=tenant_id,
                 job_id=job_id,
-                details=details,
+                details=operation_details,
             )
-            raise AppError(
-                code="CONTENT_UNDERSTANDING_FAILED",
-                message="Content Understanding による動画解析に失敗しました。",
-                http_status=502,
-                details=details,
-            )
+            return {"status": str(status), "error": operation_details}
         return {"status": str(status or "Running")}
 
     store = build_artifact_store(settings)
