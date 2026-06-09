@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from meeting_minutes_backend.errors import AppError
 from meeting_minutes_backend.models import JobStatus
 
 
@@ -151,6 +152,16 @@ def run_sample_workflow(payload: dict[str, object]) -> dict[str, object]:
 
 
 def serialize_workflow_error(error: Exception, correlation_id: str) -> dict[str, object]:
+    if isinstance(error, AppError):
+        serialized: dict[str, object] = {
+            "code": error.code,
+            "message": error.message,
+            "correlationId": correlation_id,
+        }
+        if error.details:
+            serialized["details"] = error.details
+        return serialized
+
     return {
         "code": error.__class__.__name__,
         "message": str(error) or "Workflow failed.",

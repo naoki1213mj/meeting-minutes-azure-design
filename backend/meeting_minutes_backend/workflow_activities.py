@@ -8,7 +8,10 @@ from meeting_minutes_backend.audio_preprocessing import (
     prepare_audio_for_transcription,
     should_preprocess_audio,
 )
-from meeting_minutes_backend.content_understanding_client import ContentUnderstandingRequest
+from meeting_minutes_backend.content_understanding_client import (
+    ContentUnderstandingRequest,
+    sanitized_content_understanding_error_details,
+)
 from meeting_minutes_backend.content_understanding_normalizer import (
     build_visual_context,
     normalize_content_understanding_transcript,
@@ -37,6 +40,7 @@ from meeting_minutes_backend.settings import (
     build_speech_client,
 )
 from meeting_minutes_backend.speech_client import TranscriptionRequest
+from meeting_minutes_backend.telemetry import safe_log_payload
 from meeting_minutes_backend.transcript_normalizer import normalize_transcript
 
 LOGGER = logging.getLogger(__name__)
@@ -165,9 +169,17 @@ def start_content_understanding_analysis(payload: dict[str, object]) -> dict[str
             }
         )
     )
-    operation_url = build_content_understanding_client(settings).start_analysis(
-        ContentUnderstandingRequest(content_url=content_url)
-    )
+    try:
+        operation_url = build_content_understanding_client(settings).start_analysis(
+            ContentUnderstandingRequest(content_url=content_url)
+        )
+    except AppError as error:
+        _log_content_understanding_failure(
+            tenant_id=tenant_id,
+            job_id=job_id,
+            details=error.details or {"operationStatus": "StartFailed"},
+        )
+        raise
     return {"operationUrl": operation_url}
 
 
@@ -177,15 +189,30 @@ def poll_content_understanding_analysis(payload: dict[str, object]) -> dict[str,
     tenant_id = _required_string(job, "tenantId")
     job_id = _required_string(job, "jobId")
     settings = AppSettings.from_env()
-    result = build_content_understanding_client(settings).get_result(operation_url)
+    try:
+        result = build_content_understanding_client(settings).get_result(operation_url)
+    except AppError as error:
+        _log_content_understanding_failure(
+            tenant_id=tenant_id,
+            job_id=job_id,
+            details=error.details or {"operationStatus": "PollFailed"},
+        )
+        raise
     status = result.get("status")
     if status != "Succeeded":
         if status in {"Failed", "Canceled"}:
+            details: dict[str, object] = {"operationStatus": str(status)}
+            details.update(sanitized_content_understanding_error_details(result))
+            _log_content_understanding_failure(
+                tenant_id=tenant_id,
+                job_id=job_id,
+                details=details,
+            )
             raise AppError(
                 code="CONTENT_UNDERSTANDING_FAILED",
                 message="Content Understanding による動画解析に失敗しました。",
                 http_status=502,
-                details={"operationStatus": str(status)},
+                details=details,
             )
         return {"status": str(status or "Running")}
 
@@ -685,6 +712,34 @@ def _log_minutes_generation_mode(
         LOGGER.info(json.dumps(payload, ensure_ascii=False, sort_keys=True))
     except Exception:
         LOGGER.debug("minutes generation mode telemetry emission failed", exc_info=True)
+
+
+def _log_content_understanding_failure(
+    *,
+    tenant_id: str,
+    job_id: str,
+    details: dict[str, object],
+) -> None:
+    payload = {
+        "event": "content_understanding_failed",
+        "tenantId": tenant_id,
+        "jobId": job_id,
+        "details": safe_log_payload(details, max_depth=5),
+    }
+    try:
+        LOGGER.error(
+            json.dumps(payload, ensure_ascii=False, sort_keys=True),
+            extra={
+                "custom_dimensions": {
+                    "event": "content_understanding_failed",
+                    "tenantId": tenant_id,
+                    "jobId": job_id,
+                    "errorCode": "CONTENT_UNDERSTANDING_FAILED",
+                }
+            },
+        )
+    except Exception:
+        LOGGER.debug("content understanding failure telemetry emission failed", exc_info=True)
 
 
 def _required_string(payload: dict[str, object], key: str) -> str:

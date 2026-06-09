@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from function_app import app
+from meeting_minutes_backend.errors import AppError
 from meeting_minutes_backend.models import JobStatus
 from meeting_minutes_backend.workflow import (
     build_transcript_chunks_activity,
     fail_job_activity,
     run_sample_workflow,
+    serialize_workflow_error,
 )
 
 
@@ -53,6 +55,31 @@ def test_build_transcript_chunks_returns_at_least_one_chunk() -> None:
 
     assert len(chunks) == 1
     assert chunks[0]["chunkIndex"] == 0
+
+
+def test_serialize_workflow_error_preserves_app_error_details() -> None:
+    serialized = serialize_workflow_error(
+        AppError(
+            code="CONTENT_UNDERSTANDING_FAILED",
+            message="Content Understanding による動画解析に失敗しました。",
+            http_status=502,
+            details={
+                "operationStatus": "Failed",
+                "operationError": {"code": "InvalidContent"},
+            },
+        ),
+        "corr-a",
+    )
+
+    assert serialized == {
+        "code": "CONTENT_UNDERSTANDING_FAILED",
+        "message": "Content Understanding による動画解析に失敗しました。",
+        "correlationId": "corr-a",
+        "details": {
+            "operationStatus": "Failed",
+            "operationError": {"code": "InvalidContent"},
+        },
+    }
 
 
 def test_http_functions_are_registered() -> None:

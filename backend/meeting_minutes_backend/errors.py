@@ -12,6 +12,9 @@ class AppError(Exception):
     http_status: int
     details: dict[str, object] = field(default_factory=dict)
 
+    def __str__(self) -> str:
+        return f"{self.code}: {self.message}"
+
 
 def validation_error_to_app_error(error: ValidationError) -> AppError:
     validation_errors: list[dict[str, object]] = []

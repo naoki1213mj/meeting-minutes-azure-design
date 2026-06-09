@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import logging
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import cast
@@ -13,6 +15,7 @@ from meeting_minutes_backend.models import ProcessingRoute
 from meeting_minutes_backend.workflow_activities import (
     _should_fallback_to_chunk_minutes,
     create_read_sas,
+    poll_content_understanding_analysis,
 )
 
 
@@ -182,3 +185,111 @@ def test_create_read_sas_preprocesses_stable_media_in_ingest_storage(
     expected_url = "https://ingest.example/preprocessed/tenant-a/job-a/input.flac?sig=redacted"
     assert result == {"audioUrl": expected_url}
     assert repo.saved_records == [repo.record]
+
+
+def test_poll_content_understanding_failed_result_preserves_sanitized_details(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    class FakeClient:
+        def get_result(self, operation_url: str) -> dict[str, object]:
+            assert operation_url == "https://foundry.example/operations/op-a"
+            return {
+                "status": "Failed",
+                "error": {
+                    "code": "InvalidContent",
+                    "message": (
+                        "Could not fetch https://storage.example/video.mp4?"
+                        "sv=2024&sig=secret-signature"
+                    ),
+                },
+            }
+
+    monkeypatch.setattr(
+        workflow_activities.AppSettings,
+        "from_env",
+        lambda: SimpleNamespace(),
+    )
+    monkeypatch.setattr(
+        workflow_activities,
+        "build_content_understanding_client",
+        lambda _settings: FakeClient(),
+    )
+
+    caplog.set_level(logging.ERROR, logger=workflow_activities.LOGGER.name)
+
+    with pytest.raises(AppError) as exc_info:
+        poll_content_understanding_analysis(
+            {
+                "job": {"tenantId": "tenant-a", "jobId": "job-a"},
+                "operationUrl": "https://foundry.example/operations/op-a",
+            }
+        )
+
+    assert exc_info.value.code == "CONTENT_UNDERSTANDING_FAILED"
+    assert exc_info.value.details["operationStatus"] == "Failed"
+    operation_error = exc_info.value.details["operationError"]
+    assert isinstance(operation_error, dict)
+    assert operation_error["code"] == "InvalidContent"
+    assert operation_error["message"] == "Could not fetch [REDACTED_SAS_URL]"
+    assert "secret-signature" not in str(operation_error)
+    log_records = [
+        record for record in caplog.records if "content_understanding_failed" in record.message
+    ]
+    assert log_records
+    rendered = log_records[0].message
+    assert "secret-signature" not in rendered
+    logged = json.loads(rendered)
+    assert logged["event"] == "content_understanding_failed"
+    assert logged["details"]["operationError"]["code"] == "InvalidContent"
+
+
+def test_poll_content_understanding_http_error_logs_sanitized_details(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    class FakeClient:
+        def get_result(self, operation_url: str) -> dict[str, object]:
+            assert operation_url == "https://foundry.example/operations/op-a"
+            raise AppError(
+                code="CONTENT_UNDERSTANDING_FAILED",
+                message="Content Understanding による動画解析に失敗しました。",
+                http_status=502,
+                details={
+                    "statusCode": 502,
+                    "operationError": {
+                        "code": "BadGateway",
+                        "message": "Could not fetch [REDACTED_URL]",
+                    },
+                },
+            )
+
+    monkeypatch.setattr(
+        workflow_activities.AppSettings,
+        "from_env",
+        lambda: SimpleNamespace(),
+    )
+    monkeypatch.setattr(
+        workflow_activities,
+        "build_content_understanding_client",
+        lambda _settings: FakeClient(),
+    )
+
+    caplog.set_level(logging.ERROR, logger=workflow_activities.LOGGER.name)
+
+    with pytest.raises(AppError) as exc_info:
+        poll_content_understanding_analysis(
+            {
+                "job": {"tenantId": "tenant-a", "jobId": "job-a"},
+                "operationUrl": "https://foundry.example/operations/op-a",
+            }
+        )
+
+    assert exc_info.value.details["statusCode"] == 502
+    log_records = [
+        record for record in caplog.records if "content_understanding_failed" in record.message
+    ]
+    assert log_records
+    logged = json.loads(log_records[0].message)
+    assert logged["details"]["statusCode"] == 502
+    assert logged["details"]["operationError"]["code"] == "BadGateway"
