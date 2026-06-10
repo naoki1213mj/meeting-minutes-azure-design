@@ -120,6 +120,19 @@ const statusLabels: Record<JobStatus, StatusDescriptor> = {
   CANCELLED: { label: "キャンセル済み", tone: "neutral" },
 };
 
+const heroImpactCards = [
+  { label: "Standard", value: "Fast Transcription", helper: "全体音声 + diarization" },
+  { label: "Minutes", value: "Direct JSON", helper: "schema検証後にMarkdown化" },
+  { label: "Storage", value: "Private artifacts", helper: "結果はAPI経由で取得" },
+] as const;
+
+const workflowHighlights = [
+  { number: "01", title: "Upload", text: "ブラウザからBlobへ直接転送" },
+  { number: "02", title: "Transcribe", text: "音声抽出と話者分離" },
+  { number: "03", title: "Compose", text: "議事録JSONを安全に生成" },
+  { number: "04", title: "Review", text: "議事録・根拠・映像メモを確認" },
+] as const;
+
 export function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [createdJob, setCreatedJob] = useState<CreateJobResponse | null>(null);
@@ -408,8 +421,19 @@ export function App() {
         name="description"
         content="会議録音をアップロードするだけで、要点・決定事項・アクションアイテムを整理した議事録を生成します。"
       />
+      <span className="grain-layer" aria-hidden="true" />
 
       <section className="dashboard-shell" aria-labelledby="app-title">
+        <ShellNav
+          onTranscriptClick={() => {
+            setActiveResultsTab("transcript");
+            window.setTimeout(() => {
+              document.getElementById("results-title")?.scrollIntoView({ block: "start" });
+            }, 0);
+          }}
+          statusDescriptor={statusDescriptor}
+        />
+
         <header className="hero">
           <div className="hero__content">
             <p className="eyebrow">{appTitle}</p>
@@ -420,19 +444,41 @@ export function App() {
               <span>文字起こしと議事録を一体生成</span>
               <span>アクションアイテムを自動整理</span>
             </div>
+            <div className="hero-actions" aria-label="主要操作">
+              <a className="hero-link hero-link--primary" href="#upload-panel">
+                ファイルを選ぶ
+              </a>
+              <a className="hero-link" href="#results-title">
+                結果ビューを見る
+              </a>
+            </div>
           </div>
 
           <aside className="hero-card" aria-label="ワークフロー概要">
-            <span className="hero-card__label">3ステップで完成</span>
-            <strong>録音を選ぶ → 生成を待つ → 議事録を確認</strong>
-            <p>議事録を先に読み、必要なときだけ発話ログで該当箇所を確認できます。</p>
-            <div className="hero-card__bars" aria-hidden="true">
-              <span />
-              <span />
-              <span />
+            <span className="hero-card__label">Operation Console</span>
+            <strong>音声・映像を、レビュー可能な会議ブリーフへ。</strong>
+            <p>標準経路を本線に、動画理解は明示選択の実験経路として比較できます。</p>
+            <div className="hero-impact-grid" aria-label="設計ハイライト">
+              {heroImpactCards.map((item) => (
+                <div className="hero-impact-card" key={item.label}>
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                  <small>{item.helper}</small>
+                </div>
+              ))}
             </div>
           </aside>
         </header>
+
+        <section className="workflow-ribbon" aria-label="処理フロー">
+          {workflowHighlights.map((item) => (
+            <article className="workflow-ribbon__item" key={item.number}>
+              <span>{item.number}</span>
+              <strong>{item.title}</strong>
+              <p>{item.text}</p>
+            </article>
+          ))}
+        </section>
 
         <section className="workspace-grid" aria-label="アップロードと処理状況">
           <form id="upload-panel" className="upload-card" onSubmit={(event) => void handleSubmit(event)}>
@@ -674,6 +720,33 @@ export function App() {
         </section>
       </section>
     </main>
+  );
+}
+
+function ShellNav({
+  onTranscriptClick,
+  statusDescriptor,
+}: {
+  onTranscriptClick: () => void;
+  statusDescriptor: StatusDescriptor;
+}) {
+  return (
+    <nav className="shell-nav" aria-label="アプリケーションナビゲーション">
+      <a className="shell-nav__brand" href="#app-title">
+        <span aria-hidden="true">MS</span>
+        <strong>Minutes Studio</strong>
+      </a>
+      <div className="shell-nav__links" aria-label="画面内リンク">
+        <a href="#upload-panel">Upload</a>
+        <a href="#results-title">Results</a>
+        <button onClick={onTranscriptClick} type="button">
+          Transcript
+        </button>
+      </div>
+      <span className={"shell-nav__status shell-nav__status--" + statusDescriptor.tone}>
+        {statusDescriptor.label}
+      </span>
+    </nav>
   );
 }
 
