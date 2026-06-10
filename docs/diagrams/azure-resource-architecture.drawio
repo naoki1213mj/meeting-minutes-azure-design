@@ -1,196 +1,188 @@
 <mxfile host="65bd71144e">
-  <diagram id="azure-resource-architecture" name="Azure リソース構成">
-    <mxGraphModel dx="1900" dy="1320" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1320" math="0" shadow="0">
-      <root>
-        <mxCell id="0"/>
-        <mxCell id="1" parent="0"/>
-        <mxCell id="title" value="Minutes Studio - Azure リソース構成図" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0078D4;strokeColor=#005A9E;fontColor=#ffffff;fontSize=24;fontStyle=1;align=center;verticalAlign=middle;spacing=12;" parent="1" vertex="1">
-          <mxGeometry x="40" y="30" width="1820" height="60" as="geometry"/>
-        </mxCell>
-        <mxCell id="subtitle" value="開発実機反映: Functions Premium EP1 / Python 3.13、Private成果物Storage、Cosmos Private Endpoint、単一AIServices、Batch自動切替、CU実験経路" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontColor=#605E5C;" parent="1" vertex="1">
-          <mxGeometry x="180" y="96" width="1540" height="28" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="zone-client" value="クライアント" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FC;strokeColor=#0078D4;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
-          <mxGeometry x="40" y="155" width="250" height="900" as="geometry"/>
-        </mxCell>
-        <mxCell id="zone-app" value="アプリ / API / オーケストレーション" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F9F1;strokeColor=#107C10;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
-          <mxGeometry x="330" y="155" width="450" height="900" as="geometry"/>
-        </mxCell>
-        <mxCell id="zone-data" value="ストレージ / データ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F0;strokeColor=#D83B01;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
-          <mxGeometry x="820" y="155" width="360" height="900" as="geometry"/>
-        </mxCell>
-        <mxCell id="zone-ai" value="AI / Microsoft Foundry" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8F0FF;strokeColor=#5C2D91;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
-          <mxGeometry x="1220" y="155" width="360" height="900" as="geometry"/>
-        </mxCell>
-        <mxCell id="zone-ops" value="監視 / セキュリティ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#605E5C;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
-          <mxGeometry x="1620" y="155" width="240" height="900" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="browser" value="ブラウザ&#xa;アップロード / レビュー" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/general/Browser.svg;" parent="1" vertex="1">
-          <mxGeometry x="112" y="260" width="88" height="88" as="geometry"/>
-        </mxCell>
-        <mxCell id="guide" value="仕組みガイド&#xa;右サイドドロワー&#xa;処理とAzure構成を説明" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0078D4;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="68" y="520" width="195" height="92" as="geometry"/>
-        </mxCell>
-        <mxCell id="public-safe" value="公開安全ラベルのみ&#xa;実リソース名・URL・IDは記載しない" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF4CE;strokeColor=#FFB900;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="68" y="780" width="195" height="92" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="appsvc" value="Azure App Service&#xa;フロントエンド&#xa;アクセスキーゲート / APIプロキシ" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/app_services/App_Services.svg;" parent="1" vertex="1">
-          <mxGeometry x="390" y="240" width="90" height="90" as="geometry"/>
-        </mxCell>
-        <mxCell id="functions" value="Azure Functions Premium EP1&#xa;API + Durable Functions&#xa;Python 3.13" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/compute/Function_Apps.svg;" parent="1" vertex="1">
-          <mxGeometry x="390" y="455" width="94" height="94" as="geometry"/>
-        </mxCell>
-        <mxCell id="scheduler" value="Durable Task Scheduler&#xa;状態 / チェックポイント / 再試行" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/general/Scheduler.svg;" parent="1" vertex="1">
-          <mxGeometry x="620" y="335" width="86" height="86" as="geometry"/>
-        </mxCell>
-        <mxCell id="preprocess" value="前処理Activity&#xa;m4a/mp4 音声抽出&#xa;16kHz mono FLAC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#107C10;fontSize=12;align=center;verticalAlign=middle;strokeWidth=2;" parent="1" vertex="1">
-          <mxGeometry x="390" y="710" width="315" height="78" as="geometry"/>
-        </mxCell>
-        <mxCell id="batch-activity" value="Batch自動切替Activity&#xa;開始 / 状態確認 / 取得 / 正規化&#xa;25時間の読み取りSAS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#107C10;fontSize=12;align=center;verticalAlign=middle;strokeWidth=2;" parent="1" vertex="1">
-          <mxGeometry x="390" y="855" width="315" height="86" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="ingest-storage" value="公開 Ingest Storage&#xa;元音声 / 前処理済みFLAC&#xa;ブラウザ・Speech・CUがURL参照" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/storage/Storage_Accounts.svg;" parent="1" vertex="1">
-          <mxGeometry x="945" y="235" width="90" height="90" as="geometry"/>
-        </mxCell>
-        <mxCell id="artifact-storage" value="Private Artifact Storage&#xa;生/正規化済み文字起こし&#xa;議事録JSON / Markdown / 映像補足" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/storage/Storage_Accounts.svg;" parent="1" vertex="1">
-          <mxGeometry x="945" y="480" width="90" height="90" as="geometry"/>
-        </mxCell>
-        <mxCell id="cosmos" value="Azure Cosmos DB for NoSQL&#xa;ジョブ状態 / 進捗 / 出力URI&#xa;公開アクセス無効" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/databases/Azure_Cosmos_DB.svg;" parent="1" vertex="1">
-          <mxGeometry x="945" y="735" width="90" height="90" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="ai-parent" value="AIServices アカウント（単一リソース）&#xa;アカウント単位エンドポイントをアプリが利用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5C2D91;strokeWidth=3;fontSize=13;fontStyle=1;align=center;verticalAlign=top;spacingTop=8;" parent="1" vertex="1">
-          <mxGeometry x="1255" y="220" width="290" height="545" as="geometry"/>
-        </mxCell>
-        <mxCell id="ai-icon" value="" style="image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/ai_machine_learning/Cognitive_Services.svg;" parent="1" vertex="1">
-          <mxGeometry x="1278" y="265" width="58" height="58" as="geometry"/>
-        </mxCell>
-        <mxCell id="speech" value="Speech&#xa;Fast Transcription&#xa;Batch自動切替" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8F0FF;strokeColor=#5C2D91;fontSize=11;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="1350" y="255" width="170" height="82" as="geometry"/>
-        </mxCell>
-        <mxCell id="openai" value="Azure OpenAI v1&#xa;gpt-5.4-mini / gpt-5.4&#xa;全文議事録 / テキスト分割予備処理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8F0FF;strokeColor=#5C2D91;fontSize=11;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="1280" y="370" width="240" height="88" as="geometry"/>
-        </mxCell>
-        <mxCell id="cu" value="Content Understanding（実験）&#xa;動画アナライザー&#xa;映像補足を別保存" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF4E6;strokeColor=#D79B00;fontSize=11;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="1280" y="495" width="240" height="88" as="geometry"/>
-        </mxCell>
-        <mxCell id="foundry" value="Foundry プロジェクト&#xa;新ポータルでデモ/実験を整理&#xa;実行時APIは親AIServices" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#605E5C;fontSize=11;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="1280" y="620" width="240" height="88" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="appinsights" value="Application Insights&#xa;トレース / 依存関係 / メトリック" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/devops/Application_Insights.svg;" parent="1" vertex="1">
-          <mxGeometry x="1694" y="235" width="74" height="74" as="geometry"/>
-        </mxCell>
-        <mxCell id="loganalytics" value="Log Analytics&#xa;クエリ / 保持" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/analytics/Log_Analytics_Workspaces.svg;" parent="1" vertex="1">
-          <mxGeometry x="1694" y="420" width="74" height="74" as="geometry"/>
-        </mxCell>
-        <mxCell id="managedid" value="Managed Identity&#xa;キーなしアクセス" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/identity/Managed_Identities.svg;" parent="1" vertex="1">
-          <mxGeometry x="1694" y="610" width="74" height="74" as="geometry"/>
-        </mxCell>
-        <mxCell id="rbac" value="Azure RBAC&#xa;最小権限ロール" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/identity/Custom_Azure_AD_Roles.svg;" parent="1" vertex="1">
-          <mxGeometry x="1694" y="800" width="74" height="74" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="legend" value="凡例: 青 = API/オーケストレーション、緑 = Blob/データ、紫 = AI呼び出し、灰破線 = テレメトリ、橙破線 = ID/RBAC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#605E5C;fontSize=12;align=center;verticalAlign=middle;strokeWidth=2;" parent="1" vertex="1">
-          <mxGeometry x="330" y="1095" width="1225" height="58" as="geometry"/>
-        </mxCell>
-        <mxCell id="security-note" value="公開安全: 実リソース名、URL、ID、SAS、token、keyは記載しない。現在の開発実機は Private成果物Storage / Cosmos Private Endpoint / Cosmos公開アクセス無効を有効化済み。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF4CE;strokeColor=#FFB900;fontSize=12;align=center;verticalAlign=middle;strokeWidth=2;" parent="1" vertex="1">
-          <mxGeometry x="330" y="1178" width="1225" height="72" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="e-browser-app" value="1. UI / API 操作" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#0078D4;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.45;entryX=0;entryY=0.45;" parent="1" source="browser" target="appsvc" edge="1">
-          <mxGeometry relative="1" x="-0.2" y="-10" as="geometry">
-            <Array as="points">
-              <mxPoint x="310" y="300"/>
-              <mxPoint x="310" y="280"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-browser-ingest" value="2. 直接Blobアップロード&#xa;User Delegation SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#107C10;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0;entryX=0.5;entryY=0;" parent="1" source="browser" target="ingest-storage" edge="1">
-          <mxGeometry relative="1" x="-0.15" y="-22" as="geometry">
-            <Array as="points">
-              <mxPoint x="156" y="190"/>
-              <mxPoint x="990" y="190"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-app-functions" value="3. /api プロキシ" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#0078D4;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="appsvc" target="functions" edge="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-functions-scheduler" value="4. オーケストレーション状態" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=block;startFill=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#0078D4;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.15;entryX=0;entryY=0.7;" parent="1" source="functions" target="scheduler" edge="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-functions-preprocess" value="5. 必要時前処理" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#107C10;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.25;entryY=0;" parent="1" source="functions" target="preprocess" edge="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-preprocess-ingest" value="前処理済みFLAC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#107C10;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.75;" parent="1" source="preprocess" target="ingest-storage" edge="1">
-          <mxGeometry relative="1" x="-0.1" y="12" as="geometry">
-            <Array as="points">
-              <mxPoint x="800" y="749"/>
-              <mxPoint x="800" y="300"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-functions-storage" value="成果物読み書き" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#107C10;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.42;entryX=0;entryY=0.5;" parent="1" source="functions" target="artifact-storage" edge="1">
-          <mxGeometry relative="1" x="0.05" y="-10" as="geometry">
-            <Array as="points">
-              <mxPoint x="800" y="495"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-functions-cosmos" value="ジョブ状態 / 出力URI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#107C10;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.72;entryX=0;entryY=0.5;" parent="1" source="functions" target="cosmos" edge="1">
-          <mxGeometry relative="1" x="0.05" y="14" as="geometry">
-            <Array as="points">
-              <mxPoint x="800" y="528"/>
-              <mxPoint x="800" y="780"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-ingest-ai" value="audioUrl / video URL取得&#xa;HTTPS 443 + SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=block;startFill=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#5C2D91;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.35;entryX=0;entryY=0.2;" parent="1" source="ingest-storage" target="ai-parent" edge="1">
-          <mxGeometry relative="1" x="0.1" y="-18" as="geometry">
-            <Array as="points">
-              <mxPoint x="1200" y="275"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-functions-ai" value="6. AI API 呼び出し&#xa;Managed Identity / RBAC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#5C2D91;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.18;entryX=0;entryY=0.55;" parent="1" source="functions" target="ai-parent" edge="1">
-          <mxGeometry relative="1" x="-0.1" y="-14" as="geometry">
-            <Array as="points">
-              <mxPoint x="800" y="472"/>
-              <mxPoint x="1200" y="472"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-observe" value="テレメトリ（本文なし）" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#605E5C;fontSize=11;dashed=1;dashPattern=6 4;labelBackgroundColor=#ffffff;exitX=1;exitY=0.06;entryX=0;entryY=0.5;" parent="1" source="functions" target="appinsights" edge="1">
-          <mxGeometry relative="1" x="-0.2" y="-20" as="geometry">
-            <Array as="points">
-              <mxPoint x="800" y="460"/>
-              <mxPoint x="800" y="135"/>
-              <mxPoint x="1610" y="135"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-appinsights-log" value="query / retention" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#605E5C;fontSize=11;dashed=1;dashPattern=6 4;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="appinsights" target="loganalytics" edge="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-mi-functions" value="キーなしアクセス" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#FF8C00;fontSize=11;dashed=1;dashPattern=6 4;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;entryX=1;entryY=0.9;" parent="1" source="managedid" target="functions" edge="1">
-          <mxGeometry relative="1" x="-0.2" y="16" as="geometry">
-            <Array as="points">
-              <mxPoint x="1600" y="647"/>
-              <mxPoint x="1600" y="1025"/>
-              <mxPoint x="800" y="1025"/>
-              <mxPoint x="800" y="535"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-rbac-mi" value="最小権限ロール" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#FF8C00;fontSize=11;dashed=1;dashPattern=6 4;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" parent="1" source="rbac" target="managedid" edge="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-      </root>
-    </mxGraphModel>
-  </diagram>
+    <diagram id="azure-resource-architecture" name="Azure リソース構成">
+        <mxGraphModel dx="1909" dy="1471" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1320" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="Minutes Studio - Azure リソース構成図" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0078D4;strokeColor=#005A9E;fontColor=#ffffff;fontSize=24;fontStyle=1;align=center;verticalAlign=middle;spacing=12;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="30" width="1820" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="subtitle" value="開発実機反映: Functions Premium EP1 / Python 3.13、Private成果物Storage、Cosmos Private Endpoint、単一AIServices、Batch自動切替、CU実験経路" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontColor=#605E5C;" parent="1" vertex="1">
+                    <mxGeometry x="180" y="96" width="1540" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="zone-client" value="クライアント" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FC;strokeColor=#0078D4;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="155" width="250" height="900" as="geometry"/>
+                </mxCell>
+                <mxCell id="zone-app" value="アプリ / API / オーケストレーション" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F9F1;strokeColor=#107C10;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="155" width="450" height="900" as="geometry"/>
+                </mxCell>
+                <mxCell id="zone-data" value="ストレージ / データ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F0;strokeColor=#D83B01;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="820" y="155" width="360" height="900" as="geometry"/>
+                </mxCell>
+                <mxCell id="zone-ai" value="AI / Microsoft Foundry" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8F0FF;strokeColor=#5C2D91;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="1220" y="155" width="360" height="900" as="geometry"/>
+                </mxCell>
+                <mxCell id="zone-ops" value="監視 / セキュリティ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#605E5C;verticalAlign=top;fontSize=16;fontStyle=1;align=center;spacingTop=12;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="1620" y="155" width="240" height="900" as="geometry"/>
+                </mxCell>
+                <mxCell id="browser" value="ブラウザ&#xa;アップロード / レビュー" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/general/Browser.svg;" vertex="1" parent="1">
+                    <mxGeometry x="112" y="260" width="88" height="88" as="geometry"/>
+                </mxCell>
+                <mxCell id="guide" value="仕組みガイド&#xa;右サイドドロワー&#xa;処理とAzure構成を説明" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0078D4;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+                    <mxGeometry x="68" y="520" width="195" height="92" as="geometry"/>
+                </mxCell>
+                <mxCell id="public-safe" value="公開安全ラベルのみ&#xa;実リソース名・URL・IDは記載しない" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF4CE;strokeColor=#FFB900;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+                    <mxGeometry x="68" y="780" width="195" height="92" as="geometry"/>
+                </mxCell>
+                <mxCell id="appsvc" value="Azure App Service&#xa;フロントエンド&#xa;アクセスキーゲート / APIプロキシ" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/app_services/App_Services.svg;" vertex="1" parent="1">
+                    <mxGeometry x="390" y="240" width="90" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="functions" value="Azure Functions Premium EP1&#xa;API + Durable Functions&#xa;Python 3.13" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/compute/Function_Apps.svg;" vertex="1" parent="1">
+                    <mxGeometry x="390" y="455" width="94" height="94" as="geometry"/>
+                </mxCell>
+                <mxCell id="scheduler" value="Durable Task Scheduler&#xa;状態 / チェックポイント / 再試行" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/general/Scheduler.svg;" vertex="1" parent="1">
+                    <mxGeometry x="620" y="335" width="86" height="86" as="geometry"/>
+                </mxCell>
+                <mxCell id="preprocess" value="前処理Activity&#xa;m4a/mp4 音声抽出&#xa;16kHz mono FLAC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#107C10;fontSize=12;align=center;verticalAlign=middle;strokeWidth=2;" vertex="1" parent="1">
+                    <mxGeometry x="390" y="710" width="315" height="78" as="geometry"/>
+                </mxCell>
+                <mxCell id="batch-activity" value="Batch自動切替Activity&#xa;開始 / 状態確認 / 取得 / 正規化&#xa;25時間の読み取りSAS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#107C10;fontSize=12;align=center;verticalAlign=middle;strokeWidth=2;" vertex="1" parent="1">
+                    <mxGeometry x="390" y="855" width="315" height="86" as="geometry"/>
+                </mxCell>
+                <mxCell id="ingest-storage" value="公開 Ingest Storage&#xa;元音声 / 前処理済みFLAC&#xa;ブラウザ・Speech・CUがURL参照" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/storage/Storage_Accounts.svg;" vertex="1" parent="1">
+                    <mxGeometry x="945" y="235" width="90" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="artifact-storage" value="Private Artifact Storage&#xa;生/正規化済み文字起こし&#xa;議事録JSON / Markdown / 映像補足" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/storage/Storage_Accounts.svg;" vertex="1" parent="1">
+                    <mxGeometry x="945" y="480" width="90" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="cosmos" value="Azure Cosmos DB for NoSQL&#xa;ジョブ状態 / 進捗 / 出力URI&#xa;公開アクセス無効" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/databases/Azure_Cosmos_DB.svg;" vertex="1" parent="1">
+                    <mxGeometry x="945" y="735" width="90" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="ai-parent" value="AIServices アカウント（単一リソース）&#xa;アカウント単位エンドポイントをアプリが利用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5C2D91;strokeWidth=3;fontSize=13;fontStyle=1;align=center;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+                    <mxGeometry x="1255" y="220" width="290" height="545" as="geometry"/>
+                </mxCell>
+                <mxCell id="ai-icon" value="" style="image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/ai_machine_learning/Cognitive_Services.svg;" vertex="1" parent="1">
+                    <mxGeometry x="1278" y="265" width="58" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="speech" value="Speech&#xa;Fast Transcription&#xa;Batch自動切替" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8F0FF;strokeColor=#5C2D91;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+                    <mxGeometry x="1350" y="280" width="170" height="82" as="geometry"/>
+                </mxCell>
+                <mxCell id="openai" value="Azure OpenAI v1&#xa;gpt-5.4-mini / gpt-5.4&#xa;全文議事録 / テキスト分割予備処理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8F0FF;strokeColor=#5C2D91;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+                    <mxGeometry x="1280" y="370" width="240" height="88" as="geometry"/>
+                </mxCell>
+                <mxCell id="cu" value="Content Understanding（実験）&#xa;動画アナライザー&#xa;映像補足を別保存" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF4E6;strokeColor=#D79B00;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+                    <mxGeometry x="1280" y="495" width="240" height="88" as="geometry"/>
+                </mxCell>
+                <mxCell id="foundry" value="Foundry プロジェクト&#xa;新ポータルでデモ/実験を整理&#xa;実行時APIは親AIServices" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#605E5C;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+                    <mxGeometry x="1280" y="620" width="240" height="88" as="geometry"/>
+                </mxCell>
+                <mxCell id="appinsights" value="Application Insights&#xa;トレース / 依存関係 / メトリック" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/devops/Application_Insights.svg;" vertex="1" parent="1">
+                    <mxGeometry x="1694" y="235" width="74" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="loganalytics" value="Log Analytics&#xa;クエリ / 保持" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/analytics/Log_Analytics_Workspaces.svg;" vertex="1" parent="1">
+                    <mxGeometry x="1694" y="420" width="74" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="managedid" value="Managed Identity&#xa;キーなしアクセス" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/identity/Managed_Identities.svg;" vertex="1" parent="1">
+                    <mxGeometry x="1694" y="610" width="74" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="rbac" value="Azure RBAC&#xa;最小権限ロール" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;verticalLabelPosition=bottom;verticalAlign=top;spacingTop=6;image=img/lib/azure2/identity/Custom_Azure_AD_Roles.svg;" vertex="1" parent="1">
+                    <mxGeometry x="1694" y="800" width="74" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend" value="凡例: 青 = API/オーケストレーション、緑 = Blob/データ、紫 = AI呼び出し、灰破線 = テレメトリ、橙破線 = ID/RBAC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#605E5C;fontSize=12;align=center;verticalAlign=middle;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="1095" width="1225" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="security-note" value="公開安全: 実リソース名、URL、ID、SAS、token、keyは記載しない。現在の開発実機は Private成果物Storage / Cosmos Private Endpoint / Cosmos公開アクセス無効を有効化済み。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF4CE;strokeColor=#FFB900;fontSize=12;align=center;verticalAlign=middle;strokeWidth=2;" vertex="1" parent="1">
+                    <mxGeometry x="330" y="1178" width="1225" height="72" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-browser-app" value="1. UI / API 操作" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#0078D4;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.45;entryX=0;entryY=0.45;" edge="1" parent="1" source="browser" target="appsvc">
+                    <mxGeometry x="-0.2" y="-10" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="310" y="300"/>
+                            <mxPoint x="310" y="280"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-browser-ingest" value="2. 直接Blobアップロード&#xa;User Delegation SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#107C10;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0;entryX=0.5;entryY=0;" edge="1" parent="1" source="browser" target="ingest-storage">
+                    <mxGeometry x="-0.15" y="-22" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="156" y="190"/>
+                            <mxPoint x="990" y="190"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-app-functions" value="3. /api プロキシ" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#0078D4;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="appsvc" target="functions">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-functions-scheduler" value="4. オーケストレーション状態" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=block;startFill=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#0078D4;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.15;entryX=0;entryY=0.7;" edge="1" parent="1" source="functions" target="scheduler">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-functions-preprocess" value="5. 必要時前処理" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#107C10;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.25;entryY=0;" edge="1" parent="1" source="functions" target="preprocess">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-preprocess-ingest" value="前処理済みFLAC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#107C10;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.75;" edge="1" parent="1" source="preprocess" target="ingest-storage">
+                    <mxGeometry x="-0.1" y="12" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="800" y="749"/>
+                            <mxPoint x="800" y="300"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-functions-storage" value="成果物読み書き" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#107C10;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.42;entryX=0;entryY=0.5;" edge="1" parent="1" source="functions" target="artifact-storage">
+                    <mxGeometry x="0.05" y="-10" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="800" y="495"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-functions-cosmos" value="ジョブ状態 / 出力URI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#107C10;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.72;entryX=0;entryY=0.5;" edge="1" parent="1" source="functions" target="cosmos">
+                    <mxGeometry x="0.05" y="14" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="800" y="528"/>
+                            <mxPoint x="800" y="780"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-ingest-ai" value="audioUrl / video URL取得&#xa;HTTPS 443 + SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=block;startFill=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#5C2D91;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.35;entryX=0;entryY=0.2;" edge="1" parent="1" source="ingest-storage" target="ai-parent">
+                    <mxGeometry x="0.1" y="-18" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1200" y="275"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-functions-ai" value="6. AI API 呼び出し&#xa;Managed Identity / RBAC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#5C2D91;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.18;entryX=0;entryY=0.55;" edge="1" parent="1" source="functions" target="ai-parent">
+                    <mxGeometry x="-0.1" y="-14" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="800" y="472"/>
+                            <mxPoint x="1200" y="472"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-observe" value="テレメトリ（本文なし）" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#605E5C;fontSize=11;dashed=1;dashPattern=6 4;labelBackgroundColor=#ffffff;exitX=1;exitY=0.06;entryX=0;entryY=0.5;" edge="1" parent="1" source="functions" target="appinsights">
+                    <mxGeometry x="-0.2" y="-20" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="800" y="460"/>
+                            <mxPoint x="800" y="135"/>
+                            <mxPoint x="1610" y="135"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-appinsights-log" value="query / retention" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#605E5C;fontSize=11;dashed=1;dashPattern=6 4;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="appinsights" target="loganalytics">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-mi-functions" value="キーなしアクセス" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#FF8C00;fontSize=11;dashed=1;dashPattern=6 4;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;entryX=1;entryY=0.9;" edge="1" parent="1" source="managedid" target="functions">
+                    <mxGeometry x="-0.2" y="16" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1600" y="647"/>
+                            <mxPoint x="1600" y="1025"/>
+                            <mxPoint x="800" y="1025"/>
+                            <mxPoint x="800" y="535"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-rbac-mi" value="最小権限ロール" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#FF8C00;fontSize=11;dashed=1;dashPattern=6 4;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="rbac" target="managedid">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
 </mxfile>
