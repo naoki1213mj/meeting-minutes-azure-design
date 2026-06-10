@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from meeting_minutes_backend.auth import AuthContext
 from meeting_minutes_backend.blob_sas import BlobSasIssuer
 from meeting_minutes_backend.errors import AppError
-from meeting_minutes_backend.file_names import build_safe_file_name
+from meeting_minutes_backend.file_names import build_safe_file_name, should_preprocess_media
 from meeting_minutes_backend.models import (
     CreateJobRequest,
     CreateJobResponse,
@@ -47,7 +47,7 @@ class JobService:
         upload_sas = self._blob_sas_issuer.create_upload_sas(
             blob_name,
             now,
-            ttl_minutes=self._upload_sas_ttl_minutes(request.processingRoute),
+            ttl_minutes=self._upload_sas_ttl_minutes(request),
         )
 
         record = JobRecord(
@@ -102,7 +102,7 @@ class JobService:
     ) -> UploadCompleteResponse:
         record = self._get_record_or_404(auth, job_id)
 
-        self._validate_uploaded_size(record.processingRoute, request.uploadedSizeBytes)
+        self._validate_uploaded_size(record, request.uploadedSizeBytes)
 
         if record.orchestrationInstanceId:
             return _upload_complete_response(record)
@@ -129,7 +129,7 @@ class JobService:
     ) -> UploadCompleteResponse:
         record = self._get_record_or_404(auth, job_id)
 
-        self._validate_uploaded_size(record.processingRoute, request.uploadedSizeBytes)
+        self._validate_uploaded_size(record, request.uploadedSizeBytes)
 
         if record.orchestrationInstanceId:
             return _upload_complete_response(record)
@@ -147,16 +147,24 @@ class JobService:
         return _upload_complete_response(saved)
 
     def _validate_create_request(self, request: CreateJobRequest) -> None:
-        if request.fileSizeBytes > self._max_file_size_bytes(request.processingRoute):
-            self._raise_file_size_limit_error(request.processingRoute)
+        if request.fileSizeBytes > self._max_file_size_bytes(
+            request.processingRoute,
+            request.fileName,
+            request.contentType,
+        ):
+            self._raise_file_size_limit_error(
+                request.processingRoute,
+                should_preprocess=self._should_preprocess(request.fileName, request.contentType),
+            )
 
         if (
             request.processingRoute == ProcessingRoute.STABLE
             and request.fileSizeBytes > self._constraints.normalMaxFileSizeBytes
+            and not self._should_preprocess(request.fileName, request.contentType)
         ):
             raise AppError(
                 code="AUDIO_TOO_LARGE",
-                message="通常上限の300MBを超えています。音声を圧縮して再アップロードしてください。",
+                message="標準経路のFast Transcription入力上限を超えています。",
                 http_status=400,
                 details={
                     "normalMaxFileSizeBytes": self._constraints.normalMaxFileSizeBytes,
@@ -191,26 +199,49 @@ class JobService:
 
     def _validate_uploaded_size(
         self,
-        processing_route: ProcessingRoute,
+        record: JobRecord,
         uploaded_size_bytes: int | None,
     ) -> None:
         if (
             uploaded_size_bytes
-            and uploaded_size_bytes > self._max_file_size_bytes(processing_route)
+            and uploaded_size_bytes
+            > self._max_file_size_bytes(
+                record.processingRoute,
+                record.blobName,
+                record.contentType,
+            )
         ):
-            self._raise_file_size_limit_error(processing_route)
+            self._raise_file_size_limit_error(
+                record.processingRoute,
+                should_preprocess=self._should_preprocess(record.blobName, record.contentType),
+            )
 
-    def _max_file_size_bytes(self, processing_route: ProcessingRoute) -> int:
+    def _max_file_size_bytes(
+        self,
+        processing_route: ProcessingRoute,
+        file_name: str,
+        content_type: str,
+    ) -> int:
         if processing_route == ProcessingRoute.CONTENT_UNDERSTANDING:
             return self._constraints.contentUnderstandingMaxFileSizeBytes
+        if self._should_preprocess(file_name, content_type):
+            return self._constraints.stablePreprocessedSourceMaxFileSizeBytes
         return self._constraints.hardMaxFileSizeBytes
 
-    def _upload_sas_ttl_minutes(self, processing_route: ProcessingRoute) -> int:
+    def _upload_sas_ttl_minutes(self, request: CreateJobRequest) -> int:
+        processing_route = request.processingRoute
         if processing_route == ProcessingRoute.CONTENT_UNDERSTANDING:
             return self._constraints.contentUnderstandingUploadSasTtlMinutes
+        if self._should_preprocess(request.fileName, request.contentType):
+            return self._constraints.stablePreprocessedUploadSasTtlMinutes
         return self._constraints.stableUploadSasTtlMinutes
 
-    def _raise_file_size_limit_error(self, processing_route: ProcessingRoute) -> None:
+    def _raise_file_size_limit_error(
+        self,
+        processing_route: ProcessingRoute,
+        *,
+        should_preprocess: bool,
+    ) -> None:
         if processing_route == ProcessingRoute.CONTENT_UNDERSTANDING:
             raise AppError(
                 code="CONTENT_UNDERSTANDING_VIDEO_TOO_LARGE",
@@ -222,12 +253,26 @@ class JobService:
                     )
                 },
             )
+        if should_preprocess:
+            raise AppError(
+                code="STABLE_PREPROCESSED_SOURCE_TOO_LARGE",
+                message="標準経路で前処理できる元ファイルサイズの上限を超えています。",
+                http_status=400,
+                details={
+                    "stablePreprocessedSourceMaxFileSizeBytes": (
+                        self._constraints.stablePreprocessedSourceMaxFileSizeBytes
+                    )
+                },
+            )
         raise AppError(
             code="AUDIO_EXCEEDS_HARD_LIMIT",
             message="Fast Transcriptionの上限を超えています。",
             http_status=400,
             details={"hardMaxFileSizeBytes": self._constraints.hardMaxFileSizeBytes},
         )
+
+    def _should_preprocess(self, file_name: str, content_type: str) -> bool:
+        return should_preprocess_media(file_name, content_type)
 
     def _get_record_or_404(self, auth: AuthContext, job_id: str) -> JobRecord:
         record = self._repository.get(auth.tenant_id, job_id)

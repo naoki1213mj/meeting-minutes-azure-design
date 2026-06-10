@@ -85,6 +85,16 @@ class FakeTranscoder:
         destination_path.write_bytes(b"flac")
 
 
+class FakeDurationProbe:
+    def __init__(self, duration_seconds: float | None = 60.0) -> None:
+        self.duration_seconds_value = duration_seconds
+        self.calls: list[Path] = []
+
+    def duration_seconds(self, source_path: Path) -> float | None:
+        self.calls.append(source_path)
+        return self.duration_seconds_value
+
+
 class TrackingTemporaryDirectory:
     last_path: Path | None = None
 
@@ -129,6 +139,7 @@ def test_prepare_audio_for_transcription_converts_m4a_to_flac_blob() -> None:
         sas_issuer=sas_issuer,
         now=now,
         transcoder=transcoder,
+        duration_probe=FakeDurationProbe(),
         temporary_directory=TrackingTemporaryDirectory,
     )
 
@@ -157,6 +168,7 @@ def test_prepare_audio_for_transcription_extracts_mp4_audio_to_flac_blob() -> No
         sas_issuer=sas_issuer,
         now=now,
         transcoder=transcoder,
+        duration_probe=FakeDurationProbe(),
         temporary_directory=TrackingTemporaryDirectory,
     )
 
@@ -201,8 +213,27 @@ def test_prepare_audio_for_transcription_hides_transcoder_details_on_failure() -
             sas_issuer=FakeSasIssuer(),
             now=datetime(2026, 6, 1, tzinfo=UTC),
             transcoder=FakeTranscoder(fail=True),
+            duration_probe=FakeDurationProbe(),
         )
 
     assert exc_info.value.code == "AUDIO_PREPROCESS_FAILED"
     assert "音声トラック" in exc_info.value.message
     assert exc_info.value.details == {}
+
+
+def test_prepare_audio_for_transcription_rejects_server_side_duration_over_limit() -> None:
+    with pytest.raises(AppError) as exc_info:
+        prepare_audio_for_transcription(
+            tenant_id="tenant-a",
+            job_id="job-a",
+            blob_name="raw-audio/tenant-a/job-a/input.mp4",
+            content_type="video/mp4",
+            container_name="audio",
+            store=FakeStore(),
+            sas_issuer=FakeSasIssuer(),
+            now=datetime(2026, 6, 1, tzinfo=UTC),
+            transcoder=FakeTranscoder(),
+            duration_probe=FakeDurationProbe(duration_seconds=7201.0),
+        )
+
+    assert exc_info.value.code == "AUDIO_TOO_LONG_FOR_DIARIZATION"

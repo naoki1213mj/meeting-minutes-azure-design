@@ -8,6 +8,17 @@ from meeting_minutes_backend.errors import AppError
 SUPPORTED_AUDIO_EXTENSIONS = frozenset(
     {".mp3", ".wav", ".m4a", ".mp4", ".ogg", ".webm", ".flac"}
 )
+PREPROCESS_CONTENT_TYPES = frozenset(
+    {
+        "application/mp4",
+        "audio/aac",
+        "audio/m4a",
+        "audio/mp4",
+        "audio/x-m4a",
+        "video/mp4",
+    }
+)
+PREPROCESS_EXTENSIONS = frozenset({".m4a", ".mp4"})
 ALLOWED_EXTENSIONS_BY_CONTENT_TYPE = {
     "audio/mpeg": frozenset({".mp3"}),
     "audio/mp3": frozenset({".mp3"}),
@@ -55,3 +66,9 @@ def build_safe_file_name(file_name: str, content_type: str) -> str:
     if not _SAFE_FILE_NAME.fullmatch(candidate):
         return f"input{suffix}"
     return candidate
+
+
+def should_preprocess_media(file_name: str, content_type: str) -> bool:
+    content_type_key = content_type.split(";", 1)[0].strip().lower()
+    suffix = PureWindowsPath(file_name).suffix.lower()
+    return suffix in PREPROCESS_EXTENSIONS or content_type_key in PREPROCESS_CONTENT_TYPES

@@ -58,8 +58,10 @@
   "uploadUrl": "https://...sas...",
   "uploadExpiresAt": "2026-05-29T10:15:00Z",
   "constraints": {
-    "normalMaxFileSizeBytes": 314572800,
+    "normalMaxFileSizeBytes": 524288000,
     "hardMaxFileSizeBytes": 524288000,
+    "stablePreprocessedSourceMaxFileSizeBytes": 4294967296,
+    "stablePreprocessedUploadSasTtlMinutes": 120,
     "maxDurationSecondsWithDiarization": 7200
   }
 }
@@ -69,7 +71,7 @@
 
 - `fileName` は必須。
 - `fileSizeBytes` は必須。
-- 標準経路では `fileSizeBytes < 300MB` を推奨し、500MBを超える場合は拒否する。
+- 標準経路の直接Speech入力は `fileSizeBytes < 500MB`。m4a/mp4など前処理対象は元ファイル4GB未満まで許可するが、抽出後FLACが500MB以上なら失敗する。
 - Content Understanding動画理解（実験）経路ではBlob URL参照Analyze APIの制限に合わせ、4GB未満まで許可する。
 - `contentType` と拡張子の組み合わせを検証する。`application/octet-stream` はサポート対象拡張子に限って許可する。
 - APIが受理する形式とFast TranscriptionでE2E確認済みの形式は分けて扱う。2026-06-02時点のlive E2E確認済みは短いWAVとm4a→FLAC前処理経路。
@@ -209,11 +211,10 @@
 ```json
 {
   "error": {
-    "code": "AUDIO_TOO_LARGE",
-    "message": "通常上限の300MBを超えています。音声を圧縮して再アップロードしてください。",
+    "code": "STABLE_PREPROCESSED_SOURCE_TOO_LARGE",
+    "message": "標準経路で前処理できる元ファイルサイズの上限を超えています。",
     "details": {
-      "fileSizeBytes": 420000000,
-      "normalMaxFileSizeBytes": 314572800
+      "stablePreprocessedSourceMaxFileSizeBytes": 4294967296
     },
     "correlationId": "..."
   }
@@ -228,8 +229,9 @@
 | `FORBIDDEN` | 403 | 認可されていない操作 |
 | `INVALID_REQUEST` | 400 | 入力JSONが不正 |
 | `UNSUPPORTED_AUDIO_FORMAT` | 400 | 対応外の拡張子またはMIME |
-| `AUDIO_TOO_LARGE` | 400 | 通常上限を超過 |
+| `AUDIO_TOO_LARGE` | 400 | 標準経路の通常上限を超過（互換用） |
 | `AUDIO_EXCEEDS_HARD_LIMIT` | 400 | Fast Transcriptionの上限を超過 |
+| `STABLE_PREPROCESSED_SOURCE_TOO_LARGE` | 400 | 標準経路の前処理元ファイルサイズ上限を超過 |
 | `AUDIO_TOO_LONG_FOR_DIARIZATION` | 400 | 2時間以上 |
 | `CONTENT_UNDERSTANDING_VIDEO_TOO_LARGE` | 400 | 動画理解経路のファイルサイズ上限超過 |
 | `CONTENT_UNDERSTANDING_VIDEO_TOO_LONG` | 400 | 動画理解経路の時間上限超過 |

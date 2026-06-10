@@ -160,7 +160,7 @@ export function App() {
   const supportedFormatsText = supportedAudioExtensions
     .map((extension) => extension.replace(".", "").toUpperCase())
     .join(" / ");
-  const selectedRouteMaxFileSizeBytes = getMaxFileSizeBytes(processingRoute);
+  const selectedRouteMaxFileSizeBytes = getMaxFileSizeBytes(processingRoute, selectedFile);
 
   useEffect(() => {
     return () => {

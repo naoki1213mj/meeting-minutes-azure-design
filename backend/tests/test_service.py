@@ -103,14 +103,47 @@ def test_create_job_uses_longer_upload_sas_for_content_understanding_route() -> 
     assert int(delta.total_seconds() / 60) == 120
 
 
-def test_create_job_rejects_normal_size_limit() -> None:
+def test_create_job_allows_standard_audio_up_to_fast_transcription_limit() -> None:
+    service = _service()
+
+    response = service.create_job(_auth(), _create_request(file_size_bytes=400_000_000))
+
+    assert service.get_job(_auth(), response.jobId).status == JobStatus.CREATED
+
+
+def test_create_job_rejects_standard_audio_over_fast_transcription_limit() -> None:
     service = _service()
 
     with pytest.raises(AppError) as exc_info:
-        service.create_job(_auth(), _create_request(file_size_bytes=400_000_000))
+        service.create_job(_auth(), _create_request(file_size_bytes=524_288_001))
 
-    assert exc_info.value.code == "AUDIO_TOO_LARGE"
+    assert exc_info.value.code == "AUDIO_EXCEEDS_HARD_LIMIT"
     assert exc_info.value.http_status == 400
+
+
+def test_create_job_allows_large_stable_mp4_source_for_preprocessing() -> None:
+    service = _service()
+    request = _create_request(file_size_bytes=3_221_225_472).model_copy(
+        update={"fileName": "meeting.mp4", "contentType": "video/mp4"}
+    )
+
+    response = service.create_job(_auth(), request)
+
+    status = service.get_job(_auth(), response.jobId)
+    assert status.processingRoute == ProcessingRoute.STABLE
+    assert int((response.uploadExpiresAt - status.createdAt).total_seconds() / 60) == 120
+
+
+def test_create_job_rejects_stable_preprocessed_source_over_limit() -> None:
+    service = _service()
+    request = _create_request(file_size_bytes=4_294_967_297).model_copy(
+        update={"fileName": "meeting.mp4", "contentType": "video/mp4"}
+    )
+
+    with pytest.raises(AppError) as exc_info:
+        service.create_job(_auth(), request)
+
+    assert exc_info.value.code == "STABLE_PREPROCESSED_SOURCE_TOO_LARGE"
 
 
 def test_create_job_allows_larger_file_for_content_understanding_route() -> None:
@@ -263,6 +296,22 @@ def test_upload_complete_rejects_hard_limit() -> None:
         )
 
     assert exc_info.value.code == "AUDIO_EXCEEDS_HARD_LIMIT"
+
+
+def test_upload_complete_allows_large_stable_mp4_source_for_preprocessing() -> None:
+    service = _service()
+    request = _create_request(file_size_bytes=3_221_225_472).model_copy(
+        update={"fileName": "meeting.mp4", "contentType": "video/mp4"}
+    )
+    create_response = service.create_job(_auth(), request)
+
+    response = service.complete_upload(
+        _auth(),
+        create_response.jobId,
+        UploadCompleteRequest(uploadedSizeBytes=3_221_225_472),
+    )
+
+    assert response.status == JobStatus.UPLOADED
 
 
 def test_upload_complete_allows_content_understanding_file_over_stable_hard_limit() -> None:

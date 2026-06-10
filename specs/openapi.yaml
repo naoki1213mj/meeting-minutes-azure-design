@@ -311,18 +311,23 @@ components:
         [
           normalMaxFileSizeBytes,
           hardMaxFileSizeBytes,
+          stablePreprocessedSourceMaxFileSizeBytes,
           contentUnderstandingMaxFileSizeBytes,
           maxDurationSecondsWithDiarization,
           stableUploadSasTtlMinutes,
+          stablePreprocessedUploadSasTtlMinutes,
           contentUnderstandingUploadSasTtlMinutes,
         ]
       properties:
         normalMaxFileSizeBytes:
           type: integer
-          default: 314572800
+          default: 524288000
         hardMaxFileSizeBytes:
           type: integer
           default: 524288000
+        stablePreprocessedSourceMaxFileSizeBytes:
+          type: integer
+          default: 4294967296
         contentUnderstandingMaxFileSizeBytes:
           type: integer
           default: 4294967296
@@ -332,6 +337,9 @@ components:
         stableUploadSasTtlMinutes:
           type: integer
           default: 30
+        stablePreprocessedUploadSasTtlMinutes:
+          type: integer
+          default: 120
         contentUnderstandingUploadSasTtlMinutes:
           type: integer
           default: 120

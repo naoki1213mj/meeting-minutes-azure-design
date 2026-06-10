@@ -246,7 +246,7 @@ traces
 - Fast Transcription はリソースあたり最大600 requests/min。
 - 音声入力は500MB未満、5時間未満。diarization有効時は2時間未満。
 - 本アプリのUX上限は120分までbest effort、120分超は拒否する。120分近傍はdiarizationの2時間境界に近いため失敗リスクをユーザーへ明示する。
-- 標準経路の初期UX上限は300MB、ハード上限は500MBにする。
+- 標準経路の直接Speech入力は500MB未満にする。m4a/mp4など音声抽出する元ファイルは4GB未満まで許可するが、抽出後FLACが500MB以上ならFast Transcription投入前に失敗させる。
 - Content Understanding動画理解（実験）経路はBlob URL参照Analyze APIを使うため4GB/2時間まで許可できる。ただし大容量動画はアップロード時間、解析時間、コスト、失敗時再実行の影響が大きい。
 - 標準経路のアップロードSAS TTLは30分、動画理解（実験）経路は大容量動画向けに120分にする。SAS URL全文はログに出さない。
 

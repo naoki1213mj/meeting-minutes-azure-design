@@ -25,7 +25,13 @@ from meeting_minutes_backend.minutes_generation import (
     generate_final_minutes_from_summaries,
     generate_minutes_from_full_transcript,
 )
-from meeting_minutes_backend.models import ErrorObject, JobStatus, ProcessingRoute, Progress
+from meeting_minutes_backend.models import (
+    ErrorObject,
+    InputConstraints,
+    JobStatus,
+    ProcessingRoute,
+    Progress,
+)
 from meeting_minutes_backend.settings import (
     AppSettings,
     build_artifact_store,
@@ -100,13 +106,19 @@ def create_read_sas(job: dict[str, object]) -> dict[str, object]:
             message="指定されたジョブが見つかりません。",
             http_status=404,
         )
+    _validate_actual_ingest_blob_size(
+        settings=settings,
+        blob_name=record.blobName,
+        content_type=record.contentType,
+        processing_route=record.processingRoute,
+    )
     now = _utc_now()
     if record.processingRoute == ProcessingRoute.CONTENT_UNDERSTANDING:
-            read_sas = build_ingest_blob_sas_issuer(settings).create_read_sas(
-                record.blobName,
-                now,
-            )
-            return {"audioUrl": read_sas.url}
+        read_sas = build_ingest_blob_sas_issuer(settings).create_read_sas(
+            record.blobName,
+            now,
+        )
+        return {"audioUrl": read_sas.url}
 
     if (
         record.processingRoute != ProcessingRoute.CONTENT_UNDERSTANDING
@@ -681,6 +693,57 @@ def _details(value: object) -> dict[str, object] | None:
     if isinstance(value, dict):
         return {str(key): cast_value for key, cast_value in value.items()}
     return None
+
+
+def _validate_actual_ingest_blob_size(
+    *,
+    settings: AppSettings,
+    blob_name: str,
+    content_type: str,
+    processing_route: ProcessingRoute,
+    constraints: InputConstraints | None = None,
+) -> None:
+    constraints = constraints or InputConstraints()
+    actual_size = build_ingest_blob_store(settings).get_blob_size(
+        settings.ingest_container_name,
+        blob_name,
+    )
+    should_preprocess = should_preprocess_audio(blob_name, content_type)
+    if processing_route == ProcessingRoute.CONTENT_UNDERSTANDING:
+        if actual_size > constraints.contentUnderstandingMaxFileSizeBytes:
+            raise AppError(
+                code="CONTENT_UNDERSTANDING_VIDEO_TOO_LARGE",
+                message="動画理解経路の上限サイズを超えています。",
+                http_status=400,
+                details={
+                    "contentUnderstandingMaxFileSizeBytes": (
+                        constraints.contentUnderstandingMaxFileSizeBytes
+                    )
+                },
+            )
+        return
+
+    if should_preprocess:
+        if actual_size > constraints.stablePreprocessedSourceMaxFileSizeBytes:
+            raise AppError(
+                code="STABLE_PREPROCESSED_SOURCE_TOO_LARGE",
+                message="標準経路で前処理できる元ファイルサイズの上限を超えています。",
+                http_status=400,
+                details={
+                    "stablePreprocessedSourceMaxFileSizeBytes": (
+                        constraints.stablePreprocessedSourceMaxFileSizeBytes
+                    )
+                },
+            )
+        return
+
+    if actual_size > constraints.hardMaxFileSizeBytes:
+        raise AppError(
+            code="AUDIO_EXCEEDS_HARD_LIMIT",
+            message="Fast Transcriptionの上限を超えています。",
+            http_status=400,
+            details={"hardMaxFileSizeBytes": constraints.hardMaxFileSizeBytes},
+        )
 
 
 def _should_fallback_to_chunk_minutes(error: AppError) -> bool:

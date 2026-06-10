@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import tempfile
 from collections.abc import Callable
@@ -13,21 +14,14 @@ import imageio_ffmpeg
 
 from meeting_minutes_backend.blob_sas import BlobSasIssuer, UploadSas
 from meeting_minutes_backend.errors import AppError
+from meeting_minutes_backend.file_names import PREPROCESS_EXTENSIONS, should_preprocess_media
 from meeting_minutes_backend.models import InputConstraints
 
-PREPROCESS_CONTENT_TYPES = frozenset(
-    {
-        "application/mp4",
-        "audio/aac",
-        "audio/m4a",
-        "audio/mp4",
-        "audio/x-m4a",
-        "video/mp4",
-    }
-)
-PREPROCESS_EXTENSIONS = frozenset({".m4a", ".mp4"})
 PREPROCESSED_CONTENT_TYPE = "audio/flac"
 PREPROCESSED_EXTENSION = ".flac"
+DURATION_PATTERN = re.compile(
+    r"Duration:\s(?P<hours>\d{2}):(?P<minutes>\d{2}):(?P<seconds>\d{2}(?:\.\d+)?)"
+)
 
 
 class BinaryBlobStore(Protocol):
@@ -55,6 +49,11 @@ class AudioTranscoder(Protocol):
         source_path: Path,
         destination_path: Path,
     ) -> None:
+        pass
+
+
+class MediaDurationProbe(Protocol):
+    def duration_seconds(self, source_path: Path) -> float | None:
         pass
 
 
@@ -101,12 +100,41 @@ class FfmpegAudioTranscoder:
             raise _preprocess_error() from exc
 
 
+class FfmpegMediaDurationProbe:
+    def __init__(self, ffmpeg_exe: str | None = None, timeout_seconds: int = 60) -> None:
+        self._ffmpeg_exe = ffmpeg_exe or imageio_ffmpeg.get_ffmpeg_exe()
+        self._timeout_seconds = timeout_seconds
+
+    def duration_seconds(self, source_path: Path) -> float | None:
+        command = [
+            self._ffmpeg_exe,
+            "-hide_banner",
+            "-nostdin",
+            "-i",
+            str(source_path),
+        ]
+        try:
+            result = subprocess.run(  # noqa: S603
+                command,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=self._timeout_seconds,
+            )
+        except (subprocess.SubprocessError, OSError) as exc:
+            raise _preprocess_error() from exc
+        match = DURATION_PATTERN.search(result.stderr or "")
+        if match is None:
+            return None
+        return (
+            int(match.group("hours")) * 3600
+            + int(match.group("minutes")) * 60
+            + float(match.group("seconds"))
+        )
+
+
 def should_preprocess_audio(blob_name: str, content_type: str) -> bool:
-    content_type_key = content_type.split(";", 1)[0].strip().lower()
-    return (
-        Path(blob_name).suffix.lower() in PREPROCESS_EXTENSIONS
-        or content_type_key in PREPROCESS_CONTENT_TYPES
-    )
+    return should_preprocess_media(blob_name, content_type)
 
 
 def prepare_audio_for_transcription(
@@ -120,6 +148,7 @@ def prepare_audio_for_transcription(
     sas_issuer: BlobSasIssuer,
     now: datetime,
     transcoder: AudioTranscoder | None = None,
+    duration_probe: MediaDurationProbe | None = None,
     constraints: InputConstraints | None = None,
     temporary_directory: Callable[
         [], AbstractContextManager[str]
@@ -130,6 +159,7 @@ def prepare_audio_for_transcription(
 
     target_blob_name = preprocessed_blob_name(tenant_id, job_id)
     transcoder = transcoder or FfmpegAudioTranscoder()
+    duration_probe = duration_probe or FfmpegMediaDurationProbe()
     constraints = constraints or InputConstraints()
 
     with temporary_directory() as temp_dir:
@@ -138,6 +168,21 @@ def prepare_audio_for_transcription(
         source_path = temp_path / f"input{suffix if suffix in PREPROCESS_EXTENSIONS else '.media'}"
         converted_path = temp_path / f"input{PREPROCESSED_EXTENSION}"
         store.download_to_path(container_name, blob_name, source_path)
+        duration_seconds = duration_probe.duration_seconds(source_path)
+        if (
+            duration_seconds is not None
+            and duration_seconds > constraints.maxDurationSecondsWithDiarization
+        ):
+            raise AppError(
+                code="AUDIO_TOO_LONG_FOR_DIARIZATION",
+                message="diarization有効時の上限時間を超えています。",
+                http_status=400,
+                details={
+                    "maxDurationSecondsWithDiarization": (
+                        constraints.maxDurationSecondsWithDiarization
+                    )
+                },
+            )
         transcoder.transcode_to_fast_transcription_audio(source_path, converted_path)
         if not converted_path.exists():
             raise _preprocess_error()

@@ -112,8 +112,9 @@ Orchestrator内でネットワークI/O、Blob/Cosmos I/O、現在時刻取得�
 
 | 項目 | 既定値 | 動作 |
 |---|---:|---|
-| 通常サイズ上限 | 300MB | 超過時は既定でエラー |
-| ハードサイズ上限 | 500MB | 超過時は必ずエラー |
+| 直接Speech入力サイズ上限 | 500MB | 非前処理形式で超過時はエラー |
+| 前処理元ファイルサイズ上限 | 4GB | m4a/mp4など。超過時はエラー |
+| 前処理後音声サイズ上限 | 500MB | 抽出後FLACが超過したらエラー |
 | Content Understanding動画理解サイズ上限 | 4GB | `processingRoute=contentUnderstanding` の場合だけ適用 |
 | diarization有効時の音声長 | 2時間未満 | 超過時は必ずエラー |
 | locale | `ja-JP` | 未指定時に設定 |

@@ -129,8 +129,8 @@ Activity別の時間はApplication Insightsのtraceで確認する。詳細KQL�
 | 項目 | 現在の扱い |
 |---|---|
 | 音声長 | 120分までbest effort、120分超は拒否 |
-| 標準経路の通常サイズ | 300MB未満 |
-| 標準経路のハード上限 | 500MB未満 |
+| 標準経路の直接Speech入力 | 500MB未満 |
+| 標準経路のm4a/mp4元ファイル | 4GB未満。抽出後FLACは500MB未満 |
 | Content Understanding経路のファイルサイズ | 4GB未満（Blob URL参照Analyze API） |
 | Speech timeout | 480秒 |
 | リアルタイム音声 | 対象外 |

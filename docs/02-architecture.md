@@ -136,7 +136,7 @@
 ### 3.3 文字起こし
 
 1. Orchestrator が `ValidateJobInput` を実行する。
-2. 処理方式ごとの入力上限を評価する。標準経路は通常300MB/ハード500MB、Content Understanding動画理解（実験）経路は4GB未満、どちらも120分以下。
+2. 処理方式ごとの入力上限を評価する。標準経路の直接Speech入力は500MB未満、m4a/mp4など前処理対象の元ファイルは4GB未満、Content Understanding動画理解（実験）経路は4GB未満、いずれも120分以下。前処理後FLACが500MB以上ならFast Transcription投入前に失敗にする。
 3. Fast Transcription に `definition.audioUrl` を送る。本番経路では inline `audio` を使わない。
 4. `definition` には `locales: ["ja-JP"]` と `diarization` を含める。
 5. `channels` は指定しない。diarization有効時に stereo の `[0,1]` 指定はしない。

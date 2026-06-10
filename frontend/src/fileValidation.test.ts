@@ -4,6 +4,7 @@ import {
   contentUnderstandingMaxFileSizeBytes,
   hardMaxAudioFileSizeBytes,
   maxAudioDurationSeconds,
+  stablePreprocessedSourceMaxFileSizeBytes,
   validateAudioFile,
 } from "./fileValidation";
 
@@ -25,6 +26,17 @@ describe("fileValidation", () => {
 
   it("rejects stable-route files over the hard limit", () => {
     expect(validateAudioFile(file("meeting.mp3", hardMaxAudioFileSizeBytes + 1)).valid).toBe(false);
+  });
+
+  it("allows larger stable-route mp4 files that are preprocessed before Speech", () => {
+    expect(
+      validateAudioFile(file("meeting.mp4", hardMaxAudioFileSizeBytes + 1, "video/mp4")).valid,
+    ).toBe(true);
+    expect(
+      validateAudioFile(
+        file("meeting.mp4", stablePreprocessedSourceMaxFileSizeBytes + 1, "video/mp4"),
+      ).valid,
+    ).toBe(false);
   });
 
   it("allows larger videos for the Content Understanding route", () => {

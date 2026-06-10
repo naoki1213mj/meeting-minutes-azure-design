@@ -86,6 +86,7 @@ class AzureBlobSasIssuer(BlobSasIssuer):
             if (
                 self._delegation_key
                 and self._delegation_key.expires_at > now + timedelta(minutes=15)
+                and self._delegation_key.expires_at >= required_expiry
             ):
                 return self._delegation_key.key
 

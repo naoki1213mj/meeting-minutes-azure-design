@@ -43,6 +43,14 @@ class BlobArtifactStore:
         blob_client = self._service_client.get_blob_client(container_name, blob_name)
         return blob_client.download_blob().readall().decode("utf-8")
 
+    def get_blob_size(self, container_name: str, blob_name: str) -> int:
+        blob_client = self._service_client.get_blob_client(container_name, blob_name)
+        properties = blob_client.get_blob_properties()
+        size = properties.size
+        if size is None:
+            size = properties.content_length
+        return int(size)
+
     def download_to_path(
         self,
         container_name: str,

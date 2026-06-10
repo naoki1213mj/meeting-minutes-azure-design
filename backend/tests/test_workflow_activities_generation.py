@@ -79,6 +79,14 @@ def test_create_read_sas_uses_original_mp4_for_content_understanding(
                 expires_at=now,
             )
 
+    class FakeIngestStore:
+        def get_blob_size(self, container_name: str, blob_name: str) -> int:
+            assert (container_name, blob_name) == (
+                "audio",
+                "raw-audio/tenant-a/job-a/input.mp4",
+            )
+            return 1_024
+
     repo = FakeRepository()
     issuer = FakeSasIssuer()
     monkeypatch.setattr(
@@ -100,7 +108,7 @@ def test_create_read_sas_uses_original_mp4_for_content_understanding(
     monkeypatch.setattr(
         workflow_activities,
         "build_ingest_blob_store",
-        lambda _settings: (_ for _ in ()).throw(AssertionError("ingest store not needed")),
+        lambda _settings: FakeIngestStore(),
     )
 
     result = create_read_sas({"tenantId": "tenant-a", "jobId": "job-a"})
@@ -140,9 +148,17 @@ def test_create_read_sas_preprocesses_stable_media_in_ingest_storage(
     class FakeSasIssuer:
         pass
 
+    class FakeIngestStore:
+        def get_blob_size(self, container_name: str, blob_name: str) -> int:
+            assert (container_name, blob_name) == (
+                "ingest-audio",
+                "raw-audio/tenant-a/job-a/input.m4a",
+            )
+            return 3_221_225_472
+
     repo = FakeRepository()
     issuer = FakeSasIssuer()
-    ingest_store = object()
+    ingest_store = FakeIngestStore()
     monkeypatch.setattr(
         workflow_activities.AppSettings,
         "from_env",
@@ -185,6 +201,44 @@ def test_create_read_sas_preprocesses_stable_media_in_ingest_storage(
     expected_url = "https://ingest.example/preprocessed/tenant-a/job-a/input.flac?sig=redacted"
     assert result == {"audioUrl": expected_url}
     assert repo.saved_records == [repo.record]
+
+
+def test_create_read_sas_rejects_actual_preprocessed_source_over_limit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeRepository:
+        def get(self, tenant_id: str, job_id: str) -> SimpleNamespace:
+            assert (tenant_id, job_id) == ("tenant-a", "job-a")
+            return SimpleNamespace(
+                blobName="raw-audio/tenant-a/job-a/input.mp4",
+                contentType="video/mp4",
+                processingRoute=ProcessingRoute.STABLE,
+            )
+
+    class FakeIngestStore:
+        def get_blob_size(self, _container_name: str, _blob_name: str) -> int:
+            return 4_294_967_297
+
+    monkeypatch.setattr(
+        workflow_activities.AppSettings,
+        "from_env",
+        lambda: SimpleNamespace(ingest_container_name="audio"),
+    )
+    monkeypatch.setattr(
+        workflow_activities,
+        "build_job_repository",
+        lambda _settings: FakeRepository(),
+    )
+    monkeypatch.setattr(
+        workflow_activities,
+        "build_ingest_blob_store",
+        lambda _settings: FakeIngestStore(),
+    )
+
+    with pytest.raises(AppError) as exc_info:
+        create_read_sas({"tenantId": "tenant-a", "jobId": "job-a"})
+
+    assert exc_info.value.code == "STABLE_PREPROCESSED_SOURCE_TOO_LARGE"
 
 
 def test_poll_content_understanding_failed_result_preserves_sanitized_details(

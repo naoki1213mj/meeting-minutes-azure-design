@@ -43,3 +43,35 @@ def test_azure_blob_sas_issuer_uses_user_delegation_key_and_https() -> None:
     assert generate_sas.call_args.kwargs["account_name"] == "storageacct"
     assert generate_sas.call_args.kwargs["protocol"] == "https"
     assert generate_sas.call_args.kwargs["expiry"].minute == 0
+
+
+def test_azure_blob_sas_issuer_refreshes_key_when_required_expiry_exceeds_cache() -> None:
+    service_client = Mock()
+    service_client.account_name = "storageacct"
+    short_key = Mock()
+    long_key = Mock()
+    service_client.get_user_delegation_key.side_effect = [short_key, long_key]
+    blob_client = Mock()
+    blob_client.url = "https://storageacct.blob.core.windows.net/audio/blob.mp3"
+    service_client.get_blob_client.return_value = blob_client
+
+    with (
+        patch(
+            "meeting_minutes_backend.blob_storage.BlobServiceClient",
+            return_value=service_client,
+        ),
+        patch(
+            "meeting_minutes_backend.blob_storage.generate_blob_sas",
+            return_value="sig=REDACTED_TEST_VALUE",
+        ),
+    ):
+        issuer = AzureBlobSasIssuer(
+            account_url="https://storageacct.blob.core.windows.net",
+            container_name="audio",
+            credential=Mock(),
+        )
+        now = datetime(2026, 6, 1, tzinfo=UTC)
+        issuer.create_upload_sas("raw-audio/tenant/job/input.mp3", now, ttl_minutes=30)
+        issuer.create_upload_sas("raw-audio/tenant/job/input.mp4", now, ttl_minutes=120)
+
+    assert service_client.get_user_delegation_key.call_count == 2
