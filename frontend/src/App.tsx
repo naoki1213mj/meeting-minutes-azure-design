@@ -26,13 +26,14 @@ import {
   type MinutesResponse,
   type ProcessingRoute,
   type TranscriptResponse,
+  type TranscriptionEngine,
   type VisualContextResponse,
 } from "./apiClient";
 import { appTitle, heroCopy, heroHeadline, supportedAudioExtensions } from "./appConfig";
 import {
   getAudioDurationSeconds,
+  getMaxDurationSeconds,
   getMaxFileSizeBytes,
-  maxAudioDurationSeconds,
   validateAudioFile,
 } from "./fileValidation";
 import { frontendFeatures } from "./frontendFeatures";
@@ -121,7 +122,7 @@ const statusLabels: Record<JobStatus, StatusDescriptor> = {
 };
 
 const heroImpactCards = [
-  { label: "Standard", value: "Fast Transcription", helper: "全体音声 + diarization" },
+  { label: "Standard", value: "Fast / Batch", helper: "長尺時は自動fallback" },
   { label: "Minutes", value: "Direct JSON", helper: "schema検証後にMarkdown化" },
   { label: "Storage", value: "Private artifacts", helper: "結果はAPI経由で取得" },
 ] as const;
@@ -131,6 +132,21 @@ const workflowHighlights = [
   { number: "02", title: "Transcribe", text: "音声抽出と話者分離" },
   { number: "03", title: "Compose", text: "議事録JSONを安全に生成" },
   { number: "04", title: "Review", text: "議事録・根拠・映像メモを確認" },
+] as const;
+
+const guideCards = [
+  {
+    title: "標準経路",
+    description: "音声抽出後にFast Transcriptionへ投入。2時間超などはBatch fallbackへ自動切替します。",
+  },
+  {
+    title: "動画理解（実験）",
+    description: "Content Understandingで映像メモを取得。議事録本文の根拠には自動採用しません。",
+  },
+  {
+    title: "Azure構成",
+    description: "Browser→Functions→Ingest Storage→Speech/OpenAI→Private Artifacts/Cosmosで処理します。",
+  },
 ] as const;
 
 export function App() {
@@ -174,6 +190,7 @@ export function App() {
     .map((extension) => extension.replace(".", "").toUpperCase())
     .join(" / ");
   const selectedRouteMaxFileSizeBytes = getMaxFileSizeBytes(processingRoute, selectedFile);
+  const selectedRouteMaxDurationSeconds = getMaxDurationSeconds(processingRoute);
 
   useEffect(() => {
     return () => {
@@ -222,8 +239,12 @@ export function App() {
     try {
       setMessage("ジョブを作成しています。");
       const durationSeconds = await getAudioDurationSeconds(selectedFile);
-      if (durationSeconds !== null && durationSeconds > maxAudioDurationSeconds) {
-        setErrorMessage("120分を超える音声/動画は対応範囲外です。分割してからアップロードしてください。");
+      if (durationSeconds !== null && durationSeconds >= selectedRouteMaxDurationSeconds) {
+        setErrorMessage(
+          processingRoute === "contentUnderstanding"
+            ? "120分を超える動画理解処理は対応範囲外です。分割してからアップロードしてください。"
+            : "240分を超える音声/動画は対応範囲外です。分割してからアップロードしてください。",
+        );
         setMessage("音声/動画の長さを確認してください。");
         setRunStartedAtMs(null);
         setRunFinishedAtMs(null);
@@ -480,6 +501,18 @@ export function App() {
           ))}
         </section>
 
+        <section className="guide-strip" aria-label="アプリ内ガイド">
+          {guideCards.map((item) => (
+            <article className="guide-card" key={item.title}>
+              <span aria-hidden="true">◆</span>
+              <div>
+                <h2>{item.title}</h2>
+                <p>{item.description}</p>
+              </div>
+            </article>
+          ))}
+        </section>
+
         <section className="workspace-grid" aria-label="アップロードと処理状況">
           <form id="upload-panel" className="upload-card" onSubmit={(event) => void handleSubmit(event)}>
             <div className="section-heading">
@@ -487,7 +520,8 @@ export function App() {
               <h2>音声アップロード</h2>
               <p>
                 {supportedFormatsText} に対応。選択中の処理方式では最大{" "}
-                {formatBytes(selectedRouteMaxFileSizeBytes)} / 120分までアップロードできます。
+                {formatBytes(selectedRouteMaxFileSizeBytes)} / {formatMinutes(selectedRouteMaxDurationSeconds)}
+                未満までアップロードできます。
               </p>
             </div>
 
@@ -672,6 +706,10 @@ export function App() {
               <div>
                 <dt>処理方式</dt>
                 <dd>{getProcessingRouteLabel(jobStatus?.processingRoute ?? processingRoute)}</dd>
+              </div>
+              <div>
+                <dt>文字起こしエンジン</dt>
+                <dd>{getTranscriptionEngineLabel(jobStatus?.outputs.transcriptionEngine ?? null)}</dd>
               </div>
               <div>
                 <dt>文字起こし</dt>
@@ -878,6 +916,19 @@ function getProcessingRouteLabel(processingRoute: ProcessingRoute): string {
   }
 }
 
+function getTranscriptionEngineLabel(engine: TranscriptionEngine | null): string {
+  switch (engine) {
+    case "fast":
+      return "Fast Transcription";
+    case "batch":
+      return "Batch fallback";
+    case "contentUnderstanding":
+      return "Content Understanding";
+    case null:
+      return "自動判定";
+  }
+}
+
 function getTranscriptAvailabilityLabel(
   jobStatus: JobStatusResponse | null,
   transcript: TranscriptResponse | null,
@@ -932,8 +983,13 @@ function formatBytes(bytes: number): string {
     value /= 1024;
     unitIndex += 1;
   }
+
   const fractionDigits = value >= 10 || unitIndex === 0 ? 0 : 1;
   return `${value.toFixed(fractionDigits)} ${units[unitIndex]}`;
+}
+
+function formatMinutes(seconds: number): string {
+  return `${Math.floor(seconds / 60)}分`;
 }
 
 function formatDateTime(value: number | string): string {

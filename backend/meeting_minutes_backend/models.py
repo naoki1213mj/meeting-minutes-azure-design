@@ -36,6 +36,12 @@ class ProcessingRoute(StrEnum):
     CONTENT_UNDERSTANDING = "contentUnderstanding"
 
 
+class TranscriptionEngine(StrEnum):
+    FAST = "fast"
+    BATCH = "batch"
+    CONTENT_UNDERSTANDING = "contentUnderstanding"
+
+
 class InputConstraints(StrictModel):
     normalMaxFileSizeBytes: int = 524_288_000
     hardMaxFileSizeBytes: int = 524_288_000
@@ -45,6 +51,8 @@ class InputConstraints(StrictModel):
     stableUploadSasTtlMinutes: int = 30
     stablePreprocessedUploadSasTtlMinutes: int = 120
     contentUnderstandingUploadSasTtlMinutes: int = 120
+    batchMaxFileSizeBytes: int = 1_073_741_824
+    batchMaxDurationSecondsWithDiarization: int = 14_400
 
 
 class CreateJobRequest(StrictModel):
@@ -90,6 +98,7 @@ class Progress(StrictModel):
 class Outputs(StrictModel):
     transcriptReady: bool = False
     minutesReady: bool = False
+    transcriptionEngine: TranscriptionEngine | None = None
     rawTranscriptBlobUri: str | None = None
     normalizedTranscriptBlobUri: str | None = None
     visualContextBlobUri: str | None = None

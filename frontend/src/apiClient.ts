@@ -15,6 +15,7 @@ export type JobStatus =
 
 export type MinutesModel = "fast" | "quality";
 export type ProcessingRoute = "stable" | "contentUnderstanding";
+export type TranscriptionEngine = "fast" | "batch" | "contentUnderstanding";
 
 export type CreateJobResponse = {
   jobId: string;
@@ -31,6 +32,8 @@ export type CreateJobResponse = {
     stableUploadSasTtlMinutes: number;
     stablePreprocessedUploadSasTtlMinutes: number;
     contentUnderstandingUploadSasTtlMinutes: number;
+    batchMaxFileSizeBytes: number;
+    batchMaxDurationSecondsWithDiarization: number;
   };
 };
 
@@ -57,6 +60,7 @@ export type JobStatusResponse = {
   outputs: {
     transcriptReady: boolean;
     minutesReady: boolean;
+    transcriptionEngine?: TranscriptionEngine | null;
     rawTranscriptBlobUri?: string | null;
     normalizedTranscriptBlobUri?: string | null;
     visualContextBlobUri?: string | null;

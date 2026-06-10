@@ -37,6 +37,7 @@ Browser
 | Private Artifact Storage（中期/有効化時） | raw/normalized transcript、minutes JSON/Markdown、visual context |
 | Azure Cosmos DB for NoSQL | job state、progress、outputs、speaker mapping |
 | Azure Speech in Foundry Tools | Fast Transcription + diarization |
+| Azure Speech Batch Transcription | 2時間超〜4時間未満の標準経路fallback |
 | Azure OpenAI in Microsoft Foundry Models | direct minutes generation、chunk fallback |
 | Microsoft Foundry project `minutes-studio` | new Foundry portalでのデモ/実験整理。runtime APIはAIServices account-level endpointを継続 |
 | Application Insights / Log Analytics | traces、duration telemetry、障害調査 |
@@ -104,6 +105,8 @@ UIから選べるモード:
 
 direct生成が出力切れ、token制約、JSON破損、schema repair失敗などの回復可能な制約に当たった場合のみ、chunk summary方式へ自動fallbackする。通常のOrchestrator本線ではchunk Activityを呼ばない。
 
+Fast Transcriptionの上限を超える標準経路入力では、Batch Transcription fallbackへ自動切替する。これは議事録生成のchunk fallbackとは別で、文字起こしエンジンのfallbackである。
+
 ## 7.1 Content Understanding動画理解経路（実験）
 
 UIでは標準経路に加え、動画理解（実験）経路を選べる。実験経路では元MP4を Content Understanding video analyzer に渡し、`transcriptPhrases` を normalized transcript に変換して既存のminutes generatorへ渡す。key frames / camera shots / visual fields / markdown は visual context artifact として保存し、UIの「映像メモ」タブに表示する。
@@ -128,15 +131,15 @@ Activity別の時間はApplication Insightsのtraceで確認する。詳細KQL�
 
 | 項目 | 現在の扱い |
 |---|---|
-| 音声長 | 120分までbest effort、120分超は拒否 |
-| 標準経路の直接Speech入力 | 500MB未満 |
-| 標準経路のm4a/mp4元ファイル | 4GB未満。抽出後FLACは500MB未満 |
+| 音声長 | 標準経路は4時間未満までBatch fallback候補。CU経路は120分まで |
+| 標準経路の直接音声入力 | 1GB未満。500MB超はBatch fallback候補 |
+| 標準経路のm4a/mp4元ファイル | 4GB未満。抽出後音声がFast上限超ならBatch fallback |
 | Content Understanding経路のファイルサイズ | 4GB未満（Blob URL参照Analyze API） |
 | Speech timeout | 480秒 |
 | リアルタイム音声 | 対象外 |
 | 音声チャンク並列STT | 話者分離品質リスクのため本線では不採用 |
 
-120分はFast Transcription diarizationおよびContent Understanding video URL参照の2時間境界に近い。120分近傍はサービス制限やファイル内容により失敗する可能性がある。256MB超のファイルはブラウザからBlobへブロック分割アップロードする。再開機能までは未実装のため、ネットワーク中断時は再実行が必要。実用上はより小さい動画でのデモを推奨する。
+120分はFast Transcription diarizationおよびContent Understanding video URL参照の2時間境界に近い。標準経路ではFast上限を超える場合Batch fallbackへ切り替えるが、CU経路では120分近傍はサービス制限やファイル内容により失敗する可能性がある。256MB超のファイルはブラウザからBlobへブロック分割アップロードする。再開機能までは未実装のため、ネットワーク中断時は再実行が必要。実用上はより小さい動画でのデモを推奨する。
 
 ## 10. 運用チェックリスト
 

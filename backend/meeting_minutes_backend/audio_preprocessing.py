@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 from collections.abc import Callable
 from contextlib import AbstractContextManager
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Protocol
@@ -41,6 +42,15 @@ class BinaryBlobStore(Protocol):
         content_type: str,
     ) -> str:
         pass
+
+
+@dataclass(frozen=True)
+class PreparedTranscriptionInput:
+    audio_sas: UploadSas
+    engine: str
+    duration_seconds: float | None
+    audio_size_bytes: int
+    preprocessed: bool
 
 
 class AudioTranscoder(Protocol):
@@ -150,12 +160,79 @@ def prepare_audio_for_transcription(
     transcoder: AudioTranscoder | None = None,
     duration_probe: MediaDurationProbe | None = None,
     constraints: InputConstraints | None = None,
+    source_size_bytes: int | None = None,
+    batch_read_sas_ttl_minutes: int | None = None,
     temporary_directory: Callable[
         [], AbstractContextManager[str]
     ] = tempfile.TemporaryDirectory,
 ) -> UploadSas:
+    return prepare_transcription_input(
+        tenant_id=tenant_id,
+        job_id=job_id,
+        blob_name=blob_name,
+        content_type=content_type,
+        container_name=container_name,
+        store=store,
+        sas_issuer=sas_issuer,
+        now=now,
+        transcoder=transcoder,
+        duration_probe=duration_probe,
+        constraints=constraints,
+        source_size_bytes=source_size_bytes,
+        batch_read_sas_ttl_minutes=batch_read_sas_ttl_minutes,
+        temporary_directory=temporary_directory,
+    ).audio_sas
+
+
+def prepare_transcription_input(
+    *,
+    tenant_id: str,
+    job_id: str,
+    blob_name: str,
+    content_type: str,
+    container_name: str,
+    store: BinaryBlobStore,
+    sas_issuer: BlobSasIssuer,
+    now: datetime,
+    transcoder: AudioTranscoder | None = None,
+    duration_probe: MediaDurationProbe | None = None,
+    constraints: InputConstraints | None = None,
+    source_size_bytes: int | None = None,
+    batch_read_sas_ttl_minutes: int | None = None,
+    temporary_directory: Callable[
+        [],
+        AbstractContextManager[str],
+    ] = tempfile.TemporaryDirectory,
+) -> PreparedTranscriptionInput:
     if not should_preprocess_audio(blob_name, content_type):
-        return sas_issuer.create_read_sas(blob_name, now)
+        duration_seconds: float | None = None
+        with temporary_directory() as temp_dir:
+            temp_path = Path(temp_dir)
+            suffix = Path(blob_name).suffix.lower()
+            source_path = temp_path / f"input{suffix if suffix else '.media'}"
+            store.download_to_path(container_name, blob_name, source_path)
+            duration_probe = duration_probe or FfmpegMediaDurationProbe()
+            duration_seconds = duration_probe.duration_seconds(source_path)
+            _ensure_within_batch_duration(duration_seconds, constraints or InputConstraints())
+        audio_size_bytes = 0
+        engine = _select_transcription_engine(
+            duration_seconds=duration_seconds,
+            audio_size_bytes=source_size_bytes or audio_size_bytes,
+            constraints=constraints or InputConstraints(),
+        )
+        return PreparedTranscriptionInput(
+            audio_sas=_create_read_sas_for_engine(
+                sas_issuer=sas_issuer,
+                blob_name=blob_name,
+                now=now,
+                engine=engine,
+                batch_read_sas_ttl_minutes=batch_read_sas_ttl_minutes,
+            ),
+            engine=engine,
+            duration_seconds=duration_seconds,
+            audio_size_bytes=source_size_bytes or audio_size_bytes,
+            preprocessed=False,
+        )
 
     target_blob_name = preprocessed_blob_name(tenant_id, job_id)
     transcoder = transcoder or FfmpegAudioTranscoder()
@@ -171,27 +248,19 @@ def prepare_audio_for_transcription(
         duration_seconds = duration_probe.duration_seconds(source_path)
         if (
             duration_seconds is not None
-            and duration_seconds > constraints.maxDurationSecondsWithDiarization
+            and duration_seconds >= constraints.batchMaxDurationSecondsWithDiarization
         ):
-            raise AppError(
-                code="AUDIO_TOO_LONG_FOR_DIARIZATION",
-                message="diarization有効時の上限時間を超えています。",
-                http_status=400,
-                details={
-                    "maxDurationSecondsWithDiarization": (
-                        constraints.maxDurationSecondsWithDiarization
-                    )
-                },
-            )
+            _raise_batch_duration_error(constraints)
         transcoder.transcode_to_fast_transcription_audio(source_path, converted_path)
         if not converted_path.exists():
             raise _preprocess_error()
-        if converted_path.stat().st_size > constraints.hardMaxFileSizeBytes:
+        audio_size_bytes = converted_path.stat().st_size
+        if audio_size_bytes >= constraints.batchMaxFileSizeBytes:
             raise AppError(
-                code="AUDIO_EXCEEDS_HARD_LIMIT",
-                message="変換後の音声サイズが上限を超えています。",
+                code="BATCH_TRANSCRIPTION_INPUT_TOO_LARGE",
+                message="Batch Transcriptionの上限サイズを超えています。",
                 http_status=400,
-                details={"hardMaxFileSizeBytes": constraints.hardMaxFileSizeBytes},
+                details={"batchMaxFileSizeBytes": constraints.batchMaxFileSizeBytes},
             )
         store.upload_file(
             container_name,
@@ -200,11 +269,80 @@ def prepare_audio_for_transcription(
             PREPROCESSED_CONTENT_TYPE,
         )
 
-    return sas_issuer.create_read_sas(target_blob_name, now)
+    engine = _select_transcription_engine(
+        duration_seconds=duration_seconds,
+        audio_size_bytes=audio_size_bytes,
+        constraints=constraints,
+    )
+    return PreparedTranscriptionInput(
+        audio_sas=_create_read_sas_for_engine(
+            sas_issuer=sas_issuer,
+            blob_name=target_blob_name,
+            now=now,
+            engine=engine,
+            batch_read_sas_ttl_minutes=batch_read_sas_ttl_minutes,
+        ),
+        engine=engine,
+        duration_seconds=duration_seconds,
+        audio_size_bytes=audio_size_bytes,
+        preprocessed=True,
+    )
 
 
 def preprocessed_blob_name(tenant_id: str, job_id: str) -> str:
     return f"preprocessed/{tenant_id}/{job_id}/input{PREPROCESSED_EXTENSION}"
+
+
+def _select_transcription_engine(
+    *,
+    duration_seconds: float | None,
+    audio_size_bytes: int,
+    constraints: InputConstraints,
+) -> str:
+    if (
+        duration_seconds is not None
+        and duration_seconds >= constraints.maxDurationSecondsWithDiarization
+    ):
+        return "batch"
+    if audio_size_bytes >= constraints.hardMaxFileSizeBytes:
+        return "batch"
+    return "fast"
+
+
+def _create_read_sas_for_engine(
+    *,
+    sas_issuer: BlobSasIssuer,
+    blob_name: str,
+    now: datetime,
+    engine: str,
+    batch_read_sas_ttl_minutes: int | None,
+) -> UploadSas:
+    ttl_minutes = batch_read_sas_ttl_minutes if engine == "batch" else None
+    return sas_issuer.create_read_sas(blob_name, now, ttl_minutes=ttl_minutes)
+
+
+def _ensure_within_batch_duration(
+    duration_seconds: float | None,
+    constraints: InputConstraints,
+) -> None:
+    if (
+        duration_seconds is not None
+        and duration_seconds >= constraints.batchMaxDurationSecondsWithDiarization
+    ):
+        _raise_batch_duration_error(constraints)
+
+
+def _raise_batch_duration_error(constraints: InputConstraints) -> None:
+    raise AppError(
+        code="AUDIO_TOO_LONG_FOR_BATCH",
+        message="Batch Transcriptionの上限時間を超えています。",
+        http_status=400,
+        details={
+            "batchMaxDurationSecondsWithDiarization": (
+                constraints.batchMaxDurationSecondsWithDiarization
+            )
+        },
+    )
 
 
 def _preprocess_error() -> AppError:

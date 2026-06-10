@@ -147,7 +147,7 @@ class JobService:
         return _upload_complete_response(saved)
 
     def _validate_create_request(self, request: CreateJobRequest) -> None:
-        if request.fileSizeBytes > self._max_file_size_bytes(
+        if request.fileSizeBytes >= self._max_file_size_bytes(
             request.processingRoute,
             request.fileName,
             request.contentType,
@@ -161,6 +161,7 @@ class JobService:
             request.processingRoute == ProcessingRoute.STABLE
             and request.fileSizeBytes > self._constraints.normalMaxFileSizeBytes
             and not self._should_preprocess(request.fileName, request.contentType)
+            and request.fileSizeBytes > self._constraints.batchMaxFileSizeBytes
         ):
             raise AppError(
                 code="AUDIO_TOO_LARGE",
@@ -172,30 +173,36 @@ class JobService:
                 },
             )
 
-        if (
-            request.clientEstimatedDurationSeconds is not None
-            and request.clientEstimatedDurationSeconds
-            > self._constraints.maxDurationSecondsWithDiarization
-        ):
+        if request.clientEstimatedDurationSeconds is not None:
             if request.processingRoute == ProcessingRoute.CONTENT_UNDERSTANDING:
+                if (
+                    request.clientEstimatedDurationSeconds
+                    >= self._constraints.maxDurationSecondsWithDiarization
+                ):
+                    raise AppError(
+                        code="CONTENT_UNDERSTANDING_VIDEO_TOO_LONG",
+                        message="動画理解経路の上限時間を超えています。",
+                        http_status=400,
+                        details={
+                            "maxDurationSeconds": (
+                                self._constraints.maxDurationSecondsWithDiarization
+                            )
+                        },
+                    )
+            elif (
+                request.clientEstimatedDurationSeconds
+                >= self._constraints.batchMaxDurationSecondsWithDiarization
+            ):
                 raise AppError(
-                    code="CONTENT_UNDERSTANDING_VIDEO_TOO_LONG",
-                    message="動画理解経路の上限時間を超えています。",
+                    code="AUDIO_TOO_LONG_FOR_BATCH",
+                    message="Batch Transcriptionの上限時間を超えています。",
                     http_status=400,
                     details={
-                        "maxDurationSeconds": self._constraints.maxDurationSecondsWithDiarization
+                        "batchMaxDurationSecondsWithDiarization": (
+                            self._constraints.batchMaxDurationSecondsWithDiarization
+                        )
                     },
                 )
-            raise AppError(
-                code="AUDIO_TOO_LONG_FOR_DIARIZATION",
-                message="diarization有効時の上限時間を超えています。",
-                http_status=400,
-                details={
-                    "maxDurationSecondsWithDiarization": (
-                        self._constraints.maxDurationSecondsWithDiarization
-                    )
-                },
-            )
 
     def _validate_uploaded_size(
         self,
@@ -205,7 +212,7 @@ class JobService:
         if (
             uploaded_size_bytes
             and uploaded_size_bytes
-            > self._max_file_size_bytes(
+            >= self._max_file_size_bytes(
                 record.processingRoute,
                 record.blobName,
                 record.contentType,
@@ -226,13 +233,21 @@ class JobService:
             return self._constraints.contentUnderstandingMaxFileSizeBytes
         if self._should_preprocess(file_name, content_type):
             return self._constraints.stablePreprocessedSourceMaxFileSizeBytes
-        return self._constraints.hardMaxFileSizeBytes
+        return self._constraints.batchMaxFileSizeBytes
 
     def _upload_sas_ttl_minutes(self, request: CreateJobRequest) -> int:
         processing_route = request.processingRoute
         if processing_route == ProcessingRoute.CONTENT_UNDERSTANDING:
             return self._constraints.contentUnderstandingUploadSasTtlMinutes
-        if self._should_preprocess(request.fileName, request.contentType):
+        if (
+            self._should_preprocess(request.fileName, request.contentType)
+            or request.fileSizeBytes >= self._constraints.hardMaxFileSizeBytes
+            or (
+                request.clientEstimatedDurationSeconds is not None
+                and request.clientEstimatedDurationSeconds
+                > self._constraints.maxDurationSecondsWithDiarization
+            )
+        ):
             return self._constraints.stablePreprocessedUploadSasTtlMinutes
         return self._constraints.stableUploadSasTtlMinutes
 
@@ -263,6 +278,13 @@ class JobService:
                         self._constraints.stablePreprocessedSourceMaxFileSizeBytes
                     )
                 },
+            )
+        if processing_route == ProcessingRoute.STABLE:
+            raise AppError(
+                code="BATCH_TRANSCRIPTION_INPUT_TOO_LARGE",
+                message="Batch Transcriptionの上限サイズを超えています。",
+                http_status=400,
+                details={"batchMaxFileSizeBytes": self._constraints.batchMaxFileSizeBytes},
             )
         raise AppError(
             code="AUDIO_EXCEEDS_HARD_LIMIT",

@@ -2,9 +2,11 @@ import { supportedAudioExtensions } from "./appConfig";
 import type { ProcessingRoute } from "./apiClient";
 
 export const hardMaxAudioFileSizeBytes = 500 * 1024 * 1024;
+export const batchMaxAudioFileSizeBytes = 1024 * 1024 * 1024;
 export const stablePreprocessedSourceMaxFileSizeBytes = 4 * 1024 * 1024 * 1024;
 export const contentUnderstandingMaxFileSizeBytes = 4 * 1024 * 1024 * 1024;
 export const maxAudioDurationSeconds = 120 * 60;
+export const batchMaxAudioDurationSeconds = 240 * 60;
 const preprocessedExtensions = new Set([".m4a", ".mp4"]);
 const preprocessedContentTypes = new Set([
   "application/mp4",
@@ -35,7 +37,7 @@ export function validateAudioFile(
     };
   }
   const maxFileSizeBytes = getMaxFileSizeBytes(processingRoute, file);
-  if (file.size > maxFileSizeBytes) {
+  if (file.size >= maxFileSizeBytes) {
     if (processingRoute === "stable" && shouldPreprocessMedia(file)) {
       return {
         valid: false,
@@ -48,7 +50,7 @@ export function validateAudioFile(
       message:
         processingRoute === "contentUnderstanding"
           ? "動画理解経路の上限4GBを超えています。動画を圧縮してください。"
-          : "標準経路の上限500MBを超えています。大きい動画は動画理解（実験）経路を選んでください。",
+        : "標準経路のBatch fallback上限1GBを超えています。音声を圧縮または分割してください。",
     };
   }
   return { valid: true };
@@ -64,7 +66,7 @@ export function getMaxFileSizeBytes(
   if (file && shouldPreprocessMedia(file)) {
     return stablePreprocessedSourceMaxFileSizeBytes;
   }
-  return hardMaxAudioFileSizeBytes;
+  return batchMaxAudioFileSizeBytes;
 }
 
 export function shouldPreprocessMedia(file: Pick<File, "name" | "type">): boolean {
@@ -74,6 +76,12 @@ export function shouldPreprocessMedia(file: Pick<File, "name" | "type">): boolea
     : "";
   const normalizedType = file.type.trim().toLowerCase();
   return preprocessedExtensions.has(extension) || preprocessedContentTypes.has(normalizedType);
+}
+
+export function getMaxDurationSeconds(processingRoute: ProcessingRoute): number {
+  return processingRoute === "contentUnderstanding"
+    ? maxAudioDurationSeconds
+    : batchMaxAudioDurationSeconds;
 }
 
 export function getAudioDurationSeconds(file: File, timeoutMilliseconds = 5000): Promise<number | null> {

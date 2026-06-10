@@ -21,7 +21,12 @@ class BlobSasIssuer(Protocol):
     ) -> UploadSas:
         pass
 
-    def create_read_sas(self, blob_name: str, now: datetime) -> UploadSas:
+    def create_read_sas(
+        self,
+        blob_name: str,
+        now: datetime,
+        ttl_minutes: int | None = None,
+    ) -> UploadSas:
         pass
 
 
@@ -42,5 +47,10 @@ class LocalBlobSasIssuer:
             expires_at=expires_at,
         )
 
-    def create_read_sas(self, blob_name: str, now: datetime) -> UploadSas:
-        return self.create_upload_sas(blob_name, now)
+    def create_read_sas(
+        self,
+        blob_name: str,
+        now: datetime,
+        ttl_minutes: int | None = None,
+    ) -> UploadSas:
+        return self.create_upload_sas(blob_name, now, ttl_minutes=ttl_minutes)

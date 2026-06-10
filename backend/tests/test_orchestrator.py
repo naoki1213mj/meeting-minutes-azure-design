@@ -108,6 +108,48 @@ def test_orchestrator_routes_content_understanding_jobs_to_cu_activities() -> No
     assert final_call.name == "GenerateFinalMinutesActivity"
 
 
+def test_orchestrator_routes_batch_transcription_jobs_to_batch_activities() -> None:
+    context = FakeDurableContext({"tenantId": "tenant-a", "jobId": "job-a"})
+    generator = orchestrator_function(context)  # type: ignore[arg-type]
+    job = {"tenantId": "tenant-a", "jobId": "job-a"}
+    read_sas = {
+        "audioUrl": "https://example.invalid/audio",
+        "transcriptionEngine": "batch",
+    }
+    operation = {"transcriptionUrl": "https://speech.example/transcriptions/job-a"}
+    running = {"status": "Running"}
+    batch_raw = {
+        "rawTranscriptBlobName": "batch.json",
+        "rawTranscriptBlobUri": "https://storage.example/transcript/batch.json",
+    }
+    normalized = {
+        "normalizedTranscriptBlobName": "normalized.json",
+        "normalizedTranscriptBlobUri": "https://storage.example/transcript/normalized.json",
+    }
+
+    assert _next_activity(generator).name == "LoadJobActivity"
+    assert _send_activity(generator, job).name == "ValidateInputActivity"
+    assert _send_activity(generator, {"valid": True}).name == "CreateReadSasActivity"
+    start_call = _send_activity(generator, read_sas)
+    assert start_call.name == "StartBatchTranscriptionActivity"
+    assert start_call.payload == {"job": job, "audioUrl": read_sas["audioUrl"]}
+    poll_call = _send_activity(generator, operation)
+    assert poll_call.name == "PollBatchTranscriptionActivity"
+    assert poll_call.payload == {"job": job, "pollAttempt": 1, **operation}
+    timer = generator.send(running)
+    assert isinstance(timer, TimerCall)
+    second_poll_call = generator.send(None)
+    assert isinstance(second_poll_call, ActivityCall)
+    assert second_poll_call.name == "PollBatchTranscriptionActivity"
+    fetch_call = _send_activity(generator, {"status": "Succeeded", "transcription": {"self": "x"}})
+    assert fetch_call.name == "FetchBatchTranscriptionResultActivity"
+    normalize_call = _send_activity(generator, batch_raw)
+    assert normalize_call.name == "NormalizeBatchTranscriptActivity"
+    assert normalize_call.payload == {"job": job, **batch_raw}
+    final_call = _send_activity(generator, normalized)
+    assert final_call.name == "GenerateFinalMinutesActivity"
+
+
 def test_orchestrator_persists_content_understanding_failure_details() -> None:
     context = FakeDurableContext({"tenantId": "tenant-a", "jobId": "job-a"})
     generator = orchestrator_function(context)  # type: ignore[arg-type]
@@ -197,6 +239,10 @@ def test_orchestrator_activity_names_have_v1_wrappers() -> None:
         "CreateReadSasActivity",
         "AnalyzeContentUnderstandingActivity",
         "PollContentUnderstandingActivity",
+        "StartBatchTranscriptionActivity",
+        "PollBatchTranscriptionActivity",
+        "FetchBatchTranscriptionResultActivity",
+        "NormalizeBatchTranscriptActivity",
         "TranscribeAudioActivity",
         "NormalizeTranscriptActivity",
         "NormalizeContentUnderstandingTranscriptActivity",

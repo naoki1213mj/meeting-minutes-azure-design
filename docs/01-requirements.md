@@ -39,10 +39,10 @@
 
 受け入れ条件:
 
-- 標準経路の直接Speech入力は500MB未満、120分以下。
-- 標準経路のm4a/mp4など前処理対象は元ファイル4GB未満まで許可する。ただし抽出後音声は500MB未満、120分以下。
-- Content Understanding動画理解（実験）経路では4GB未満、120分以下まで許可可能。
-- 120分超は Fast Transcription + diarization の主経路では受け付けない。120分近傍はbest effortとして扱う。
+- 標準経路の直接音声入力は1GB未満まで許可する。500MB超または2時間以上〜4時間未満はBatch Transcription fallbackへ自動切替する。
+- 標準経路のm4a/mp4など前処理対象は元ファイル4GB未満まで許可する。抽出後音声がFast上限を超えてもBatch上限内なら自動fallbackする。
+- Content Understanding動画理解（実験）経路では4GB未満、120分未満まで許可可能。
+- 2時間以上はFast Transcription + diarizationではなく、標準経路内のBatch fallback候補として扱う。4時間以上は受け付けない。
 - 不正な形式は、ユーザーに再アップロードを促す。
 
 ### FR-003: 話者分離付き文字起こし
@@ -153,7 +153,7 @@ Speech API の応答を、アプリ共通の `normalized-transcript.schema.json`
 - 文字起こしは録音済み音声を対象にする。
 - 話者分離は話者識別ではない。実名推定はしない。
 - 標準経路のm4a/mp4は元ファイル4GB未満まで受け付けるが、前処理時間・一時ディスク・抽出後音声上限を明示する。動画理解（実験）経路でも4GB未満まで許可するが、アップロード時間・解析時間・コスト増を明示する。
-- 2時間以上の音声は Fast Transcription + diarization の標準経路では処理しない。
+- 2時間以上〜4時間未満の音声は標準経路内でBatch Transcription fallbackへ切り替える。
 
 ## 6. 成功指標
 

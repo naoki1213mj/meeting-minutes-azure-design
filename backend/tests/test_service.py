@@ -111,13 +111,28 @@ def test_create_job_allows_standard_audio_up_to_fast_transcription_limit() -> No
     assert service.get_job(_auth(), response.jobId).status == JobStatus.CREATED
 
 
-def test_create_job_rejects_standard_audio_over_fast_transcription_limit() -> None:
+def test_create_job_allows_standard_audio_over_fast_limit_for_batch_fallback() -> None:
+    service = _service()
+
+    response = service.create_job(
+        _auth(),
+        _create_request(file_size_bytes=800_000_000).model_copy(
+            update={"clientEstimatedDurationSeconds": 8_000}
+        ),
+    )
+
+    status = service.get_job(_auth(), response.jobId)
+    assert status.status == JobStatus.CREATED
+    assert int((response.uploadExpiresAt - status.createdAt).total_seconds() / 60) == 120
+
+
+def test_create_job_rejects_standard_audio_over_batch_limit() -> None:
     service = _service()
 
     with pytest.raises(AppError) as exc_info:
-        service.create_job(_auth(), _create_request(file_size_bytes=524_288_001))
+        service.create_job(_auth(), _create_request(file_size_bytes=1_073_741_824))
 
-    assert exc_info.value.code == "AUDIO_EXCEEDS_HARD_LIMIT"
+    assert exc_info.value.code == "BATCH_TRANSCRIPTION_INPUT_TOO_LARGE"
     assert exc_info.value.http_status == 400
 
 
@@ -136,7 +151,7 @@ def test_create_job_allows_large_stable_mp4_source_for_preprocessing() -> None:
 
 def test_create_job_rejects_stable_preprocessed_source_over_limit() -> None:
     service = _service()
-    request = _create_request(file_size_bytes=4_294_967_297).model_copy(
+    request = _create_request(file_size_bytes=4_294_967_296).model_copy(
         update={"fileName": "meeting.mp4", "contentType": "video/mp4"}
     )
 
@@ -165,7 +180,7 @@ def test_create_job_allows_larger_file_for_content_understanding_route() -> None
 
 def test_create_job_rejects_content_understanding_files_over_route_limit() -> None:
     service = _service()
-    request = _create_request(file_size_bytes=4_294_967_297).model_copy(
+    request = _create_request(file_size_bytes=4_294_967_296).model_copy(
         update={
             "fileName": "meeting.mp4",
             "contentType": "video/mp4",
@@ -186,7 +201,7 @@ def test_create_job_rejects_too_long_content_understanding_video() -> None:
             "fileName": "meeting.mp4",
             "contentType": "video/mp4",
             "processingRoute": ProcessingRoute.CONTENT_UNDERSTANDING,
-            "clientEstimatedDurationSeconds": 7_201,
+            "clientEstimatedDurationSeconds": 7_200,
         }
     )
 
@@ -194,6 +209,18 @@ def test_create_job_rejects_too_long_content_understanding_video() -> None:
         service.create_job(_auth(), request)
 
     assert exc_info.value.code == "CONTENT_UNDERSTANDING_VIDEO_TOO_LONG"
+
+
+def test_create_job_rejects_stable_audio_at_batch_duration_limit() -> None:
+    service = _service()
+    request = _create_request(file_size_bytes=1024).model_copy(
+        update={"clientEstimatedDurationSeconds": 14_400}
+    )
+
+    with pytest.raises(AppError) as exc_info:
+        service.create_job(_auth(), request)
+
+    assert exc_info.value.code == "AUDIO_TOO_LONG_FOR_BATCH"
 
 
 def test_get_job_from_other_tenant_returns_not_found() -> None:
@@ -284,7 +311,7 @@ def test_upload_complete_is_idempotent() -> None:
     assert first.statusUrl == f"/api/jobs/{create_response.jobId}"
 
 
-def test_upload_complete_rejects_hard_limit() -> None:
+def test_upload_complete_rejects_batch_limit() -> None:
     service = _service()
     create_response = service.create_job(_auth(), _create_request())
 
@@ -292,10 +319,10 @@ def test_upload_complete_rejects_hard_limit() -> None:
         service.complete_upload(
             _auth(),
             create_response.jobId,
-            UploadCompleteRequest(uploadedSizeBytes=600_000_000),
+            UploadCompleteRequest(uploadedSizeBytes=1_073_741_825),
         )
 
-    assert exc_info.value.code == "AUDIO_EXCEEDS_HARD_LIMIT"
+    assert exc_info.value.code == "BATCH_TRANSCRIPTION_INPUT_TOO_LARGE"
 
 
 def test_upload_complete_allows_large_stable_mp4_source_for_preprocessing() -> None:

@@ -9,6 +9,8 @@ from meeting_minutes_backend.workflow import serialize_workflow_error
 MAX_CHUNK_SUMMARY_BATCH_SIZE = 3
 CONTENT_UNDERSTANDING_POLL_INTERVAL_SECONDS = 30
 CONTENT_UNDERSTANDING_MAX_POLLS = 240
+BATCH_TRANSCRIPTION_POLL_INTERVAL_SECONDS = 60
+BATCH_TRANSCRIPTION_MAX_POLLS = 1440
 
 
 def orchestrator_function(
@@ -69,19 +71,69 @@ def orchestrator_function(
                 {"job": job, **raw_transcript},
             )
         else:
-            context.set_custom_status({"step": "TRANSCRIBING", "percent": 20})
-            raw_transcript = yield context.call_activity(
-                "TranscribeAudioActivity",
-                {"job": job, "audioUrl": read_sas["audioUrl"]},
-            )
-            if not isinstance(raw_transcript, dict):
-                raise TypeError("TranscribeAudioActivity must return an object")
+            if read_sas.get("transcriptionEngine") == "batch":
+                context.set_custom_status({"step": "BATCH_TRANSCRIBING", "percent": 20})
+                batch_operation = yield context.call_activity(
+                    "StartBatchTranscriptionActivity",
+                    {"job": job, "audioUrl": read_sas["audioUrl"]},
+                )
+                if not isinstance(batch_operation, dict):
+                    raise TypeError("StartBatchTranscriptionActivity must return an object")
+                if batch_operation.get("status") in {"Failed", "Canceled"}:
+                    _raise_batch_transcription_failure(batch_operation)
 
-            context.set_custom_status({"step": "NORMALIZING_TRANSCRIPT", "percent": 55})
-            normalized = yield context.call_activity(
-                "NormalizeTranscriptActivity",
-                {"job": job, **raw_transcript},
-            )
+                batch_result: object = None
+                for attempt in range(BATCH_TRANSCRIPTION_MAX_POLLS):
+                    poll_result = yield context.call_activity(
+                        "PollBatchTranscriptionActivity",
+                        {"job": job, "pollAttempt": attempt + 1, **batch_operation},
+                    )
+                    if not isinstance(poll_result, dict):
+                        raise TypeError("PollBatchTranscriptionActivity must return an object")
+                    status = poll_result.get("status")
+                    if status == "Succeeded":
+                        fetched_result = yield context.call_activity(
+                            "FetchBatchTranscriptionResultActivity",
+                            {"job": job, **poll_result},
+                        )
+                        if not isinstance(fetched_result, dict):
+                            raise TypeError(
+                                "FetchBatchTranscriptionResultActivity must return an object"
+                            )
+                        if fetched_result.get("status") in {"Failed", "Canceled"}:
+                            _raise_batch_transcription_failure(fetched_result)
+                        batch_result = fetched_result
+                        break
+                    if status in {"Failed", "Canceled"}:
+                        _raise_batch_transcription_failure(poll_result)
+                    deadline = context.current_utc_datetime + timedelta(
+                        seconds=BATCH_TRANSCRIPTION_POLL_INTERVAL_SECONDS
+                    )
+                    yield context.create_timer(deadline)
+                if batch_result is None:
+                    raise TimeoutError("Batch Transcription timed out")
+                if not isinstance(batch_result, dict):
+                    raise TypeError("FetchBatchTranscriptionResultActivity must return an object")
+
+                context.set_custom_status({"step": "NORMALIZING_TRANSCRIPT", "percent": 55})
+                normalized = yield context.call_activity(
+                    "NormalizeBatchTranscriptActivity",
+                    {"job": job, **batch_result},
+                )
+            else:
+                context.set_custom_status({"step": "TRANSCRIBING", "percent": 20})
+                raw_transcript = yield context.call_activity(
+                    "TranscribeAudioActivity",
+                    {"job": job, "audioUrl": read_sas["audioUrl"]},
+                )
+                if not isinstance(raw_transcript, dict):
+                    raise TypeError("TranscribeAudioActivity must return an object")
+
+                context.set_custom_status({"step": "NORMALIZING_TRANSCRIPT", "percent": 55})
+                normalized = yield context.call_activity(
+                    "NormalizeTranscriptActivity",
+                    {"job": job, **raw_transcript},
+                )
         if not isinstance(normalized, dict):
             raise TypeError("Normalize transcript activity must return an object")
 
@@ -136,6 +188,26 @@ def _raise_content_understanding_failure(result: dict[str, object]) -> None:
     raise AppError(
         code="CONTENT_UNDERSTANDING_FAILED",
         message="Content Understanding による動画解析に失敗しました。",
+        http_status=502,
+        details=details,
+    )
+
+
+def _raise_batch_transcription_failure(result: dict[str, object]) -> None:
+    status = str(result.get("status") or "Failed")
+    details: dict[str, object] = {"operationStatus": status}
+    explicit_error = result.get("error")
+    if isinstance(explicit_error, dict):
+        details.update({str(key): value for key, value in explicit_error.items()})
+        details["operationStatus"] = str(details.get("operationStatus") or status)
+    raw_error = result.get("transcription")
+    if isinstance(raw_error, dict):
+        error_value = raw_error.get("error")
+        if isinstance(error_value, dict):
+            details["operationError"] = error_value
+    raise AppError(
+        code="BATCH_TRANSCRIPTION_FAILED",
+        message="Batch Transcription による文字起こしに失敗しました。",
         http_status=502,
         details=details,
     )

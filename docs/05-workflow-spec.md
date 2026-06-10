@@ -104,6 +104,8 @@ def orchestrator(context):
 
 Content Understanding実験経路では、`AnalyzeContentUnderstandingActivity` は解析開始だけを行い、operation URLを返す。OrchestratorはDurable timerで待機し、`PollContentUnderstandingActivity` を繰り返し呼ぶ。これにより、大きい動画の解析中にActivityが長時間ブロックしてtimeoutすることを避ける。
 
+標準経路では、前処理後の音声メタデータに基づいてFast TranscriptionまたはBatch Transcriptionを選ぶ。Fast上限内なら既存の同期Fast Transcriptionを使い、2時間超〜4時間未満などFast上限を超える入力はBatch Transcription fallbackとして非同期jobを作成し、Durable timerでpollする。
+
 Orchestrator内でネットワークI/O、Blob/Cosmos I/O、現在時刻取得などの非決定的処理を直接行わない。I/Oと副作用はActivityへ閉じ込める。
 
 ## 4. ValidateInputActivity
@@ -112,11 +114,12 @@ Orchestrator内でネットワークI/O、Blob/Cosmos I/O、現在時刻取得�
 
 | 項目 | 既定値 | 動作 |
 |---|---:|---|
-| 直接Speech入力サイズ上限 | 500MB | 非前処理形式で超過時はエラー |
+| 直接音声入力サイズ上限 | 1GB | 500MB超はBatch fallback候補 |
 | 前処理元ファイルサイズ上限 | 4GB | m4a/mp4など。超過時はエラー |
-| 前処理後音声サイズ上限 | 500MB | 抽出後FLACが超過したらエラー |
+| 前処理後音声サイズ上限 | 1GB | 500MB超はBatch fallback候補。1GB超はエラー |
 | Content Understanding動画理解サイズ上限 | 4GB | `processingRoute=contentUnderstanding` の場合だけ適用 |
-| diarization有効時の音声長 | 2時間未満 | 超過時は必ずエラー |
+| diarization有効時のFast音声長 | 2時間未満 | 超過時はBatch fallback候補 |
+| Batch fallback音声長 | 4時間未満 | 超過時はエラー |
 | locale | `ja-JP` | 未指定時に設定 |
 | maxSpeakers | 8 | 未指定時に設定 |
 
@@ -125,9 +128,9 @@ Orchestrator内でネットワークI/O、Blob/Cosmos I/O、現在時刻取得�
 Phase 1では次の順序で扱う。
 
 1. ブラウザで取得できた `clientEstimatedDurationSeconds` を参考値として保存する。
-2. 2時間以上ならアップロード前またはジョブ作成時に警告・拒否する。
-3. バックエンドで厳密な音声長が必要になったら、Phase 2で ffprobe を使う `ProbeAudioActivity` を追加する。
-4. Speech API 側で2時間超過エラーになった場合は、`AUDIO_TOO_LONG_FOR_DIARIZATION` に正規化する。
+2. 2時間以上〜4時間未満ならBatch fallback候補として受け付ける。
+3. 4時間以上ならアップロード前またはジョブ作成時に拒否する。
+4. Speech API 側で上限超過エラーになった場合は、Fast/Batchそれぞれの上限エラーに正規化する。
 
 ## 5. TranscribeAudioActivity
 

@@ -49,7 +49,7 @@ UIでは議事録生成モデルを選択できるようにする。
 
 Backendは固定された選択肢だけを設定済みdeploymentへマッピングする。クライアントから任意deployment名を受け取らない。
 
-音声長は120分までbest effortで受け付け、120分超は拒否する。120分はFast Transcription diarizationの2時間境界に近いため、UIとdocsではbest effort上限であることを明示する。
+音声長の入力上限はADR-010で更新し、標準経路では4時間未満までBatch Transcription fallback候補として扱う。direct minutes generationは120分程度までを主な本線とし、長尺・高密度transcriptで制約に当たる場合はchunk fallbackで回復する。
 
 ## Consequences
 

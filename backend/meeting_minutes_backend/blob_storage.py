@@ -61,10 +61,15 @@ class AzureBlobSasIssuer(BlobSasIssuer):
         blob_client = self._service_client.get_blob_client(self._container_name, blob_name)
         return UploadSas(url=f"{blob_client.url}?{sas_token}", expires_at=expires_at)
 
-    def create_read_sas(self, blob_name: str, now: datetime) -> UploadSas:
+    def create_read_sas(
+        self,
+        blob_name: str,
+        now: datetime,
+        ttl_minutes: int | None = None,
+    ) -> UploadSas:
         now_utc = _ensure_utc(now)
         start = now_utc - timedelta(minutes=5)
-        expires_at = now_utc + timedelta(minutes=self._read_ttl_minutes)
+        expires_at = now_utc + timedelta(minutes=ttl_minutes or self._read_ttl_minutes)
         delegation_key = self._get_user_delegation_key(now_utc, expires_at)
         sas_token = generate_blob_sas(
             account_name=str(self._service_client.account_name),

@@ -5,9 +5,10 @@ import logging
 from datetime import UTC, datetime
 
 from meeting_minutes_backend.audio_preprocessing import (
-    prepare_audio_for_transcription,
+    prepare_transcription_input,
     should_preprocess_audio,
 )
+from meeting_minutes_backend.batch_transcription_client import BatchTranscriptionRequest
 from meeting_minutes_backend.content_understanding_client import (
     ContentUnderstandingRequest,
     sanitized_content_understanding_error_details,
@@ -31,11 +32,13 @@ from meeting_minutes_backend.models import (
     JobStatus,
     ProcessingRoute,
     Progress,
+    TranscriptionEngine,
 )
 from meeting_minutes_backend.settings import (
     AppSettings,
     build_artifact_store,
     build_artifact_store_for_uri,
+    build_batch_transcription_client,
     build_chunk_deployment,
     build_content_understanding_client,
     build_ingest_blob_sas_issuer,
@@ -47,7 +50,10 @@ from meeting_minutes_backend.settings import (
 )
 from meeting_minutes_backend.speech_client import TranscriptionRequest
 from meeting_minutes_backend.telemetry import safe_log_payload
-from meeting_minutes_backend.transcript_normalizer import normalize_transcript
+from meeting_minutes_backend.transcript_normalizer import (
+    normalize_batch_transcript,
+    normalize_transcript,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -106,7 +112,7 @@ def create_read_sas(job: dict[str, object]) -> dict[str, object]:
             message="指定されたジョブが見つかりません。",
             http_status=404,
         )
-    _validate_actual_ingest_blob_size(
+    actual_size = _validate_actual_ingest_blob_size(
         settings=settings,
         blob_name=record.blobName,
         content_type=record.contentType,
@@ -138,7 +144,7 @@ def create_read_sas(job: dict[str, object]) -> dict[str, object]:
                 }
             )
         )
-    read_sas = prepare_audio_for_transcription(
+    prepared = prepare_transcription_input(
         tenant_id=tenant_id,
         job_id=job_id,
         blob_name=record.blobName,
@@ -147,8 +153,30 @@ def create_read_sas(job: dict[str, object]) -> dict[str, object]:
         store=build_ingest_blob_store(settings),
         sas_issuer=build_ingest_blob_sas_issuer(settings),
         now=now,
+        source_size_bytes=actual_size,
+        batch_read_sas_ttl_minutes=getattr(
+            settings,
+            "batch_transcription_source_sas_ttl_minutes",
+            1500,
+        ),
     )
-    return {"audioUrl": read_sas.url}
+    repository.save(
+        record.model_copy(
+            update={
+                "outputs": record.outputs.model_copy(
+                    update={"transcriptionEngine": TranscriptionEngine(prepared.engine)}
+                ),
+                "updatedAt": now,
+            }
+        )
+    )
+    return {
+        "audioUrl": prepared.audio_sas.url,
+        "transcriptionEngine": prepared.engine,
+        "audioDurationSeconds": prepared.duration_seconds,
+        "audioSizeBytes": prepared.audio_size_bytes,
+        "preprocessed": prepared.preprocessed,
+    }
 
 
 def start_content_understanding_analysis(payload: dict[str, object]) -> dict[str, object]:
@@ -300,6 +328,131 @@ def transcribe_audio(payload: dict[str, object]) -> dict[str, object]:
     return {"rawTranscriptBlobName": blob_name, "rawTranscriptBlobUri": raw_uri}
 
 
+def start_batch_transcription(payload: dict[str, object]) -> dict[str, object]:
+    job = _required_dict(payload, "job")
+    audio_url = _required_string(payload, "audioUrl")
+    tenant_id = _required_string(job, "tenantId")
+    job_id = _required_string(job, "jobId")
+    settings = AppSettings.from_env()
+    repository = build_job_repository(settings)
+    record = repository.get(tenant_id, job_id)
+    if record is None:
+        raise AppError(
+            code="JOB_NOT_FOUND",
+            message="指定されたジョブが見つかりません。",
+            http_status=404,
+        )
+    now = _utc_now()
+    repository.save(
+        record.model_copy(
+            update={
+                "status": JobStatus.TRANSCRIBING,
+                "progress": Progress(
+                    step="BATCH_TRANSCRIBING",
+                    percent=20,
+                    message="長尺音声としてBatch Transcriptionを開始しています。",
+                    updatedAt=now,
+                ),
+                "updatedAt": now,
+            }
+        )
+    )
+    try:
+        transcription_url = build_batch_transcription_client(settings).start_transcription(
+            BatchTranscriptionRequest(
+                audioUrl=audio_url,
+                jobId=job_id,
+                locale=record.locale,
+                maxSpeakers=record.maxSpeakers,
+            )
+        )
+    except AppError as error:
+        details = _batch_transcription_error_details(
+            operation_status="StartFailed",
+            error_details=error.details,
+        )
+        _log_batch_transcription_failure(tenant_id=tenant_id, job_id=job_id, details=details)
+        return {"status": "Failed", "error": details}
+    return {"transcriptionUrl": transcription_url}
+
+
+def poll_batch_transcription(payload: dict[str, object]) -> dict[str, object]:
+    job = _required_dict(payload, "job")
+    transcription_url = _required_string(payload, "transcriptionUrl")
+    poll_attempt = _optional_int(payload, "pollAttempt")
+    tenant_id = _required_string(job, "tenantId")
+    job_id = _required_string(job, "jobId")
+    settings = AppSettings.from_env()
+    try:
+        transcription = build_batch_transcription_client(settings).get_transcription(
+            transcription_url
+        )
+    except AppError as error:
+        details = _batch_transcription_error_details(
+            operation_status="PollFailed",
+            error_details=error.details,
+        )
+        _log_batch_transcription_failure(tenant_id=tenant_id, job_id=job_id, details=details)
+        return {"status": "Failed", "error": details}
+    status = str(transcription.get("status") or "Running")
+    if status in {"Succeeded", "Failed", "Canceled"}:
+        if status in {"Failed", "Canceled"}:
+            details = _batch_transcription_error_details(
+                operation_status=status,
+                error_details=_dict_or_none(transcription.get("error")),
+            )
+            _log_batch_transcription_failure(
+                tenant_id=tenant_id,
+                job_id=job_id,
+                details=details,
+            )
+            return {"status": status, "error": details}
+        return {"status": status, "transcription": transcription}
+    _update_batch_transcription_poll_progress(
+        settings=settings,
+        tenant_id=tenant_id,
+        job_id=job_id,
+        operation_status=status,
+        poll_attempt=poll_attempt,
+    )
+    return {"status": status}
+
+
+def fetch_batch_transcription_result(payload: dict[str, object]) -> dict[str, object]:
+    job = _required_dict(payload, "job")
+    transcription = _required_dict(payload, "transcription")
+    tenant_id = _required_string(job, "tenantId")
+    job_id = _required_string(job, "jobId")
+    settings = AppSettings.from_env()
+    try:
+        result = build_batch_transcription_client(settings).get_result(transcription)
+    except AppError as error:
+        details = _batch_transcription_error_details(
+            operation_status="FetchFailed",
+            error_details=error.details,
+        )
+        _log_batch_transcription_failure(tenant_id=tenant_id, job_id=job_id, details=details)
+        return {"status": "Failed", "error": details}
+    if result.status != "Succeeded" or result.raw_result is None:
+        raise AppError(
+            code="BATCH_TRANSCRIPTION_FAILED",
+            message="Batch Transcription による文字起こしに失敗しました。",
+            http_status=502,
+            details={"operationStatus": result.status},
+        )
+    blob_name = f"raw/{tenant_id}/{job_id}/batch-transcription-response.json"
+    raw_uri = build_artifact_store(settings).write_json(
+        settings.transcript_container_name,
+        blob_name,
+        _sanitize_batch_transcription_result(result.raw_result),
+    )
+    return {
+        "rawTranscriptBlobName": blob_name,
+        "rawTranscriptBlobUri": raw_uri,
+        "transcriptionUrl": result.transcription_url,
+    }
+
+
 def normalize_transcript_artifact(payload: dict[str, object]) -> dict[str, object]:
     raw_blob_name = _required_string(payload, "rawTranscriptBlobName")
     raw_blob_uri = _required_string(payload, "rawTranscriptBlobUri")
@@ -343,6 +496,63 @@ def normalize_transcript_artifact(payload: dict[str, object]) -> dict[str, objec
                             "transcriptReady": True,
                             "rawTranscriptBlobUri": raw_blob_uri,
                             "normalizedTranscriptBlobUri": normalized_uri,
+                            "transcriptionEngine": TranscriptionEngine.FAST,
+                        }
+                    ),
+                    "updatedAt": now,
+                }
+            )
+        )
+    return {
+        "normalizedTranscriptBlobName": normalized_blob_name,
+        "normalizedTranscriptBlobUri": normalized_uri,
+    }
+
+
+def normalize_batch_transcript_artifact(payload: dict[str, object]) -> dict[str, object]:
+    raw_blob_name = _required_string(payload, "rawTranscriptBlobName")
+    raw_blob_uri = _required_string(payload, "rawTranscriptBlobUri")
+    job = _required_dict(payload, "job")
+    tenant_id = _required_string(job, "tenantId")
+    job_id = _required_string(job, "jobId")
+    settings = AppSettings.from_env()
+    store = build_artifact_store_for_uri(settings, raw_blob_uri)
+    raw_response = store.read_json(settings.transcript_container_name, raw_blob_name)
+    normalized = normalize_batch_transcript(
+        raw_response,
+        job_id=job_id,
+        tenant_id=tenant_id,
+        locale=str(job.get("locale", "ja-JP")),
+        raw_transcript_blob_uri=raw_blob_uri,
+        api_version=settings.batch_transcription_api_version,
+    )
+    normalized_blob_name = f"normalized/{tenant_id}/{job_id}/normalized-transcript.json"
+    normalized_uri = store.write_json(
+        settings.transcript_container_name,
+        normalized_blob_name,
+        normalized,
+    )
+
+    repository = build_job_repository(settings)
+    record = repository.get(tenant_id, job_id)
+    if record:
+        now = _utc_now()
+        repository.save(
+            record.model_copy(
+                update={
+                    "status": JobStatus.TRANSCRIPT_READY,
+                    "progress": Progress(
+                        step=JobStatus.TRANSCRIPT_READY.value,
+                        percent=55,
+                        message="Batch Transcriptionの文字起こしを正規化しました。",
+                        updatedAt=now,
+                    ),
+                    "outputs": record.outputs.model_copy(
+                        update={
+                            "transcriptReady": True,
+                            "rawTranscriptBlobUri": raw_blob_uri,
+                            "normalizedTranscriptBlobUri": normalized_uri,
+                            "transcriptionEngine": TranscriptionEngine.BATCH,
                         }
                     ),
                     "updatedAt": now,
@@ -400,6 +610,7 @@ def normalize_content_understanding_artifact(payload: dict[str, object]) -> dict
                             "rawTranscriptBlobUri": raw_blob_uri,
                             "normalizedTranscriptBlobUri": normalized_uri,
                             "visualContextBlobUri": visual_context_blob_uri,
+                            "transcriptionEngine": TranscriptionEngine.CONTENT_UNDERSTANDING,
                         }
                     ),
                     "updatedAt": now,
@@ -702,7 +913,7 @@ def _validate_actual_ingest_blob_size(
     content_type: str,
     processing_route: ProcessingRoute,
     constraints: InputConstraints | None = None,
-) -> None:
+) -> int:
     constraints = constraints or InputConstraints()
     actual_size = build_ingest_blob_store(settings).get_blob_size(
         settings.ingest_container_name,
@@ -710,7 +921,7 @@ def _validate_actual_ingest_blob_size(
     )
     should_preprocess = should_preprocess_audio(blob_name, content_type)
     if processing_route == ProcessingRoute.CONTENT_UNDERSTANDING:
-        if actual_size > constraints.contentUnderstandingMaxFileSizeBytes:
+        if actual_size >= constraints.contentUnderstandingMaxFileSizeBytes:
             raise AppError(
                 code="CONTENT_UNDERSTANDING_VIDEO_TOO_LARGE",
                 message="動画理解経路の上限サイズを超えています。",
@@ -721,10 +932,10 @@ def _validate_actual_ingest_blob_size(
                     )
                 },
             )
-        return
+        return actual_size
 
     if should_preprocess:
-        if actual_size > constraints.stablePreprocessedSourceMaxFileSizeBytes:
+        if actual_size >= constraints.stablePreprocessedSourceMaxFileSizeBytes:
             raise AppError(
                 code="STABLE_PREPROCESSED_SOURCE_TOO_LARGE",
                 message="標準経路で前処理できる元ファイルサイズの上限を超えています。",
@@ -735,15 +946,16 @@ def _validate_actual_ingest_blob_size(
                     )
                 },
             )
-        return
+        return actual_size
 
-    if actual_size > constraints.hardMaxFileSizeBytes:
+    if actual_size >= constraints.batchMaxFileSizeBytes:
         raise AppError(
-            code="AUDIO_EXCEEDS_HARD_LIMIT",
-            message="Fast Transcriptionの上限を超えています。",
+            code="BATCH_TRANSCRIPTION_INPUT_TOO_LARGE",
+            message="Batch Transcriptionの上限サイズを超えています。",
             http_status=400,
-            details={"hardMaxFileSizeBytes": constraints.hardMaxFileSizeBytes},
+            details={"batchMaxFileSizeBytes": constraints.batchMaxFileSizeBytes},
         )
+    return actual_size
 
 
 def _should_fallback_to_chunk_minutes(error: AppError) -> bool:
@@ -810,6 +1022,51 @@ def _log_content_understanding_failure(
         LOGGER.debug("content understanding failure telemetry emission failed", exc_info=True)
 
 
+def _log_batch_transcription_failure(
+    *,
+    tenant_id: str,
+    job_id: str,
+    details: dict[str, object],
+) -> None:
+    payload = {
+        "event": "batch_transcription_failed",
+        "tenantId": tenant_id,
+        "jobId": job_id,
+        "details": safe_log_payload(details, max_depth=5),
+    }
+    try:
+        LOGGER.error(
+            json.dumps(payload, ensure_ascii=False, sort_keys=True),
+            extra={
+                "custom_dimensions": {
+                    "event": "batch_transcription_failed",
+                    "tenantId": tenant_id,
+                    "jobId": job_id,
+                    "errorCode": "BATCH_TRANSCRIPTION_FAILED",
+                }
+            },
+        )
+    except Exception:
+        LOGGER.debug("batch transcription failure telemetry emission failed", exc_info=True)
+
+
+def _batch_transcription_error_details(
+    *,
+    operation_status: str,
+    error_details: dict[str, object] | None,
+) -> dict[str, object]:
+    details: dict[str, object] = {"operationStatus": operation_status}
+    if error_details:
+        details["operationError"] = safe_log_payload(error_details, max_depth=5)
+    return details
+
+
+def _sanitize_batch_transcription_result(raw_result: dict[str, object]) -> dict[str, object]:
+    sanitized = dict(raw_result)
+    sanitized.pop("source", None)
+    return sanitized
+
+
 def _update_content_understanding_poll_progress(
     *,
     settings: AppSettings,
@@ -841,6 +1098,43 @@ def _update_content_understanding_poll_progress(
     )
 
 
+def _update_batch_transcription_poll_progress(
+    *,
+    settings: AppSettings,
+    tenant_id: str,
+    job_id: str,
+    operation_status: str,
+    poll_attempt: int | None,
+) -> None:
+    repository = build_job_repository(settings)
+    record = repository.get(tenant_id, job_id)
+    if record is None:
+        return
+    now = _utc_now()
+    suffix = f"（確認 {poll_attempt} 回目）" if poll_attempt else ""
+    message = (
+        f"Batch Transcriptionで長尺音声を文字起こししています。"
+        f"状態: {operation_status}{suffix}"
+    )
+    repository.save(
+        record.model_copy(
+            update={
+                "status": JobStatus.TRANSCRIBING,
+                "progress": Progress(
+                    step="BATCH_TRANSCRIBING",
+                    percent=25,
+                    message=message,
+                    updatedAt=now,
+                ),
+                "outputs": record.outputs.model_copy(
+                    update={"transcriptionEngine": TranscriptionEngine.BATCH}
+                ),
+                "updatedAt": now,
+            }
+        )
+    )
+
+
 def _required_string(payload: dict[str, object], key: str) -> str:
     value = payload.get(key)
     if not isinstance(value, str) or not value:
@@ -853,6 +1147,12 @@ def _required_dict(payload: dict[str, object], key: str) -> dict[str, object]:
     if not isinstance(value, dict):
         raise TypeError(f"{key} must be an object")
     return value
+
+
+def _dict_or_none(value: object) -> dict[str, object] | None:
+    if not isinstance(value, dict):
+        return None
+    return {str(key): item for key, item in value.items()}
 
 
 def _required_int(payload: dict[str, object], key: str) -> int:

@@ -50,6 +50,10 @@
       "properties": {
         "transcriptReady": { "type": "boolean" },
         "minutesReady": { "type": "boolean" },
+        "transcriptionEngine": {
+          "type": ["string", "null"],
+          "enum": ["fast", "batch", "contentUnderstanding", null]
+        },
         "rawTranscriptBlobUri": { "type": ["string", "null"] },
         "normalizedTranscriptBlobUri": { "type": ["string", "null"] },
         "visualContextBlobUri": { "type": ["string", "null"] },

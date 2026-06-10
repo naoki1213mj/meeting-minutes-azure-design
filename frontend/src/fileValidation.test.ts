@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  batchMaxAudioFileSizeBytes,
   contentUnderstandingMaxFileSizeBytes,
+  getMaxDurationSeconds,
   hardMaxAudioFileSizeBytes,
   maxAudioDurationSeconds,
   stablePreprocessedSourceMaxFileSizeBytes,
@@ -24,13 +26,14 @@ describe("fileValidation", () => {
     expect(validateAudioFile(file("meeting.txt", 1024)).valid).toBe(false);
   });
 
-  it("rejects stable-route files over the hard limit", () => {
-    expect(validateAudioFile(file("meeting.mp3", hardMaxAudioFileSizeBytes + 1)).valid).toBe(false);
+  it("rejects stable-route direct audio files over the batch fallback limit", () => {
+    expect(validateAudioFile(file("meeting.mp3", batchMaxAudioFileSizeBytes - 1)).valid).toBe(true);
+    expect(validateAudioFile(file("meeting.mp3", batchMaxAudioFileSizeBytes)).valid).toBe(false);
   });
 
   it("allows larger stable-route mp4 files that are preprocessed before Speech", () => {
     expect(
-      validateAudioFile(file("meeting.mp4", hardMaxAudioFileSizeBytes + 1, "video/mp4")).valid,
+      validateAudioFile(file("meeting.mp4", batchMaxAudioFileSizeBytes + 1, "video/mp4")).valid,
     ).toBe(true);
     expect(
       validateAudioFile(
@@ -53,5 +56,7 @@ describe("fileValidation", () => {
 
   it("sets the UI duration limit to 120 minutes", () => {
     expect(maxAudioDurationSeconds).toBe(120 * 60);
+    expect(getMaxDurationSeconds("stable")).toBe(240 * 60);
+    expect(getMaxDurationSeconds("contentUnderstanding")).toBe(120 * 60);
   });
 });

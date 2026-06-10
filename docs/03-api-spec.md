@@ -71,7 +71,7 @@
 
 - `fileName` は必須。
 - `fileSizeBytes` は必須。
-- 標準経路の直接Speech入力は `fileSizeBytes < 500MB`。m4a/mp4など前処理対象は元ファイル4GB未満まで許可するが、抽出後FLACが500MB以上なら失敗する。
+- 標準経路の直接音声入力は `fileSizeBytes < 1GB`。500MB超または2時間以上〜4時間未満はBatch fallback候補。m4a/mp4など前処理対象は元ファイル4GB未満まで許可し、抽出後音声メタデータでFast/Batchを自動判定する。
 - Content Understanding動画理解（実験）経路ではBlob URL参照Analyze APIの制限に合わせ、4GB未満まで許可する。
 - `contentType` と拡張子の組み合わせを検証する。`application/octet-stream` はサポート対象拡張子に限って許可する。
 - APIが受理する形式とFast TranscriptionでE2E確認済みの形式は分けて扱う。2026-06-02時点のlive E2E確認済みは短いWAVとm4a→FLAC前処理経路。

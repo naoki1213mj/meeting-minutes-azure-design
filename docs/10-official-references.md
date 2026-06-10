@@ -52,13 +52,20 @@ URLs:
 
 ## 4. Batch Transcription
 
-URL: https://learn.microsoft.com/en-us/azure/ai-services/speech-service/batch-transcription
+URLs:
+
+- https://learn.microsoft.com/en-us/azure/ai-services/speech-service/batch-transcription
+- https://learn.microsoft.com/en-us/azure/ai-services/speech-service/batch-transcription-create
+- https://learn.microsoft.com/en-us/azure/ai-services/speech-service/batch-transcription-get
 
 確認した要点:
 
 - Batch Transcription はベストエフォートでスケジュールされる。
 - ピーク時はジョブ開始まで最大30分、完了まで最大24時間かかる可能性がある。
 - 即時性を重視する今回の主経路にはしない。
+- REST API は `/speechtotext/transcriptions:submit?api-version=2024-11-15` を使う。Speech CLI の `v3.2` はCLI向け互換経路であり、アプリ実装では使わない。
+- diarization は `properties.diarization.enabled=true` と `maxSpeakers` で有効化する。`channels` は指定しない。
+- 結果一覧では `kind: "Transcription"` の `links.contentUrl` だけを取得し、`TranscriptionReport` を正規化対象にしない。
 
 ## 5. LLM Speech
 

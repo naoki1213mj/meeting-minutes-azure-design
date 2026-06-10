@@ -317,6 +317,8 @@ components:
           stableUploadSasTtlMinutes,
           stablePreprocessedUploadSasTtlMinutes,
           contentUnderstandingUploadSasTtlMinutes,
+          batchMaxFileSizeBytes,
+          batchMaxDurationSecondsWithDiarization,
         ]
       properties:
         normalMaxFileSizeBytes:
@@ -343,6 +345,12 @@ components:
         contentUnderstandingUploadSasTtlMinutes:
           type: integer
           default: 120
+        batchMaxFileSizeBytes:
+          type: integer
+          default: 1073741824
+        batchMaxDurationSecondsWithDiarization:
+          type: integer
+          default: 14400
     UploadCompleteRequest:
       type: object
       additionalProperties: false

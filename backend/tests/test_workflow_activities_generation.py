@@ -9,10 +9,12 @@ from typing import cast
 import pytest
 
 import meeting_minutes_backend.workflow_activities as workflow_activities
+from meeting_minutes_backend.audio_preprocessing import PreparedTranscriptionInput
 from meeting_minutes_backend.blob_sas import UploadSas
 from meeting_minutes_backend.errors import AppError
-from meeting_minutes_backend.models import ProcessingRoute, Progress
+from meeting_minutes_backend.models import Outputs, ProcessingRoute, Progress
 from meeting_minutes_backend.workflow_activities import (
+    _sanitize_batch_transcription_result,
     _should_fallback_to_chunk_minutes,
     create_read_sas,
     poll_content_understanding_analysis,
@@ -51,6 +53,27 @@ def test_minutes_generation_does_not_fallback_on_content_filter() -> None:
     assert not _should_fallback_to_chunk_minutes(error)
 
 
+def test_sanitize_batch_transcription_result_preserves_all_phrases_without_source() -> None:
+    phrases = [
+        {
+            "speaker": 1,
+            "offsetInTicks": index * 10_000_000.0,
+            "durationInTicks": 10_000_000.0,
+            "nBest": [{"display": f"発話 {index}"}],
+        }
+        for index in range(80)
+    ]
+    raw_result: dict[str, object] = {
+        "source": "https://storage.example/audio.flac?sig=secret",
+        "recognizedPhrases": phrases,
+    }
+
+    sanitized = _sanitize_batch_transcription_result(raw_result)
+
+    assert "source" not in sanitized
+    assert sanitized["recognizedPhrases"] == phrases
+
+
 def test_create_read_sas_uses_original_mp4_for_content_understanding(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -71,7 +94,13 @@ def test_create_read_sas_uses_original_mp4_for_content_understanding(
     class FakeSasIssuer:
         blob_names: list[str] = []
 
-        def create_read_sas(self, blob_name: str, now: datetime) -> UploadSas:
+        def create_read_sas(
+            self,
+            blob_name: str,
+            now: datetime,
+            ttl_minutes: int | None = None,
+        ) -> UploadSas:
+            _ = ttl_minutes
             assert now.tzinfo == UTC
             self.blob_names.append(blob_name)
             return UploadSas(
@@ -127,9 +156,12 @@ def test_create_read_sas_preprocesses_stable_media_in_ingest_storage(
         blobName = "raw-audio/tenant-a/job-a/input.m4a"
         contentType = "audio/x-m4a"
         processingRoute = ProcessingRoute.STABLE
+        outputs = Outputs()
         update: dict[str, object] | None = None
 
         def model_copy(self, update: dict[str, object]) -> FakeRecord:
+            if "outputs" in update and isinstance(update["outputs"], Outputs):
+                self.outputs = update["outputs"]
             self.update = update
             return self
 
@@ -181,26 +213,33 @@ def test_create_read_sas_preprocesses_stable_media_in_ingest_storage(
         lambda _settings: (_ for _ in ()).throw(AssertionError("artifact store not needed")),
     )
 
-    def fake_prepare_audio_for_transcription(**kwargs: object) -> UploadSas:
+    def fake_prepare_transcription_input(**kwargs: object) -> PreparedTranscriptionInput:
         assert kwargs["container_name"] == "ingest-audio"
         assert kwargs["store"] is ingest_store
         assert kwargs["sas_issuer"] is issuer
-        return UploadSas(
-            url="https://ingest.example/preprocessed/tenant-a/job-a/input.flac?sig=redacted",
-            expires_at=datetime(2026, 6, 1, tzinfo=UTC),
+        return PreparedTranscriptionInput(
+            audio_sas=UploadSas(
+                url="https://ingest.example/preprocessed/tenant-a/job-a/input.flac?sig=redacted",
+                expires_at=datetime(2026, 6, 1, tzinfo=UTC),
+            ),
+            engine="fast",
+            duration_seconds=60.0,
+            audio_size_bytes=1024,
+            preprocessed=True,
         )
 
     monkeypatch.setattr(
         workflow_activities,
-        "prepare_audio_for_transcription",
-        fake_prepare_audio_for_transcription,
+        "prepare_transcription_input",
+        fake_prepare_transcription_input,
     )
 
     result = create_read_sas({"tenantId": "tenant-a", "jobId": "job-a"})
 
     expected_url = "https://ingest.example/preprocessed/tenant-a/job-a/input.flac?sig=redacted"
-    assert result == {"audioUrl": expected_url}
-    assert repo.saved_records == [repo.record]
+    assert result["audioUrl"] == expected_url
+    assert result["transcriptionEngine"] == "fast"
+    assert repo.saved_records == [repo.record, repo.record]
 
 
 def test_create_read_sas_rejects_actual_preprocessed_source_over_limit(

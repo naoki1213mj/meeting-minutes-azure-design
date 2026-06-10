@@ -1712,6 +1712,42 @@ h1 {
   margin: 0;
 }
 
+.guide-strip {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.guide-card {
+  align-items: start;
+  backdrop-filter: blur(18px);
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 9%), rgb(255 255 255 / 4%)),
+    rgb(2 6 23 / 42%);
+  border: 1px solid var(--color-line);
+  border-radius: 1.35rem;
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 1rem;
+}
+
+.guide-card > span {
+  color: var(--color-cyan);
+  font-size: 0.9rem;
+  margin-block-start: 0.25rem;
+}
+
+.guide-card h2 {
+  font-size: 1.05rem;
+}
+
+.guide-card p {
+  color: var(--color-muted);
+  font-size: 0.92rem;
+  margin: 0.35rem 0 0;
+}
+
 .workspace-grid {
   grid-template-columns: minmax(0, 0.98fr) minmax(23rem, 0.72fr);
 }
@@ -1875,7 +1911,8 @@ h1 {
 
   .hero,
   .workspace-grid,
-  .workflow-ribbon {
+  .workflow-ribbon,
+  .guide-strip {
     grid-template-columns: 1fr;
   }
 

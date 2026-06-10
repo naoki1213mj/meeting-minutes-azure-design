@@ -35,7 +35,7 @@ Fast Transcription 完了後、まず transcript を表示可能にする。続�
 
 ### 4. 入力上限はサービス上限とUX上限を分ける
 
-サービス上限としては、Fast Transcription は500MB未満・5時間未満、diarization 有効時は2時間未満。本アプリはユーザー要件に合わせて120分までbest effortで受け付け、120分超は拒否する。標準経路の直接Speech入力は500MB未満、m4a/mp4など前処理対象の元ファイルは4GB未満まで受け付けるが、抽出後FLACが500MB以上なら失敗にする。Content Understanding動画理解（実験）経路はBlob URL参照Analyze APIを使うため4GB未満まで許可するが、120分近傍はサービス境界に近く、アップロード時間・解析時間・コストも大きくなる。
+サービス上限としては、Fast Transcription は500MB未満・5時間未満、diarization 有効時は2時間未満。標準経路はFast上限内ならFast Transcription、Fast上限を超えても1GB未満・4時間未満ならBatch Transcription fallbackへ自動切替する。m4a/mp4など前処理対象の元ファイルは4GB未満まで受け付ける。Content Understanding動画理解（実験）経路はBlob URL参照Analyze APIを使うため4GB未満まで許可するが、120分近傍はサービス境界に近く、アップロード時間・解析時間・コストも大きくなる。
 
 ### 5. 本番化前に認証を切り替える
 
@@ -59,9 +59,9 @@ Fast Transcription 完了後、まず transcript を表示可能にする。続�
 | 項目 | 初期実装 |
 |---|---|
 | 入力 | 音声/動画ファイル。API受付は `.mp3`, `.wav`, `.m4a`, `.mp4`, `.ogg`, `.webm`, `.flac`。MP4は音声トラックだけを抽出して処理する。E2E確認済みは短いWAVとm4a→FLAC前処理経路 |
-| 音声長 | 120分までbest effort。120分超は拒否 |
-| 標準経路の直接Speech入力 | 500MB未満 |
-| 標準経路のm4a/mp4元ファイル | 4GB未満。抽出後FLACは500MB未満 |
+| 音声長 | 標準経路は4時間未満までBatch fallback候補。動画理解（実験）は120分未満 |
+| 標準経路の直接音声入力 | 1GB未満。Fast上限超はBatch fallback |
+| 標準経路のm4a/mp4元ファイル | 4GB未満。抽出後音声がFast上限超ならBatch fallback |
 | 動画理解（実験）経路のファイルサイズ | 4GB未満 |
 | 話者分離 | あり。speaker ID は匿名ラベルとして扱う |
 | 実名紐付け | UIで後から user が指定する |
@@ -85,7 +85,7 @@ Fast Transcription 完了後、まず transcript を表示可能にする。続�
 | demo認証のまま本番利用される | 高 | 本番化ブロッカーとして明記。Microsoft Entra ID / Easy Auth とuser単位認可が完了するまで実データ利用しない |
 | 音声品質が悪く文字起こし精度が下がる | 高 | 音声品質チェック、phrase list、LLM Speech比較、手動修正UI |
 | speaker ID が実名と一致しない | 高 | 実名識別しない。UIで speaker mapping を登録 |
-| 大容量音声/動画で待ち時間が長い | 中 | 標準経路の前処理対象は4GBまで許可するが、抽出後音声500MB/120分を超えたら失敗。CU経路は4GBまで許可するが大容量デモには注意喚起 |
+| 大容量音声/動画で待ち時間が長い | 中 | 標準経路はFast上限超ならBatch fallbackへ切替。Batchも超えたら失敗。CU経路は4GBまで許可するが大容量デモには注意喚起 |
 | Azure OpenAIのTPM/RPM不足 | 高 | `gpt-5.4-mini` / `gpt-5.4` capacity 100をdevで設定済み。direct/fallbackの発動状況、指数バックオフ、クォータ監視 |
 | Ingest Storage public endpointが無効化される | 高 | Fast Transcription `audioUrl`、Content Understanding URL参照、ブラウザ直接アップロードの前提。Bicepでingest側の `publicNetworkAccess=Enabled` を明示し、成果物はprivate Artifact Storageへ分離する |
 | Cosmos public accessをPrivate Endpoint疎通前に閉じる | 高 | Functionsがjob metadataへ到達できず処理停止。VNet Integration/Private DNS/Private Endpoint疎通確認後に別デプロイでlockdownする |

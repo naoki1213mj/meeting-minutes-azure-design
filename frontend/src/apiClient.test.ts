@@ -116,6 +116,8 @@ describe("apiClient", () => {
               stableUploadSasTtlMinutes: 30,
               stablePreprocessedUploadSasTtlMinutes: 120,
               contentUnderstandingUploadSasTtlMinutes: 120,
+              batchMaxFileSizeBytes: 1073741824,
+              batchMaxDurationSecondsWithDiarization: 14400,
             },
           }),
           { status: 201, headers: { "Content-Type": "application/json" } },

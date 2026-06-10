@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from urllib.parse import urlparse
 
 from meeting_minutes_backend.azure_credentials import build_credential
+from meeting_minutes_backend.batch_transcription_client import BatchTranscriptionClient
 from meeting_minutes_backend.blob_artifacts import BlobArtifactStore
 from meeting_minutes_backend.blob_sas import BlobSasIssuer, LocalBlobSasIssuer
 from meeting_minutes_backend.blob_storage import AzureBlobSasIssuer
@@ -38,6 +39,10 @@ class AppSettings:
     chunk_summary_deployment_name: str
     final_merge_deployment_name: str
     speech_request_timeout_seconds: float
+    batch_transcription_api_version: str = "2024-11-15"
+    batch_transcription_poll_interval_seconds: float = 60.0
+    batch_transcription_max_polls: int = 1440
+    batch_transcription_source_sas_ttl_minutes: int = 1500
     ingest_storage_account_url: str | None = None
     artifact_storage_account_url: str | None = None
     private_artifact_storage_account_url: str | None = None
@@ -77,6 +82,19 @@ class AppSettings:
             ),
             content_understanding_operation_timeout_seconds=float(
                 os.getenv("AZURE_CONTENT_UNDERSTANDING_OPERATION_TIMEOUT_SECONDS", "900")
+            ),
+            batch_transcription_api_version=os.getenv(
+                "AZURE_BATCH_TRANSCRIPTION_API_VERSION",
+                "2024-11-15",
+            ),
+            batch_transcription_poll_interval_seconds=float(
+                os.getenv("AZURE_BATCH_TRANSCRIPTION_POLL_INTERVAL_SECONDS", "60")
+            ),
+            batch_transcription_max_polls=int(
+                os.getenv("AZURE_BATCH_TRANSCRIPTION_MAX_POLLS", "1440")
+            ),
+            batch_transcription_source_sas_ttl_minutes=int(
+                os.getenv("AZURE_BATCH_TRANSCRIPTION_SOURCE_SAS_TTL_MINUTES", "1500")
             ),
             openai_base_url=os.getenv("AZURE_OPENAI_BASE_URL"),
             chunk_summary_deployment_name=os.getenv(
@@ -231,6 +249,15 @@ def build_content_understanding_client(settings: AppSettings) -> ContentUndersta
         credential=build_credential(),
         poll_interval_seconds=settings.content_understanding_poll_interval_seconds,
         operation_timeout_seconds=settings.content_understanding_operation_timeout_seconds,
+    )
+
+
+def build_batch_transcription_client(settings: AppSettings) -> BatchTranscriptionClient:
+    settings.validate_ai_for_azure()
+    return BatchTranscriptionClient(
+        endpoint=_required(settings.speech_endpoint),
+        credential=build_credential(),
+        api_version=settings.batch_transcription_api_version,
     )
 
 

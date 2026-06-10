@@ -11,6 +11,7 @@ import pytest
 from meeting_minutes_backend.audio_preprocessing import (
     PREPROCESSED_CONTENT_TYPE,
     prepare_audio_for_transcription,
+    prepare_transcription_input,
     preprocessed_blob_name,
     should_preprocess_audio,
 )
@@ -47,6 +48,7 @@ class FakeStore:
 class FakeSasIssuer:
     def __init__(self) -> None:
         self.read_blob_names: list[str] = []
+        self.read_ttl_minutes: list[int | None] = []
 
     def create_upload_sas(
         self,
@@ -57,8 +59,14 @@ class FakeSasIssuer:
         _ = (blob_name, now, ttl_minutes)
         raise NotImplementedError
 
-    def create_read_sas(self, blob_name: str, now: datetime) -> UploadSas:
+    def create_read_sas(
+        self,
+        blob_name: str,
+        now: datetime,
+        ttl_minutes: int | None = None,
+    ) -> UploadSas:
         self.read_blob_names.append(blob_name)
+        self.read_ttl_minutes.append(ttl_minutes)
         return UploadSas(url=f"https://storage.example/{blob_name}?sig=redacted", expires_at=now)
 
 
@@ -180,7 +188,7 @@ def test_prepare_audio_for_transcription_extracts_mp4_audio_to_flac_blob() -> No
     assert transcoder.calls[0][0].name == "input.mp4"
 
 
-def test_prepare_audio_for_transcription_skips_non_preprocessed_formats() -> None:
+def test_prepare_audio_for_transcription_probes_non_preprocessed_formats() -> None:
     store = FakeStore()
     sas_issuer = FakeSasIssuer()
 
@@ -194,9 +202,10 @@ def test_prepare_audio_for_transcription_skips_non_preprocessed_formats() -> Non
         sas_issuer=sas_issuer,
         now=datetime(2026, 6, 1, tzinfo=UTC),
         transcoder=FakeTranscoder(),
+        duration_probe=FakeDurationProbe(),
     )
 
-    assert store.downloads == []
+    assert store.downloads == [("audio", "raw-audio/tenant-a/job-a/input.mp3")]
     assert store.uploads == []
     assert sas_issuer.read_blob_names == ["raw-audio/tenant-a/job-a/input.mp3"]
 
@@ -233,7 +242,45 @@ def test_prepare_audio_for_transcription_rejects_server_side_duration_over_limit
             sas_issuer=FakeSasIssuer(),
             now=datetime(2026, 6, 1, tzinfo=UTC),
             transcoder=FakeTranscoder(),
-            duration_probe=FakeDurationProbe(duration_seconds=7201.0),
+            duration_probe=FakeDurationProbe(duration_seconds=14_401.0),
         )
 
-    assert exc_info.value.code == "AUDIO_TOO_LONG_FOR_DIARIZATION"
+    assert exc_info.value.code == "AUDIO_TOO_LONG_FOR_BATCH"
+
+
+def test_prepare_audio_for_transcription_rejects_direct_audio_duration_over_batch_limit() -> None:
+    with pytest.raises(AppError) as exc_info:
+        prepare_audio_for_transcription(
+            tenant_id="tenant-a",
+            job_id="job-a",
+            blob_name="raw-audio/tenant-a/job-a/input.mp3",
+            content_type="audio/mpeg",
+            container_name="audio",
+            store=FakeStore(),
+            sas_issuer=FakeSasIssuer(),
+            now=datetime(2026, 6, 1, tzinfo=UTC),
+            duration_probe=FakeDurationProbe(duration_seconds=14_400.0),
+        )
+
+    assert exc_info.value.code == "AUDIO_TOO_LONG_FOR_BATCH"
+
+
+def test_prepare_transcription_input_extends_read_sas_for_batch_engine() -> None:
+    sas_issuer = FakeSasIssuer()
+
+    prepared = prepare_transcription_input(
+        tenant_id="tenant-a",
+        job_id="job-a",
+        blob_name="raw-audio/tenant-a/job-a/input.mp3",
+        content_type="audio/mpeg",
+        container_name="audio",
+        store=FakeStore(),
+        sas_issuer=sas_issuer,
+        now=datetime(2026, 6, 1, tzinfo=UTC),
+        duration_probe=FakeDurationProbe(duration_seconds=8_000.0),
+        source_size_bytes=1024,
+        batch_read_sas_ttl_minutes=1500,
+    )
+
+    assert prepared.engine == "batch"
+    assert sas_issuer.read_ttl_minutes == [1500]

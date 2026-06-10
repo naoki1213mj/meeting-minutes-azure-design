@@ -136,11 +136,13 @@
 ### 3.3 文字起こし
 
 1. Orchestrator が `ValidateJobInput` を実行する。
-2. 処理方式ごとの入力上限を評価する。標準経路の直接Speech入力は500MB未満、m4a/mp4など前処理対象の元ファイルは4GB未満、Content Understanding動画理解（実験）経路は4GB未満、いずれも120分以下。前処理後FLACが500MB以上ならFast Transcription投入前に失敗にする。
-3. Fast Transcription に `definition.audioUrl` を送る。本番経路では inline `audio` を使わない。
-4. `definition` には `locales: ["ja-JP"]` と `diarization` を含める。
-5. `channels` は指定しない。diarization有効時に stereo の `[0,1]` 指定はしない。
-6. Speech API の raw response を Artifact Storage（分離前のdev MVPでは既存Storage）に保存する。
+2. 処理方式ごとの入力上限を評価する。標準経路の直接音声入力は1GB未満、m4a/mp4など前処理対象の元ファイルは4GB未満、Content Understanding動画理解（実験）経路は4GB未満。Fast上限超かつBatch上限内ならBatch fallbackへ切り替える。
+3. 前処理後の音声サイズとdurationで文字起こしエンジンを判定する。
+4. Fast上限内なら Fast Transcription に `definition.audioUrl` を送る。本番経路では inline `audio` を使わない。
+5. Fast上限を超えるがBatch上限内なら Batch Transcription fallback を開始し、Durable timerでpollする。
+6. `definition` には `locales: ["ja-JP"]` と `diarization` を含める。
+7. `channels` は指定しない。diarization有効時に stereo の `[0,1]` 指定はしない。
+8. Speech API の raw response を Artifact Storage（分離前のdev MVPでは既存Storage）に保存する。
 
 ### 3.4 議事録生成
 

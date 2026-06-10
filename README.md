@@ -89,13 +89,13 @@ React + Vite Web UI
 | 受理する拡張子 | `.mp3`, `.wav`, `.m4a`, `.mp4`, `.ogg`, `.webm`, `.flac` |
 | `application/octet-stream` | 上記拡張子に限って受理 |
 | MP4 | 動画から音声トラックだけを抽出して前処理 |
-| 標準経路の直接Speech入力上限 | 500MB 未満 |
-| 標準経路のm4a/mp4元ファイル上限 | 4GB 未満。ただし抽出後音声は500MB未満、音声長は120分以下 |
+| 標準経路の直接音声入力上限 | 1GB 未満。500MB超または2時間超はBatch fallback |
+| 標準経路のm4a/mp4元ファイル上限 | 4GB 未満。抽出後音声がFast上限超ならBatch fallback、Batch上限超なら失敗 |
 | 動画理解（実験）経路の上限 | 4GB 未満（Blob URL参照のCU経路のみ） |
-| 音声長 | 120分まで best effort。120分超は拒否 |
+| 音声長 | 標準経路は4時間未満までBatch fallback候補。動画理解（実験）は120分未満 |
 | m4a / mp4 | 必要に応じて backend で 16kHz mono FLAC へ前処理 |
 
-Fast Transcription の diarization 経路は 2 時間境界に近づくほど失敗リスクが高くなります。120分近傍は best effort とし、公開・本番利用の前に対象リージョン、SKU、quota、データ所在地、代表音声での品質・処理時間・コストを確認してください。標準経路のm4a/mp4は音声抽出後のFLACがFast Transcription上限を超えた場合に失敗します。動画理解（実験）経路の大容量動画はブロック分割アップロードを使い、アップロードSAS TTLを長めにしますが、ネットワーク中断時は再実行が必要です。
+Fast Transcription の diarization 経路は 2 時間境界に近づくほど失敗リスクが高くなります。Fast上限を超える標準経路入力は、1GB未満・4時間未満ならBatch Transcription fallbackへ自動切替します。動画理解（実験）経路の大容量動画はブロック分割アップロードを使い、アップロードSAS TTLを長めにしますが、ネットワーク中断時は再実行が必要です。
 
 ## セキュリティとプライバシー
 
