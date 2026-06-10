@@ -62,6 +62,20 @@ type StatusDescriptor = {
 
 type StepState = "active" | "complete" | "failed" | "idle";
 
+type GuideStep = {
+  title: string;
+  bullets: string[];
+};
+
+type GuideSection = {
+  eyebrow: string;
+  title: string;
+  lead: string;
+  ordered: boolean;
+  steps: GuideStep[];
+  note?: string;
+};
+
 const processSteps = [
   { label: "選択", description: "音声ファイルを確認" },
   { label: "アップロード", description: "音声を安全に転送" },
@@ -145,67 +159,248 @@ const guideFlow = [
   "Private Artifacts / Cosmos DB",
 ] as const;
 
-const guideSections = [
+const guideSections: GuideSection[] = [
   {
     eyebrow: "Standard route",
     title: "標準経路で行う処理",
-    summary: "録音済み音声から、話者分離付きtranscriptと議事録を安定生成する本線です。映像ではなく音声を正とし、話者ラベルの一貫性を守ります。",
-    points: [
-      "ブラウザはAPIから一時URLを受け取り、Functionsを経由せずPublic Ingest Storageへ直接アップロードします。",
-      "APIはファイル形式、サイズ、音声長の目安、実Blobサイズを確認し、上限外なら処理開始前に分かりやすく止めます。",
-      "m4a/mp4はActivityで音声トラックだけを取り出し、16kHz mono FLACへ変換します。標準経路では映像を議事録根拠にしません。",
-      "Fast上限内ならFast Transcription、超過してもBatch上限内ならBatch fallbackへ切り替えます。どちらも音声全体を1つの入力として扱います。",
-      "音声を細かく分割して文字起こししないため、前半と後半でSpeaker 1が別人になるリスクを抑えます。",
-      "speaker、timestamp、textをnormalized transcriptへ整え、transcriptにある内容だけを根拠にminutes JSONを生成します。担当者や期限は推測で補いません。",
-      "保存前にschema検証し、MarkdownはLLMではなくアプリコードで描画します。UIでは要点（議事録）を先頭に、確認用のtranscriptと根拠時刻も併置します。",
+    lead: "このアプリの本線は、標準経路 = Fast Transcriptionで文字起こし → Azure OpenAIで議事録生成です。CUは明示選択したときだけ使う実験経路です。",
+    ordered: true,
+    steps: [
+      {
+        title: "ブラウザで音声/動画を選択",
+        bullets: [
+          ".mp3 / .wav / .m4a / .mp4 / .ogg / .webm / .flac に対応します。",
+          "標準経路は通常300MB、hardは500MB未満、120分以下をFastの目安にします。",
+          "Fast上限を超えても、Batch上限内なら標準経路内で自動切替します。",
+        ],
+      },
+      {
+        title: "APIでジョブ作成",
+        bullets: [
+          "POST /api/jobs でFunctionsがjobIdを採番します。",
+          "ファイル名、Content-Type、申告サイズ、クライアント推定durationを検証します。",
+          "FunctionsがBlob upload SASを発行し、Cosmos DBへジョブ状態をCREATEDで保存します。",
+        ],
+      },
+      {
+        title: "ブラウザが直接アップロード",
+        bullets: [
+          "ブラウザは音声/動画をPublic Ingest Storageへ直接PUTします。",
+          "Functionsは大きなファイル本体を中継しません。",
+          "256MB超のファイルはブロック分割アップロードで送ります。",
+        ],
+      },
+      {
+        title: "アップロード完了通知",
+        bullets: [
+          "POST /api/jobs/{jobId}/upload-complete を呼びます。",
+          "Functionsが実Blobサイズを確認し、上限外ならここで止めます。",
+          "Durable Functions orchestrationを開始し、HTTP同期では待たずに進めます。",
+        ],
+      },
+      {
+        title: "必要なら前処理",
+        bullets: [
+          ".m4a / .mp4 はFunctions内でffmpegを使い、音声トラックだけ抽出します。",
+          "16kHz mono FLACへ変換し、Speechが読めるようPublic Ingest Storageへ保存します。",
+          "標準経路では映像を議事録本文の根拠にしません。",
+        ],
+      },
+      {
+        title: "Fast Transcriptionで文字起こし",
+        bullets: [
+          "Azure Speech in Foundry Tools Fast TranscriptionへaudioUrlを1回渡します。",
+          "diarizationを有効にし、話者ごとの発話とtimestampを取得します。",
+          "音声チャンク並列STTはしません。Speaker 1が途中で別人になるリスクを避けるためです。",
+          "Fast上限を超えた場合は、次セクションのBatchへ自動切替します。",
+        ],
+      },
+      {
+        title: "transcript正規化",
+        bullets: [
+          "Speech raw responseをnormalized-transcript.schema.json形式へ変換します。",
+          "speaker、timestamp、text、confidenceをアプリ共通の形に揃えます。",
+          "normalized transcriptは成果物として保存し、議事録生成の唯一の根拠にします。",
+        ],
+      },
+      {
+        title: "議事録生成",
+        bullets: [
+          "normalized transcript全文をAzure OpenAI in Microsoft Foundry Modelsへ渡します。",
+          "既定は高速モデルgpt-5.4-mini、高品質モードではgpt-5.4を使います。",
+          "transcriptにない担当者、期限、参加者名は推測で補いません。",
+          "direct生成が壊れた場合だけ、transcriptテキストを分割する予備処理を使います。これは音声STT分割とは別です。",
+        ],
+      },
+      {
+        title: "保存と表示",
+        bullets: [
+          "minutes JSONをminutes.schema.jsonで検証します。",
+          "MarkdownはLLMに書かせず、アプリコードで生成します。",
+          "議事録とMarkdownはPrivate Artifact Storageへ保存し、UIはFunctions API経由で取得します。",
+          "画面では要点（議事録）を先頭に、確認用の文字起こしと根拠時刻も併置します。",
+        ],
+      },
     ],
+    note: "標準経路は「音声を正」にする本線です。映像補足が必要なときだけ、動画理解（実験）経路を明示的に選びます。",
   },
   {
     eyebrow: "Batch fallback",
-    title: "長尺・大容量時の自動fallback",
-    summary: "Fast上限を超えても、Batch上限内ならユーザー操作なしで非同期Batchへ切り替えます。",
-    points: [
-      "500MB以上または2時間以上で、1GB未満・4時間未満ならBatch Transcription候補です。",
-      "BatchはSpeech側のキューで実行され、混雑時は開始待ちを含めて長くかかる可能性があります。",
-      "入力Blobのread SASはBatch用に25時間TTLで発行し、処理中に失効しにくくしています。",
-      "Batch結果のsourceには入力SASが含まれ得るため、artifact保存前にsourceだけ除去します。",
-      "結果一覧ではTranscriptionReportではなくkind=Transcriptionの結果ファイルだけを正規化します。",
+    title: "長尺・大容量時のBatch自動切替",
+    lead: "Batchは標準経路の6番「文字起こし」で自動発動する分岐です。ユーザーが別モードを選ぶ必要はありません。",
+    ordered: true,
+    steps: [
+      {
+        title: "発動条件を判定",
+        bullets: [
+          "500MB以上、または2時間以上でFast上限を超えた場合に候補になります。",
+          "1GB未満、4時間未満ならBatch Transcriptionへ切り替えます。",
+          "1GB以上または4時間以上は、現時点では分割や圧縮を案内します。",
+        ],
+      },
+      {
+        title: "Batchジョブを開始",
+        bullets: [
+          "Speech Batch TranscriptionのREST APIへcontentUrlsを渡します。",
+          "diarizationを有効にし、maxSpeakersもジョブ設定から渡します。",
+          "入力Blobのread SASはBatch用に25時間TTLで発行します。",
+        ],
+      },
+      {
+        title: "Durable timerで待機",
+        bullets: [
+          "BatchはSpeech側のキューで処理されるため、Fastより時間がかかります。",
+          "OrchestratorはActivityを長時間ブロックせず、timerで定期的にpollします。",
+          "UIでは文字起こしエンジンがBatch fallbackとして表示されます。",
+        ],
+      },
+      {
+        title: "結果を安全に取得",
+        bullets: [
+          "結果一覧ではTranscriptionReportではなくkind=Transcriptionだけを取得します。",
+          "Batch結果のsourceには入力SASが含まれ得るため、artifact保存前にsourceだけ除去します。",
+          "offsetInTicks / durationInTicksをtimestampへ正規化し、以降は標準経路と同じ議事録生成へ戻ります。",
+        ],
+      },
     ],
+    note: "Batchでも音声全体を1つの入力として扱います。音声チャンク並列STTではないため、話者ラベル分断リスクを抑えます。",
   },
   {
     eyebrow: "Video understanding",
     title: "動画理解（実験）経路",
-    summary: "動画デモや画面共有の補足確認向けです。標準経路を置き換える本線ではありません。",
-    points: [
-      "Content Understandingのvideo analyzerへ元MP4のURLを渡し、transcriptと映像補足を取得します。",
-      "key frames、camera shots、visual summaryはvisual context artifactとして保存します。",
-      "映像から見える情報は議事録本文の決定事項・担当者・期限へ自動混入しません。",
-      "顔認識やspeaker IDからの実名推定は行いません。映像情報は補足タブで人が確認します。",
+    lead: "CUは明示的に動画理解を選んだときだけ使う実験経路です。標準経路の置き換えではなく、映像補足を得るために使います。",
+    ordered: true,
+    steps: [
+      {
+        title: "動画理解を明示選択",
+        bullets: [
+          "処理方式で動画理解（実験）を選んだジョブだけCUへ進みます。",
+          "標準経路ではMP4でも音声トラックだけを使います。",
+          "映像情報が必要なデモ、画面共有、ホワイトボード確認向けです。",
+        ],
+      },
+      {
+        title: "元MP4をCUへ渡す",
+        bullets: [
+          "Content Understanding video analyzerへ元MP4のURLを渡します。",
+          "標準経路のように映像を捨てず、transcriptと映像補足を取得します。",
+          "大きい動画は解析時間とコストが増えます。",
+        ],
+      },
+      {
+        title: "解析結果をpoll",
+        bullets: [
+          "Analyze開始後、operation URLをDurable timerで定期確認します。",
+          "Activityを長時間ブロックせず、解析完了まで非同期に待ちます。",
+          "失敗時はContent Understandingのエラー詳細を安全な形で保存します。",
+        ],
+      },
+      {
+        title: "transcriptと映像メモを分ける",
+        bullets: [
+          "transcriptPhrasesはnormalized transcriptへ変換します。",
+          "key frames、camera shots、visual summaryはvisual context artifactとして保存します。",
+          "映像から見える情報を、決定事項・担当者・期限として議事録本文へ自動混入しません。",
+        ],
+      },
     ],
+    note: "顔認識やspeaker IDからの実名推定は行いません。映像情報は補足タブで人が確認します。",
   },
   {
     eyebrow: "Azure architecture",
     title: "Azure構成と保護方針",
-    summary: "デモ中に構成説明へ戻れるよう、主要な責務とセキュリティ境界をここに集約しています。",
-    points: [
-      "App ServiceはReact UI配信とアクセスキーゲート、Functionsへの/api reverse proxyを担当します。",
-      "Azure Functions + Durable Functionsが長時間処理をHTTP同期で待たずに進めます。",
-      "Public Ingest Storageはブラウザ/Speech/CUが読む入力用、Private Artifact Storageはtranscript/minutes/visual context用です。",
-      "Cosmos DB for NoSQLはjob状態、進捗、出力URI、エラー情報を保存します。private endpoint構成を使います。",
-      "Managed identityとAzure RBACを優先し、Storage account keyを使ったSASは新規実装しません。",
-      "Application Insightsには処理時間やjobIdなどの運用メタデータだけを出し、音声本文・transcript全文・minutes全文・SAS URL全文は出しません。",
+    lead: "デモ中に構成説明へ戻れるよう、主要リソースの責務とセキュリティ境界をここに集約しています。",
+    ordered: false,
+    steps: [
+      {
+        title: "入口とAPI",
+        bullets: [
+          "App ServiceはReact UI配信、共有アクセスキーゲート、Functionsへの/api reverse proxyを担当します。",
+          "FunctionsのHTTP endpointは公開ですが、App Serviceから付与されるproxy secretで保護します。",
+        ],
+      },
+      {
+        title: "ワークフロー",
+        bullets: [
+          "Azure Functions Premium EP1でAPIとActivityを実行します。",
+          "Durable FunctionsとDurable Task Schedulerが長時間ジョブ、timer待機、retryを管理します。",
+        ],
+      },
+      {
+        title: "保存領域",
+        bullets: [
+          "Public Ingest Storageは、ブラウザアップロードとSpeech/CUのURL取得に使います。",
+          "Private Artifact Storageは、raw/normalized transcript、minutes JSON/Markdown、visual contextを保存します。",
+          "Cosmos DB for NoSQLは、job状態、進捗、出力URI、エラー情報を保存します。",
+        ],
+      },
+      {
+        title: "AIと認証",
+        bullets: [
+          "Speech、OpenAI、Content Understandingは単一のAIServicesアカウントのaccount-level endpointから使います。",
+          "Managed IdentityとAzure RBACを優先し、Storage account keyを使ったSASは新規実装しません。",
+          "Application Insightsには処理時間やjobIdなどの運用メタデータだけを出し、音声本文・transcript全文・minutes全文・SAS URL全文は出しません。",
+        ],
+      },
     ],
+    note: "現在のdev実機では、Artifact StorageとCosmos DBはPrivate Endpoint構成です。一方、Ingest、App Service、Functions受信、AIServicesは公開endpointを維持します。",
   },
   {
     eyebrow: "Demo guidance",
     title: "デモでの使い分け",
-    summary: "顧客説明では、まず標準経路を本線として見せ、必要な場面だけ実験経路を比較すると説明しやすくなります。",
-    points: [
-      "通常会議や音声中心の録音は標準経路を選びます。",
-      "2時間を超える標準経路入力はBatch fallbackで時間がかかる前提を伝えます。",
-      "製品デモ、画面共有、ホワイトボードなど映像補足に価値がある場合だけ動画理解（実験）を選びます。",
-      "最終議事録は必ず人が確認し、担当者・期限・固有名詞をチェックしてから共有します。",
+    lead: "顧客説明では、まず標準経路を本線として見せ、必要な場面だけBatchや動画理解を補足すると流れが分かりやすくなります。",
+    ordered: false,
+    steps: [
+      {
+        title: "まず標準経路を見せる",
+        bullets: [
+          "通常会議や音声中心の録音は標準経路を選びます。",
+          "Fast Transcriptionで短時間にtranscriptを作り、Azure OpenAIで議事録を生成する流れを説明します。",
+        ],
+      },
+      {
+        title: "長尺時はBatch自動切替を説明する",
+        bullets: [
+          "2時間以上や500MB以上はFastではなくBatchへ自動切替されることを伝えます。",
+          "Batchは非同期で時間がかかるため、デモでは待ち時間を事前に説明します。",
+        ],
+      },
+      {
+        title: "映像補足が必要なときだけCUを選ぶ",
+        bullets: [
+          "製品デモ、画面共有、ホワイトボードなど映像に意味がある場合だけ動画理解（実験）を選びます。",
+          "映像メモは議事録本文とは分けて、人が補足情報として確認します。",
+        ],
+      },
+      {
+        title: "最後は人が確認する",
+        bullets: [
+          "最終議事録は必ず人が確認します。",
+          "担当者、期限、固有名詞、決定事項は、共有前に根拠時刻と照合します。",
+        ],
+      },
     ],
+    note: "このアプリはdev MVPです。本番利用前にはMicrosoft Entra ID / Easy Authとユーザー単位認可が必要です。",
   },
 ] as const;
 
@@ -993,12 +1188,27 @@ function GuideDrawer({
             <section className="guide-section" key={section.title}>
               <p className="guide-section__eyebrow">{section.eyebrow}</p>
               <h3>{section.title}</h3>
-              <p>{section.summary}</p>
-              <ul>
-                {section.points.map((point) => (
-                  <li key={point}>{point}</li>
+              <p className="guide-section__lead">{section.lead}</p>
+              <div className={"guide-steps" + (section.ordered ? " guide-steps--ordered" : "")}>
+                {section.steps.map((step, stepIndex) => (
+                  <article className="guide-step" key={step.title}>
+                    {section.ordered ? (
+                      <span className="guide-step__number">{stepIndex + 1}</span>
+                    ) : (
+                      <span className="guide-step__marker" aria-hidden="true" />
+                    )}
+                    <div className="guide-step__body">
+                      <h4>{step.title}</h4>
+                      <ul>
+                        {step.bullets.map((bullet, bulletIndex) => (
+                          <li key={`${step.title}-${bulletIndex}`}>{bullet}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </article>
                 ))}
-              </ul>
+              </div>
+              {section.note ? <p className="guide-section__note">{section.note}</p> : null}
             </section>
           ))}
         </div>

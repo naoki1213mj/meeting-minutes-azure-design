@@ -17,6 +17,10 @@ describe("App", () => {
     expect(markup).toContain("動画理解");
     expect(markup).toContain("仕組みガイド");
     expect(markup).toContain("処理の仕組みとAzure構成");
+    expect(markup).toContain("標準経路 = Fast Transcriptionで文字起こし");
+    expect(markup).toContain("ブラウザで音声/動画を選択");
+    expect(markup).toContain("Batchは標準経路の6番");
+    expect(markup).toContain("transcriptと映像メモを分ける");
     expect(markup).toContain("Public Ingest Storage");
     expect(markup).toContain("高速");
     expect(markup).not.toContain("話者分離付き議事録を生成");
