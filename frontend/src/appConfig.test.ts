@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { appTitle, heroCopy, heroHeadline } from "./appConfig";
+import { appTitle, heroCopy, heroHeadline, heroHeadlineLines } from "./appConfig";
 
 describe("appConfig", () => {
   it("uses the Minutes Studio brand and polished Japanese hero copy", () => {
     expect(appTitle).toBe("Minutes Studio");
+    expect(heroHeadlineLines).toEqual(["録音を、", "読める議事録へ。"]);
     expect(heroHeadline).toBe("録音を、読める議事録へ。");
     expect(heroCopy).toContain("アクションアイテム");
   });

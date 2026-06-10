@@ -104,7 +104,9 @@ def orchestrator(context):
 
 Content Understanding実験経路では、`AnalyzeContentUnderstandingActivity` は解析開始だけを行い、operation URLを返す。OrchestratorはDurable timerで待機し、`PollContentUnderstandingActivity` を繰り返し呼ぶ。これにより、大きい動画の解析中にActivityが長時間ブロックしてtimeoutすることを避ける。
 
-標準経路では、前処理後の音声メタデータに基づいてFast TranscriptionまたはBatch Transcriptionを選ぶ。Fast上限内なら既存の同期Fast Transcriptionを使い、2時間超〜4時間未満などFast上限を超える入力はBatch Transcription fallbackとして非同期jobを作成し、Durable timerでpollする。
+標準経路は、録音済み音声を正として、話者分離付きtranscriptと議事録を安定生成する本線である。UIは `POST /api/jobs` で短時間・最小権限のupload SASを受け取り、Functionsを経由せずPublic Ingest Storageへ直接PUTする。`upload-complete` 後、Activityが実Blobサイズを確認してからworkflowを開始する。
+
+標準経路では、前処理後の音声メタデータに基づいてFast TranscriptionまたはBatch Transcriptionを選ぶ。Fast上限内なら既存の同期Fast Transcriptionを使い、2時間以上〜4時間未満などFast上限を超える入力はBatch Transcription fallbackとして非同期jobを作成し、Durable timerでpollする。Fast/Batchのどちらでも音声全体を1つの入力として扱い、speaker labelの分断を避ける。
 
 Orchestrator内でネットワークI/O、Blob/Cosmos I/O、現在時刻取得などの非決定的処理を直接行わない。I/Oと副作用はActivityへ閉じ込める。
 
@@ -128,9 +130,10 @@ Orchestrator内でネットワークI/O、Blob/Cosmos I/O、現在時刻取得�
 Phase 1では次の順序で扱う。
 
 1. ブラウザで取得できた `clientEstimatedDurationSeconds` を参考値として保存する。
-2. 2時間以上〜4時間未満ならBatch fallback候補として受け付ける。
-3. 4時間以上ならアップロード前またはジョブ作成時に拒否する。
-4. Speech API 側で上限超過エラーになった場合は、Fast/Batchそれぞれの上限エラーに正規化する。
+2. `upload-complete` では実Blobサイズを確認する。durationはブラウザ推定値と前処理後メタデータを参考にする。
+3. 2時間以上〜4時間未満ならBatch fallback候補として受け付ける。
+4. 4時間以上ならアップロード前またはジョブ作成時に拒否する。
+5. Speech API 側で上限超過エラーになった場合は、Fast/Batchそれぞれの上限エラーに正規化する。
 
 ## 5. TranscribeAudioActivity
 

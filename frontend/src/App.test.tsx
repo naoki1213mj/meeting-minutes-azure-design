@@ -8,7 +8,8 @@ describe("App", () => {
     const markup = renderToString(<App />);
 
     expect(markup).toContain("Minutes Studio");
-    expect(markup).toContain("録音を、読める議事録へ。");
+    expect(markup).toContain("録音を、");
+    expect(markup).toContain("読める議事録へ。");
     expect(markup).toContain("アクションアイテムを自動整理");
     expect(markup).toContain("経過時間");
     expect(markup).toContain("議事録生成モード");

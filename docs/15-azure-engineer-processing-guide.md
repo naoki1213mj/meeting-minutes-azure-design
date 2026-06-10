@@ -78,6 +78,10 @@ Application InsightsではActivity durationやjobIdなどの運用メタデー�
 
 ## 6. 音声処理方式
 
+標準経路は、録音済み音声を正として、話者分離付きtranscriptと議事録を安定生成する本線である。ブラウザはAPIからUser Delegation SASを受け取り、Functionsを経由せずPublic Ingest Storageへ直接PUTする。APIは大容量ファイル本文を中継しない。
+
+`POST /api/jobs` では拡張子、Content-Type、申告サイズ、クライアント推定durationを検証し、アップロードSASを発行する。`upload-complete` では実Blobサイズを確認してからDurable orchestrationを開始する。durationはブラウザ推定値を参考にし、最終的な長さ境界は前処理後メタデータとSpeech/Batch側の制限で判定する。
+
 文字起こしは、音声全体を Azure Speech in Foundry Tools Fast Transcription に1回投入する。`diarization.enabled=true` を使い、`channels` は指定しない。
 
 音声をチャンク分割して並列文字起こししない理由:
@@ -87,9 +91,11 @@ Application InsightsではActivity durationやjobIdなどの運用メタデー�
 - speaker reconciliationの追加設計が必要になる。
 - 現要件では話者分離品質を優先する。
 
-m4a/mp4はFast Transcriptionで直接失敗するケースがあるため、必要に応じてffmpegで音声トラックだけを16kHz mono FLACへ前処理してからSpeechへ渡す。MP4に音声トラックがない場合は前処理エラーにする。
+m4a/mp4はFast Transcriptionで直接失敗するケースがあるため、必要に応じてffmpegで音声トラックだけを16kHz mono FLACへ前処理してからSpeechへ渡す。前処理済みFLACはSpeech/CUが参照できるPublic Ingest Storageへ保存し、read SASを発行する。MP4に音声トラックがない場合は前処理エラーにする。標準経路では映像を議事録本文の根拠にしない。
 
 Fast Transcriptionの上限を超える標準経路入力では、Batch Transcription fallbackへ自動切替する。Batch REST APIは `/speechtotext/transcriptions:submit?api-version=2024-11-15` を使い、`properties.diarization.enabled=true` と `maxSpeakers` を送る。`channels` は指定しない。結果取得では `kind: "Transcription"` のファイルだけを正規化し、Batch結果の `source` は入力SASを含み得るためartifact保存前に除去する。
+
+Fast/Batchのどちらでも、音声全体を1つの入力として扱う。これは、音声チャンクごとにspeaker labelが再割り当てされることを避けるためである。議事録生成段階のchunk fallbackは、文字起こし済みテキストを分ける処理であり、音声STT入力の分割とは別レイヤである。
 
 ## 7. 議事録生成方式
 
@@ -109,7 +115,9 @@ UIから選べるモード:
 | 高速 | `fast` | 既定。GPT-5.4 miniで低レイテンシ |
 | 高品質 | `quality` | GPT-5.4で品質重視 |
 
-direct生成が出力切れ、token制約、JSON破損、schema repair失敗などの回復可能な制約に当たった場合のみ、chunk summary方式へ自動fallbackする。通常のOrchestrator本線ではchunk Activityを呼ばない。
+raw transcription resultは、phraseごとのspeaker/timestamp/text/confidenceを `normalized-transcript.schema.json` に揃える。議事録生成では、このnormalized transcriptを根拠にStructured outputsでminutes JSONを生成する。transcriptにない担当者・期限・参加者名は推測で補完しない。
+
+direct生成が出力切れ、token制約、JSON破損、schema repair失敗などの回復可能な制約に当たった場合のみ、chunk summary方式へ自動fallbackする。通常のOrchestrator本線ではchunk Activityを呼ばない。長尺Batch transcriptでも、議事録生成側の制約に当たればこのテキストchunk fallbackで回復する。
 
 これは議事録生成のchunk fallbackとは別で、文字起こしエンジンのfallbackである。Batchはキュー待ちを含め最大24時間かかる可能性があるため、入力Blob read SASはBatch専用に既定25時間TTLで発行する。
 

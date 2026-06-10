@@ -30,7 +30,7 @@ import {
   type TranscriptionEngine,
   type VisualContextResponse,
 } from "./apiClient";
-import { appTitle, heroCopy, heroHeadline, supportedAudioExtensions } from "./appConfig";
+import { appTitle, heroCopy, heroHeadlineLines, supportedAudioExtensions } from "./appConfig";
 import {
   getAudioDurationSeconds,
   getMaxDurationSeconds,
@@ -149,13 +149,15 @@ const guideSections = [
   {
     eyebrow: "Standard route",
     title: "標準経路で行う処理",
-    summary: "通常はこちらを使います。音声全体を1回だけ文字起こしし、話者ラベルの一貫性を優先します。",
+    summary: "録音済み音声から、話者分離付きtranscriptと議事録を安定生成する本線です。映像ではなく音声を正とし、話者ラベルの一貫性を守ります。",
     points: [
-      "ブラウザがUser Delegation SASでPublic Ingest Storageへ直接アップロードします。",
-      "m4a/mp4はFunctionsのActivityで音声トラックだけを16kHz mono FLACへ変換します。",
-      "Fast Transcriptionの上限内なら、Azure Speech in Foundry Tools Fast TranscriptionへaudioUrlで投入します。",
-      "返却されたspeaker/timestamp/textをnormalized transcriptへ整形し、議事録生成の唯一の根拠にします。",
-      "Azure OpenAI in Microsoft Foundry Modelsでminutes JSONを生成し、schema検証後にMarkdownをコードで描画します。",
+      "ブラウザはAPIから一時URLを受け取り、Functionsを経由せずPublic Ingest Storageへ直接アップロードします。",
+      "APIはファイル形式、サイズ、音声長の目安、実Blobサイズを確認し、上限外なら処理開始前に分かりやすく止めます。",
+      "m4a/mp4はActivityで音声トラックだけを取り出し、16kHz mono FLACへ変換します。標準経路では映像を議事録根拠にしません。",
+      "Fast上限内ならFast Transcription、超過してもBatch上限内ならBatch fallbackへ切り替えます。どちらも音声全体を1つの入力として扱います。",
+      "音声を細かく分割して文字起こししないため、前半と後半でSpeaker 1が別人になるリスクを抑えます。",
+      "speaker、timestamp、textをnormalized transcriptへ整え、transcriptにある内容だけを根拠にminutes JSONを生成します。担当者や期限は推測で補いません。",
+      "保存前にschema検証し、MarkdownはLLMではなくアプリコードで描画します。UIでは要点（議事録）を先頭に、確認用のtranscriptと根拠時刻も併置します。",
     ],
   },
   {
@@ -574,7 +576,11 @@ export function App() {
         <header className="hero">
           <div className="hero__content">
             <p className="eyebrow">{appTitle}</p>
-            <h1 id="app-title">{heroHeadline}</h1>
+            <h1 id="app-title">
+              {heroHeadlineLines.map((line) => (
+                <span key={line}>{line}</span>
+              ))}
+            </h1>
             <p className="hero-copy">{heroCopy}</p>
             <div className="trust-row" aria-label="主な特徴">
               <span>日本語会議に最適化</span>

@@ -1656,11 +1656,16 @@ body {
 
 h1 {
   color: var(--color-text);
-  font-size: clamp(3.2rem, 9vw, 8.4rem);
-  letter-spacing: -0.08em;
-  line-height: 0.88;
-  max-inline-size: 9.5ch;
+  font-size: clamp(2.45rem, 5.4vw, 4.9rem);
+  letter-spacing: -0.06em;
+  line-height: 0.98;
+  max-inline-size: none;
   text-shadow: 0 20px 80px rgb(34 211 238 / 18%);
+}
+
+h1 span {
+  display: block;
+  white-space: nowrap;
 }
 
 .hero-copy {
