@@ -6,6 +6,7 @@ import {
   type ChangeEvent,
   type DragEvent,
   type FormEvent,
+  type RefObject,
 } from "react";
 
 import {
@@ -134,18 +135,75 @@ const workflowHighlights = [
   { number: "04", title: "Review", text: "議事録・根拠・映像メモを確認" },
 ] as const;
 
-const guideCards = [
+const guideFlow = [
+  "Browser",
+  "Azure Functions",
+  "Public Ingest Storage",
+  "Speech Fast / Batch or CU",
+  "Normalized transcript",
+  "Azure OpenAI",
+  "Private Artifacts / Cosmos DB",
+] as const;
+
+const guideSections = [
   {
-    title: "標準経路",
-    description: "音声抽出後にFast Transcriptionへ投入。2時間超などはBatch fallbackへ自動切替します。",
+    eyebrow: "Standard route",
+    title: "標準経路で行う処理",
+    summary: "通常はこちらを使います。音声全体を1回だけ文字起こしし、話者ラベルの一貫性を優先します。",
+    points: [
+      "ブラウザがUser Delegation SASでPublic Ingest Storageへ直接アップロードします。",
+      "m4a/mp4はFunctionsのActivityで音声トラックだけを16kHz mono FLACへ変換します。",
+      "Fast Transcriptionの上限内なら、Azure Speech in Foundry Tools Fast TranscriptionへaudioUrlで投入します。",
+      "返却されたspeaker/timestamp/textをnormalized transcriptへ整形し、議事録生成の唯一の根拠にします。",
+      "Azure OpenAI in Microsoft Foundry Modelsでminutes JSONを生成し、schema検証後にMarkdownをコードで描画します。",
+    ],
   },
   {
-    title: "動画理解（実験）",
-    description: "Content Understandingで映像メモを取得。議事録本文の根拠には自動採用しません。",
+    eyebrow: "Batch fallback",
+    title: "長尺・大容量時の自動fallback",
+    summary: "Fast上限を超えても、Batch上限内ならユーザー操作なしで非同期Batchへ切り替えます。",
+    points: [
+      "500MB以上または2時間以上で、1GB未満・4時間未満ならBatch Transcription候補です。",
+      "BatchはSpeech側のキューで実行され、混雑時は開始待ちを含めて長くかかる可能性があります。",
+      "入力Blobのread SASはBatch用に25時間TTLで発行し、処理中に失効しにくくしています。",
+      "Batch結果のsourceには入力SASが含まれ得るため、artifact保存前にsourceだけ除去します。",
+      "結果一覧ではTranscriptionReportではなくkind=Transcriptionの結果ファイルだけを正規化します。",
+    ],
   },
   {
-    title: "Azure構成",
-    description: "Browser→Functions→Ingest Storage→Speech/OpenAI→Private Artifacts/Cosmosで処理します。",
+    eyebrow: "Video understanding",
+    title: "動画理解（実験）経路",
+    summary: "動画デモや画面共有の補足確認向けです。標準経路を置き換える本線ではありません。",
+    points: [
+      "Content Understandingのvideo analyzerへ元MP4のURLを渡し、transcriptと映像補足を取得します。",
+      "key frames、camera shots、visual summaryはvisual context artifactとして保存します。",
+      "映像から見える情報は議事録本文の決定事項・担当者・期限へ自動混入しません。",
+      "顔認識やspeaker IDからの実名推定は行いません。映像情報は補足タブで人が確認します。",
+    ],
+  },
+  {
+    eyebrow: "Azure architecture",
+    title: "Azure構成と保護方針",
+    summary: "デモ中に構成説明へ戻れるよう、主要な責務とセキュリティ境界をここに集約しています。",
+    points: [
+      "App ServiceはReact UI配信とアクセスキーゲート、Functionsへの/api reverse proxyを担当します。",
+      "Azure Functions + Durable Functionsが長時間処理をHTTP同期で待たずに進めます。",
+      "Public Ingest Storageはブラウザ/Speech/CUが読む入力用、Private Artifact Storageはtranscript/minutes/visual context用です。",
+      "Cosmos DB for NoSQLはjob状態、進捗、出力URI、エラー情報を保存します。private endpoint構成を使います。",
+      "Managed identityとAzure RBACを優先し、Storage account keyを使ったSASは新規実装しません。",
+      "Application Insightsには処理時間やjobIdなどの運用メタデータだけを出し、音声本文・transcript全文・minutes全文・SAS URL全文は出しません。",
+    ],
+  },
+  {
+    eyebrow: "Demo guidance",
+    title: "デモでの使い分け",
+    summary: "顧客説明では、まず標準経路を本線として見せ、必要な場面だけ実験経路を比較すると説明しやすくなります。",
+    points: [
+      "通常会議や音声中心の録音は標準経路を選びます。",
+      "2時間を超える標準経路入力はBatch fallbackで時間がかかる前提を伝えます。",
+      "製品デモ、画面共有、ホワイトボードなど映像補足に価値がある場合だけ動画理解（実験）を選びます。",
+      "最終議事録は必ず人が確認し、担当者・期限・固有名詞をチェックしてから共有します。",
+    ],
   },
 ] as const;
 
@@ -164,12 +222,16 @@ export function App() {
   const [runFinishedAtMs, setRunFinishedAtMs] = useState<number | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [message, setMessage] = useState("音声ファイルを選択してください。");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const activeJobIdRef = useRef<string | null>(null);
   const abortPollingRef = useRef<AbortController | null>(null);
   const completedJobTabSelectionRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const guidePanelRef = useRef<HTMLElement | null>(null);
+  const guideCloseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const lastGuideTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const fileMetadata = useMemo(() => (selectedFile ? buildFileMetadata(selectedFile) : null), [selectedFile]);
   const activeStatus = jobStatus?.status ?? createdJob?.status ?? null;
@@ -206,6 +268,58 @@ export function App() {
     setActiveResultsTab("minutes");
     completedJobTabSelectionRef.current = jobStatus.jobId;
   }, [jobStatus?.jobId, jobStatus?.status]);
+
+  useEffect(() => {
+    if (!isGuideOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.setTimeout(() => guideCloseButtonRef.current?.focus(), 0);
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeGuideDrawer();
+        return;
+      }
+      if (event.key !== "Tab") {
+        return;
+      }
+      const focusable = guidePanelRef.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusable || focusable.length === 0) {
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isGuideOpen]);
+
+  function openGuideDrawer(trigger: HTMLButtonElement) {
+    lastGuideTriggerRef.current = trigger;
+    setIsGuideOpen(true);
+  }
+
+  function closeGuideDrawer() {
+    setIsGuideOpen(false);
+    window.setTimeout(() => lastGuideTriggerRef.current?.focus(), 0);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -444,8 +558,10 @@ export function App() {
       />
       <span className="grain-layer" aria-hidden="true" />
 
-      <section className="dashboard-shell" aria-labelledby="app-title">
+      <section className="dashboard-shell" aria-hidden={isGuideOpen} aria-labelledby="app-title" inert={isGuideOpen}>
         <ShellNav
+          isGuideOpen={isGuideOpen}
+          onGuideOpen={openGuideDrawer}
           onTranscriptClick={() => {
             setActiveResultsTab("transcript");
             window.setTimeout(() => {
@@ -472,6 +588,16 @@ export function App() {
               <a className="hero-link" href="#results-title">
                 結果ビューを見る
               </a>
+              <button
+                aria-controls="guide-drawer"
+                aria-expanded={isGuideOpen}
+                aria-haspopup="dialog"
+                className="hero-link hero-link--secondary"
+                onClick={(event) => openGuideDrawer(event.currentTarget)}
+                type="button"
+              >
+                仕組みを開く
+              </button>
             </div>
           </div>
 
@@ -497,18 +623,6 @@ export function App() {
               <span>{item.number}</span>
               <strong>{item.title}</strong>
               <p>{item.text}</p>
-            </article>
-          ))}
-        </section>
-
-        <section className="guide-strip" aria-label="アプリ内ガイド">
-          {guideCards.map((item) => (
-            <article className="guide-card" key={item.title}>
-              <span aria-hidden="true">◆</span>
-              <div>
-                <h2>{item.title}</h2>
-                <p>{item.description}</p>
-              </div>
             </article>
           ))}
         </section>
@@ -757,14 +871,24 @@ export function App() {
           />
         </section>
       </section>
+      <GuideDrawer
+        closeButtonRef={guideCloseButtonRef}
+        isOpen={isGuideOpen}
+        onClose={closeGuideDrawer}
+        panelRef={guidePanelRef}
+      />
     </main>
   );
 }
 
 function ShellNav({
+  isGuideOpen,
+  onGuideOpen,
   onTranscriptClick,
   statusDescriptor,
 }: {
+  isGuideOpen: boolean;
+  onGuideOpen: (trigger: HTMLButtonElement) => void;
   onTranscriptClick: () => void;
   statusDescriptor: StatusDescriptor;
 }) {
@@ -780,11 +904,100 @@ function ShellNav({
         <button onClick={onTranscriptClick} type="button">
           Transcript
         </button>
+        <button
+          aria-controls="guide-drawer"
+          aria-expanded={isGuideOpen}
+          aria-haspopup="dialog"
+          onClick={(event) => onGuideOpen(event.currentTarget)}
+          type="button"
+        >
+          仕組みガイド
+        </button>
       </div>
       <span className={"shell-nav__status shell-nav__status--" + statusDescriptor.tone}>
         {statusDescriptor.label}
       </span>
     </nav>
+  );
+}
+
+function GuideDrawer({
+  closeButtonRef,
+  isOpen,
+  onClose,
+  panelRef,
+}: {
+  closeButtonRef: RefObject<HTMLButtonElement | null>;
+  isOpen: boolean;
+  onClose: () => void;
+  panelRef: RefObject<HTMLElement | null>;
+}) {
+  return (
+    <div
+      aria-hidden={!isOpen}
+      className={`guide-drawer${isOpen ? " guide-drawer--open" : ""}`}
+      id="guide-drawer"
+      inert={!isOpen}
+    >
+      <button
+        aria-label="仕組みガイドを閉じる"
+        className="guide-drawer__backdrop"
+        disabled={!isOpen}
+        onClick={onClose}
+        type="button"
+      />
+      <aside
+        aria-labelledby="guide-drawer-title"
+        aria-modal="true"
+        className="guide-drawer__panel"
+        ref={panelRef}
+        role="dialog"
+      >
+        <header className="guide-drawer__header">
+          <div>
+            <p className="section-kicker">Architecture guide</p>
+            <h2 id="guide-drawer-title">処理の仕組みとAzure構成</h2>
+          </div>
+          <button
+            aria-label="仕組みガイドを閉じる"
+            className="guide-drawer__close"
+            onClick={onClose}
+            ref={closeButtonRef}
+            type="button"
+          >
+            ×
+          </button>
+        </header>
+
+        <p className="guide-drawer__lead">
+          デモ中に別資料へ戻らなくても、処理内容・fallback条件・Azure構成・保護方針をこのパネルで確認できます。
+        </p>
+
+        <section className="guide-flow" aria-label="全体処理フロー">
+          {guideFlow.map((step, index) => (
+            <div className="guide-flow__step" key={step}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <strong>{step}</strong>
+            </div>
+          ))}
+        </section>
+
+        <div className="guide-drawer__sections">
+          {guideSections.map((section) => (
+            <section className="guide-section" key={section.title}>
+              <p className="guide-section__eyebrow">{section.eyebrow}</p>
+              <h3>{section.title}</h3>
+              <p>{section.summary}</p>
+              <ul>
+                {section.points.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      </aside>
+    </div>
   );
 }
 

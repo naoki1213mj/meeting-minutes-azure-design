@@ -101,7 +101,7 @@ Fast Transcription 完了後、まず transcript を表示可能にする。続�
 3. Speech client: Fast Transcription + diarization の live E2E。
    - m4a/mp4はFast Transcription直渡しでデコードできないケースがあるため、Backendで16kHz mono FLACへ前処理する。
 4. Minutes generator: Structured outputs 用schemaによるJSON固定、保存前schema検証、Markdownコード生成。
-5. UI: アップロード、進捗、transcript/minutes表示のdev MVP。
+5. UI: アップロード、進捗、transcript/minutes表示、右サイドドロワー型の「仕組みガイド」のdev MVP。
 6. Observability: Application Insightsで機密ログ漏えいスキャンを実施し、主要secretやSAS全文の未検出を確認。
 
 次の優先課題:

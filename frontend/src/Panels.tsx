@@ -386,11 +386,7 @@ function ResultPlaceholder({
 }) {
   return (
     <div className={"result-placeholder result-placeholder--" + variant}>
-      <div className="placeholder-visual" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
+      <PlaceholderPreview variant={variant} />
       <div>
         <h3>{title}</h3>
         <p>{description}</p>
@@ -400,6 +396,53 @@ function ResultPlaceholder({
           ))}
         </ul>
       </div>
+    </div>
+  );
+}
+
+function PlaceholderPreview({ variant }: { variant: "minutes" | "transcript" | "visual" }) {
+  if (variant === "minutes") {
+    return (
+      <div className="placeholder-preview placeholder-preview--minutes" aria-label="議事録プレビュー">
+        <div className="placeholder-preview__header">
+          <span>Summary</span>
+          <strong>議事録</strong>
+        </div>
+        <div className="placeholder-preview__line placeholder-preview__line--wide" />
+        <div className="placeholder-preview__line" />
+        <div className="placeholder-preview__cards" aria-hidden="true">
+          <span>決定事項</span>
+          <span>Action</span>
+          <span>根拠時刻</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === "transcript") {
+    return (
+      <div className="placeholder-preview placeholder-preview--transcript" aria-label="文字起こしプレビュー">
+        <div className="placeholder-preview__utterance">
+          <span>00:01</span>
+          <strong>Speaker 1</strong>
+        </div>
+        <div className="placeholder-preview__utterance">
+          <span>00:18</span>
+          <strong>Speaker 2</strong>
+        </div>
+        <div className="placeholder-preview__utterance">
+          <span>00:42</span>
+          <strong>Speaker 1</strong>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="placeholder-preview placeholder-preview--visual" aria-label="映像メモプレビュー">
+      <span>Key frame</span>
+      <span>Camera shot</span>
+      <span>Visual memo</span>
     </div>
   );
 }

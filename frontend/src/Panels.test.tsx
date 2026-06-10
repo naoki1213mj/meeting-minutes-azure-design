@@ -168,4 +168,22 @@ describe("ResultsWorkspace", () => {
     expect(markup).not.toContain("<input");
     expect(markup).not.toContain("disabled");
   });
+
+  it("uses meaningful placeholders instead of abstract bars", () => {
+    const markup = renderToString(
+      <ResultsWorkspace
+        activeTab="minutes"
+        jobStatus={null}
+        minutes={null}
+        transcript={null}
+        visualContext={null}
+        onTabChange={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("議事録プレビュー");
+    expect(markup).toContain("決定事項");
+    expect(markup).toContain("根拠時刻");
+    expect(markup).not.toContain("placeholder-visual");
+  });
 });

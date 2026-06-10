@@ -27,6 +27,7 @@ Minutes Studio は、録音済み音声ファイルから **話者分離付き t
 - **根拠を残す:** 決定事項、ToDo、未決事項、リスクに timestamp を残します。
 - **推測しない:** transcript にない事実、担当者、期限、参加者名を補完しません。
 - **Azure 標準構成:** Azure Functions、Durable Functions、Blob Storage、Cosmos DB、Microsoft Foundry project、Application Insights、Bicep を中心に構成します。
+- **アプリ内で説明完結:** 右サイドドロワーの「仕組みガイド」で、処理内容、Batch fallback、動画理解（実験）、Azure構成、保護方針をデモ中に確認できます。
 
 ## dev MVP の実装範囲
 

@@ -158,10 +158,15 @@
 1. UIは `GET /api/jobs/{jobId}` をポーリングする。
 2. transcript ready後、`GET /api/jobs/{jobId}/transcript` で正規化済みtranscriptを取得する。
 3. minutes ready後、`GET /api/jobs/{jobId}/minutes` で議事録を取得する。
-4. UIは speaker ごとの代表発話を表示する。
-5. ユーザーは `Speaker 0 = 山田` のように紐付ける。
-6. 議事録の話者表示を更新する。
-7. 必要なら最終議事録だけ再生成する。
+4. visual context ready時は、動画理解（実験）経路の映像補足を「映像メモ」として取得する。
+5. UIは speaker ごとの代表発話を表示する。
+6. ユーザーは `Speaker 0 = 山田` のように紐付ける。
+7. 議事録の話者表示を更新する。
+8. 必要なら最終議事録だけ再生成する。
+
+### 3.6 アプリ内仕組みガイド
+
+デモ中に別資料へ戻らなくても処理内容を説明できるよう、UIには右サイドドロワー型の「仕組みガイド」を置く。ガイドはメイン操作を邪魔しないよう通常は閉じ、ナビゲーションまたはheroのボタンから開く。内容は、標準経路、Batch fallback、動画理解（実験）経路、Azure構成、Public Ingest Storage / Private Artifact Storage の分離、User Delegation SAS、managed identity / RBAC、Application Insightsで本文をログに出さない方針を説明する。
 
 ## 4. コンポーネント設計
 

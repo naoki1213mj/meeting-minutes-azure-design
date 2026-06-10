@@ -34,7 +34,7 @@ Batchは開始待ちと処理で最大24時間かかる可能性があるため�
 - Fastより遅く、Speech側のキューにより数十分〜数時間かかる可能性がある。
 - Batch結果形式はFastと異なるため、専用normalizerが必要になる。
 - Batchも4時間/1GBを超える入力は扱えない。将来は話者精度低下を明示した分割STT縮退モードを検討する。
-- App内ガイドでFast/Batch/CUの違いとAzure構成を説明し、デモ中に別資料へ戻らなくてもよいようにする。
+- 右サイドドロワー型のApp内「仕組みガイド」でFast/Batch/CUの違いとAzure構成を説明し、デモ中に別資料へ戻らなくてもよいようにする。
 
 ## Alternatives considered
 

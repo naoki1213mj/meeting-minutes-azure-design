@@ -1,6 +1,6 @@
 # 15. Azureエンジニア向け: 処理方式と運用ポイント
 
-確認日: 2026-06-02
+確認日: 2026-06-10
 
 ## 1. この資料の対象
 
@@ -18,6 +18,8 @@ Browser
   -> Durable Functions orchestration
   -> m4a/mp4 preprocessing to ingest FLAC if needed
   -> Fast Transcription audioUrl + diarization
+     or Batch Transcription fallback for long/large stable-route audio
+     or Content Understanding video analyzer for experimental route
   -> normalized transcriptをArtifact Storageへ保存（分離前は既存Storage）
   -> direct minutes generation
   -> minutes schema validation
@@ -25,6 +27,8 @@ Browser
   -> Artifact Storage（分離前は既存Storage）/ Cosmos DBへ結果保存
   -> UI pollingで表示
 ```
+
+UIには右サイドドロワー型の「仕組みガイド」を実装している。ナビゲーションまたはheroから開き、標準経路、Batch fallback、動画理解（実験）、Azure構成、セキュリティ境界をアプリ内で説明できる。閉じている間はメイン操作を邪魔せず、デモ時だけ補助説明として使う。
 
 ## 3. Azureリソースと責務
 
@@ -85,6 +89,8 @@ Application InsightsではActivity durationやjobIdなどの運用メタデー�
 
 m4a/mp4はFast Transcriptionで直接失敗するケースがあるため、必要に応じてffmpegで音声トラックだけを16kHz mono FLACへ前処理してからSpeechへ渡す。MP4に音声トラックがない場合は前処理エラーにする。
 
+Fast Transcriptionの上限を超える標準経路入力では、Batch Transcription fallbackへ自動切替する。Batch REST APIは `/speechtotext/transcriptions:submit?api-version=2024-11-15` を使い、`properties.diarization.enabled=true` と `maxSpeakers` を送る。`channels` は指定しない。結果取得では `kind: "Transcription"` のファイルだけを正規化し、Batch結果の `source` は入力SASを含み得るためartifact保存前に除去する。
+
 ## 7. 議事録生成方式
 
 本線は direct minutes generation。
@@ -105,7 +111,7 @@ UIから選べるモード:
 
 direct生成が出力切れ、token制約、JSON破損、schema repair失敗などの回復可能な制約に当たった場合のみ、chunk summary方式へ自動fallbackする。通常のOrchestrator本線ではchunk Activityを呼ばない。
 
-Fast Transcriptionの上限を超える標準経路入力では、Batch Transcription fallbackへ自動切替する。これは議事録生成のchunk fallbackとは別で、文字起こしエンジンのfallbackである。
+これは議事録生成のchunk fallbackとは別で、文字起こしエンジンのfallbackである。Batchはキュー待ちを含め最大24時間かかる可能性があるため、入力Blob read SASはBatch専用に既定25時間TTLで発行する。
 
 ## 7.1 Content Understanding動画理解経路（実験）
 

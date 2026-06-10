@@ -14,8 +14,10 @@ describe("App", () => {
     expect(markup).toContain("議事録生成モード");
     expect(markup).toContain("処理方式");
     expect(markup).toContain("動画理解");
+    expect(markup).toContain("仕組みガイド");
+    expect(markup).toContain("処理の仕組みとAzure構成");
+    expect(markup).toContain("Public Ingest Storage");
     expect(markup).toContain("高速");
     expect(markup).not.toContain("話者分離付き議事録を生成");
-    expect(markup).not.toContain("Blob Storage");
   });
 });
