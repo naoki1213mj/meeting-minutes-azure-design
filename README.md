@@ -8,13 +8,34 @@ Minutes Studio は、録音済み音声ファイルから **話者分離付き t
 
 > **現在の状態:** dev MVP です。`MEETING_MINUTES_AUTH_MODE=demo` を使うデモ認証が残っているため、Microsoft Entra ID / Easy Auth とユーザー単位認可へ置き換えるまでは **production-ready ではありません**。実データ・機密音声・広範な共有利用には使わないでください。
 
+## このリポジトリの位置づけ
+
+このリポジトリは、録音済み会議ファイルから議事録を生成するAzureアーキテクチャの **参考実装** です。特に、次のような課題を整理するためのリファレンスとして使えます。
+
+- 音声を細かく分割して逐次文字起こしする構成が遅い。
+- 話者分離付き議事録で、speaker ID の一貫性を保ちたい。
+- 長時間処理をHTTP同期で待たず、ジョブとして非同期に進めたい。
+- 議事録生成の根拠 timestamp と schema validation を残したい。
+- Azure上で、入力用Storageと成果物Storageのセキュリティ境界を分けたい。
+
+本線は **標準経路 = Azure Speech in Foundry Tools Fast Transcription + diarization → Azure OpenAI in Microsoft Foundry Models で議事録生成** です。Fast上限を超える長尺・大容量入力は、標準経路内で Batch Transcription へ自動切替します。Content Understanding動画理解は、映像補足を確認したい場合だけ明示的に選ぶ実験経路です。
+
+## 顧客共有時の注意
+
+- GitHubリポジトリは公開安全版です。実Azureリソース名、subscription/tenant ID、実endpoint、SAS URL、token/key、実音声/transcript/minutes本文は含めない方針です。
+- WebアプリURLはデモ用参考として共有できますが、**dev MVP** です。顧客には実データ・機密音声をアップロードしない前提で案内してください。
+- デモ用アクセスキーを使う場合、アプリURLとは別の安全な経路で共有してください。共有デモは期間・対象者を限定し、非機密サンプル音声だけを使ってください。
+- デモ用アクセスキーやプロキシシークレットはREADMEやIssueに書かないでください。共有後に必要に応じてローテーションしてください。
+- 公開Issue / Pull Request / 画面共有には、音声本文、transcript全文、議事録全文、SAS URL、トークン、API key、実リソース名を載せないでください。
+
 ## 何ができるか
 
 - 録音済み音声をジョブとして登録し、長時間処理を HTTP 同期で待たずに進める。
 - ブラウザから Azure Blob Storage へ直接アップロードする。
 - 全体音声を Azure Speech in Foundry Tools Fast Transcription に 1 回だけ渡し、diarization を有効にする。
-- 最大120分までの transcript は、原則として全文を 1 回の Structured outputs 呼び出しに渡して議事録を生成する。
-- 長大入力や出力切れなど direct 生成で回復可能な制約に当たった場合だけ、chunk summary 方式へ自動 fallback する。
+- Fast上限を超えるがBatch上限内の入力は、Batch Transcriptionへ自動fallbackする。
+- transcript は、原則として全文を 1 回の Structured outputs 呼び出しに渡して議事録を生成する。
+- 長大入力や出力切れなど direct 生成で回復可能な制約に当たった場合だけ、transcriptテキストのchunk summary方式へ自動fallbackする。
 - Structured outputs で議事録 JSON を生成し、保存前に JSON Schema で検証する。
 - Markdown は LLM に直接書かせず、検証済み JSON からアプリコードで生成する。
 - speaker ID は匿名ラベルとして扱い、実名はユーザー入力の speaker mapping で更新する。
@@ -57,20 +78,21 @@ Phase 2 以降の候補:
 ## アーキテクチャ概要
 
 ```text
-React + Vite Web UI
+React + Vite Web UI / App Service
   -> POST /api/jobs
   -> Azure Functions API
   -> User Delegation SAS
-  -> Azure Blob Storage へ直接アップロード
+  -> Public Ingest Storage へブラウザから直接アップロード
   -> POST /api/jobs/{jobId}/upload-complete
   -> Durable Functions orchestration
   -> Azure Speech in Foundry Tools Fast Transcription + diarization
+     or Batch Transcription fallback
   -> normalized transcript
   -> Azure OpenAI in Microsoft Foundry Models v1 API
   -> direct minutes JSON generation
   -> final minutes JSON schema validation
   -> Markdown rendering
-  -> Blob Storage / Cosmos DB / Application Insights
+  -> Private Artifact Storage / Cosmos DB / Application Insights
 ```
 
 重要な設計制約:
@@ -82,6 +104,20 @@ React + Vite Web UI
 - Fast Transcription の本番経路では `audioUrl` を使います。inline `audio` は小さい開発・検証用に限定します。
 - Azure OpenAI in Microsoft Foundry Models は v1 API を使い、新規に dated `api-version` を追加しません。
 - `temperature` などの生成パラメーターは全モデルに固定送信せず、deployment capability に基づいて送ります。
+
+## リポジトリ構成
+
+| パス | 内容 |
+|---|---|
+| `backend/` | Python 3.13 のAzure Functions / Durable Functions backend。HTTP API、Activity、service/repository層、テストを含みます。 |
+| `frontend/` | React + TypeScript + Vite のWeb UI。アップロード、進捗表示、結果表示、仕組みガイドを含みます。 |
+| `infra/` | Bicep + Azure Developer CLI 用IaC。App Service、Functions、Storage、Cosmos DB、AIServices、Private Endpointなどを定義します。 |
+| `specs/` | OpenAPI 3.1 と JSON Schema。API契約、normalized transcript、minutes、Structured outputs用schemaを管理します。 |
+| `docs/` | 要件、設計、workflow、セキュリティ、運用、ビジネスユーザー/エンジニア向け説明資料。 |
+| `docs/diagrams/` | draw.io図と顧客説明用PDF。公開安全なラベルだけを使います。 |
+| `docs/adr/` | Architecture Decision Records。主要な設計判断を記録します。 |
+| `scripts/` | spec validationなど、リポジトリ検証用スクリプト。 |
+| `.github/` | Copilot instructions、CI workflow、Issue/PRテンプレート。 |
 
 ## 対応形式と制限
 
@@ -102,10 +138,11 @@ Fast Transcription の diarization 経路は 2 時間境界に近づくほど失
 
 - 本番化前に Microsoft Entra ID / Easy Auth を必須化し、token claims に基づく tenant/user 認可へ切り替えます。
 - SAS は User Delegation SAS を使い、Storage account key を使った SAS は新規実装しません。
-- SAS は短い TTL と最小権限で発行します。
-- Blob 匿名公開と共有キーアクセスは無効化する方針です。
-- 中期ハードニングでは、Speech/CUが読む raw input は public ingest Storage に限定し、transcript / minutes / visual context などの artifact は Private Endpoint 経由の別Storageへ分離します。
-- Cosmos DB は Functions VNet Integration + Private Endpoint でprivate化する計画です。ただし Speech/CU の URL fetch 制約があるため、ingest Storage の public endpoint は残ります。
+- SAS は用途ごとにTTLと権限を分けます。アップロードSASは短時間、Batch入力のread SASは処理待ちを考慮して長めに発行します。
+- Blob 匿名公開と共有キーアクセスは無効化します。
+- azd既定デプロイ（`infra/main.parameters.json`）では、Private Endpoint疎通検証済みのdev環境を前提に、Speech/CUが読む入力は public network endpoint を維持した Ingest Storage に限定し、transcript / minutes / visual context などの artifact は Private Endpoint 経由の別Storageへ分離します。
+- Ingest Storageのpublic network endpointは、ブラウザ直接アップロードとSpeech/CUのURL fetch制約のため維持します。ただし匿名公開ではなく、短期TTLのUser Delegation SAS / Entra ID を前提にします。
+- Cosmos DB は Functions VNet Integration + Private Endpoint 経由にし、public network accessを無効化する構成をazd既定デプロイで有効化しています。既存public構成から段階移行する場合は、先にPrivate Endpoint疎通を確認してからpublic accessを閉じてください。
 - 音声本文、transcript 全文、議事録全文、SAS URL 全文、アクセストークン、API key、Storage account key をログに出しません。
 - speaker ID から実名を自動推定しません。
 - 脆弱性報告は `SECURITY.md` を参照してください。公開 Issue に秘密情報や実データを貼らないでください。
@@ -205,6 +242,7 @@ python -m json.tool specs\normalized-transcript.schema.json > $null
 - `docs/diagrams/azure-resource-architecture.drawio` - Azureサービスアイコン付きリソース構成図。
 - `docs/diagrams/azure-network-architecture.drawio` - public ingest と Private Endpoint / Private DNS の境界を示すネットワーク構成図。
 - `docs/diagrams/azure-architecture.drawio` - シンプルなAzureアーキテクチャ概要図。
+- `docs/diagrams/minutes-studio-azure-diagrams.pdf` - 顧客説明向けに3つの構成図をまとめたPDF。
 - `docs/00-design-summary.md` - 設計サマリーと現在の dev MVP 状態。
 - `docs/01-requirements.md` - 要件。
 - `docs/02-architecture.md` - アーキテクチャ。
@@ -228,11 +266,10 @@ python -m json.tool specs\normalized-transcript.schema.json > $null
 ## ロードマップ
 
 1. Microsoft Entra ID / Easy Auth、demo 認証廃止、ユーザー単位認可テスト。
-2. public ingest Storage と private Artifact Storage / private Cosmos DB の段階的ハードニング。
-3. 代表的な短い会議音声 fixture と品質期待値の整備。
-4. 80 分級音声を含む性能・コスト・429 率の測定と ADR 化。
-5. UI ポーリング backoff、retry、cancel、regenerate、job 一覧の整備。
-6. Application Insights での機密ログ漏えい回帰スキャン自動化。
+2. 代表的な短い会議音声 fixture と品質期待値の整備。
+3. 80分級・2時間超・Batch fallback経路の性能、コスト、429率の測定とADR化。
+4. UI ポーリング backoff、retry、cancel、regenerate、job 一覧の整備。
+5. Application Insights での機密ログ漏えい回帰スキャン自動化。
 6. 必要に応じて Azure SignalR Service、Azure AI Search、Azure Container Apps Jobs を追加。
 
 ## コントリビュート

@@ -20,7 +20,7 @@ param demoAccessKey string = ''
 @secure()
 param proxySecret string = ''
 
-@description('When true, new transcript/minutes/visual artifacts are written to a private artifact Storage account through Private Endpoint. Keep false for the current dev-compatible topology.')
+@description('When true, new transcript/minutes/visual artifacts are written to a private artifact Storage account through Private Endpoint. The azd dev parameters enable this for the current deployed environment; the module default stays false for isolated validation.')
 param enablePrivateArtifacts bool = false
 
 @description('When true, create a Cosmos DB Private Endpoint and private DNS link while keeping public access enabled unless lockDownCosmosPublicAccess is also true.')
