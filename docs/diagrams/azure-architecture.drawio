@@ -1,196 +1,194 @@
 <mxfile host="65bd71144e">
-  <diagram id="azure-architecture" name="Azure 概要構成">
-    <mxGraphModel dx="1900" dy="1220" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1220" math="0" shadow="0">
-      <root>
-        <mxCell id="0"/>
-        <mxCell id="1" parent="0"/>
-        <mxCell id="title" value="Minutes Studio - Azure 概要構成図" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1f4e79;strokeColor=#17365d;fontColor=#ffffff;fontSize=24;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="40" y="24" width="1820" height="58" as="geometry"/>
-        </mxCell>
-        <mxCell id="subtitle" value="録音済み音声を直接アップロードし、Durable Functions で文字起こし・議事録生成・成果物保存を非同期実行する開発MVP" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontColor=#605E5C;" parent="1" vertex="1">
-          <mxGeometry x="250" y="88" width="1400" height="30" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="zone-user" value="1. 利用者とブラウザ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;fontSize=17;fontStyle=1;align=center;verticalAlign=top;spacingTop=12;" parent="1" vertex="1">
-          <mxGeometry x="40" y="140" width="285" height="840" as="geometry"/>
-        </mxCell>
-        <mxCell id="zone-app" value="2. アプリ / API / ワークフロー" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;fontSize=17;fontStyle=1;align=center;verticalAlign=top;spacingTop=12;" parent="1" vertex="1">
-          <mxGeometry x="360" y="140" width="555" height="840" as="geometry"/>
-        </mxCell>
-        <mxCell id="zone-ai" value="3. AI 処理（単一 AIServices アカウント）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f0ff;strokeColor=#9673a6;strokeWidth=2;fontSize=17;fontStyle=1;align=center;verticalAlign=top;spacingTop=12;" parent="1" vertex="1">
-          <mxGeometry x="950" y="140" width="430" height="840" as="geometry"/>
-        </mxCell>
-        <mxCell id="zone-data" value="4. 保存 / 状態 / 監視" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;fontSize=17;fontStyle=1;align=center;verticalAlign=top;spacingTop=12;" parent="1" vertex="1">
-          <mxGeometry x="1415" y="140" width="445" height="840" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="user" value="ユーザー&#xa;録音済み音声 / 動画" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;strokeWidth=2;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="80" y="210" width="205" height="82" as="geometry"/>
-        </mxCell>
-        <mxCell id="browser" value="ブラウザ UI&#xa;ファイル選択 / 直接アップロード&#xa;状態ポーリング / 結果確認" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="70" y="380" width="225" height="120" as="geometry"/>
-        </mxCell>
-        <mxCell id="drawer" value="仕組みガイド&#xa;右サイドドロワー&#xa;処理・Azure構成を説明" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9e6;strokeColor=#d6b656;strokeWidth=1;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="70" y="720" width="225" height="92" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="app-service" value="Azure App Service&#xa;React UI 配信&#xa;アクセスキーゲート / APIプロキシ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="405" y="190" width="225" height="95" as="geometry"/>
-        </mxCell>
-        <mxCell id="functions-api" value="Azure Functions Premium&#xa;HTTP API / Python 3.13&#xa;User Delegation SAS発行" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="405" y="350" width="225" height="110" as="geometry"/>
-        </mxCell>
-        <mxCell id="durable" value="Durable Functions&#xa;オーケストレーター&#xa;Activity / 再試行 / タイマー待機" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="655" y="350" width="220" height="110" as="geometry"/>
-        </mxCell>
-        <mxCell id="pipeline" value="標準経路の主なActivity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5faff;strokeColor=#6c8ebf;strokeWidth=1;fontSize=14;fontStyle=1;align=center;verticalAlign=top;spacingTop=8;" parent="1" vertex="1">
-          <mxGeometry x="390" y="560" width="500" height="270" as="geometry"/>
-        </mxCell>
-        <mxCell id="activity-validate" value="① 入力検証&#xa;サイズ / 形式 / 実Blob確認" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="415" y="615" width="135" height="64" as="geometry"/>
-        </mxCell>
-        <mxCell id="activity-preprocess" value="② 前処理&#xa;m4a/mp4 → 16kHz mono FLAC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="575" y="615" width="140" height="64" as="geometry"/>
-        </mxCell>
-        <mxCell id="activity-engine" value="③ エンジン判定&#xa;Fast / Batch自動切替" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="740" y="615" width="125" height="64" as="geometry"/>
-        </mxCell>
-        <mxCell id="activity-normalize" value="④ 正規化&#xa;話者 / 時刻 / 発話本文" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="415" y="725" width="135" height="64" as="geometry"/>
-        </mxCell>
-        <mxCell id="activity-minutes" value="⑤ 議事録生成&#xa;文字起こし根拠 / 推測禁止" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="575" y="725" width="140" height="64" as="geometry"/>
-        </mxCell>
-        <mxCell id="activity-render" value="⑥ schema検証&#xa;Markdownはコード生成" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="740" y="725" width="125" height="64" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="ai-parent" value="AIServices アカウント&#xa;Speech / OpenAI / Content Understanding を単一エンドポイントで提供" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;strokeWidth=3;fontSize=14;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" parent="1" vertex="1">
-          <mxGeometry x="985" y="190" width="360" height="650" as="geometry"/>
-        </mxCell>
-        <mxCell id="ai-fast" value="Speech: Fast Transcription&#xa;500MB未満 / 2時間未満&#xa;diarization有効" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5edff;strokeColor=#9673a6;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="1015" y="265" width="300" height="82" as="geometry"/>
-        </mxCell>
-        <mxCell id="ai-batch" value="Speech: Batch自動切替&#xa;1GB未満 / 4時間未満&#xa;最大24時間の非同期処理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5edff;strokeColor=#9673a6;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="1015" y="375" width="300" height="82" as="geometry"/>
-        </mxCell>
-        <mxCell id="ai-cu" value="Content Understanding（実験）&#xa;映像メモ / 映像補足&#xa;標準経路の置換ではない" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#d79b00;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="1015" y="485" width="300" height="82" as="geometry"/>
-        </mxCell>
-        <mxCell id="ai-openai" value="Azure OpenAI v1&#xa;議事録JSON生成&#xa;全文生成 / テキスト分割予備処理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5edff;strokeColor=#9673a6;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="1015" y="595" width="300" height="82" as="geometry"/>
-        </mxCell>
-        <mxCell id="foundry" value="Foundry プロジェクト&#xa;新ポータルでデモ/実験を整理&#xa;実行時APIは親アカウントのエンドポイント" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f8f8;strokeColor=#666666;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="1015" y="735" width="300" height="80" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="ingest" value="公開 Ingest Storage&#xa;元音声 / 前処理済みFLAC&#xa;ブラウザ・Speech・CUが参照" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="1455" y="190" width="355" height="105" as="geometry"/>
-        </mxCell>
-        <mxCell id="artifact" value="Private Artifact Storage&#xa;生/正規化済み文字起こし&#xa;議事録JSON / Markdown / 映像補足" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef8ee;strokeColor=#82b366;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="1455" y="350" width="355" height="112" as="geometry"/>
-        </mxCell>
-        <mxCell id="cosmos" value="Azure Cosmos DB for NoSQL&#xa;ジョブ状態 / 進捗 / 出力URI&#xa;Private Endpoint経由" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef8ee;strokeColor=#82b366;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="1455" y="520" width="355" height="112" as="geometry"/>
-        </mxCell>
-        <mxCell id="monitor" value="Application Insights + Log Analytics&#xa;処理時間 / 依存関係 / 失敗調査&#xa;本文・SAS全文はログ禁止" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f8f8;strokeColor=#666666;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="1455" y="690" width="355" height="112" as="geometry"/>
-        </mxCell>
-        <mxCell id="security" value="Managed Identity / RBAC&#xa;User Delegation SAS&#xa;Storageアカウントキー不使用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d79b00;strokeWidth=2;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="1455" y="850" width="355" height="82" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="note" value="公開安全な図: 実リソース名、subscription/tenant ID、エンドポイント、SAS URL、token、key は記載しない。現在の開発実機は Private Artifacts / Cosmos Private Endpoint / Cosmos公開アクセス無効を有効化済み。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
-          <mxGeometry x="40" y="1035" width="1820" height="72" as="geometry"/>
-        </mxCell>
-
-        <mxCell id="e-user-browser" value="ファイル選択" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="user" target="browser" edge="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-browser-app" value="Web UI / API" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.25;entryX=0;entryY=0.5;" parent="1" source="browser" target="app-service" edge="1">
-          <mxGeometry relative="1" x="-0.15" y="-14" as="geometry">
-            <Array as="points">
-              <mxPoint x="335" y="410"/>
-              <mxPoint x="335" y="238"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-browser-functions" value="ジョブ作成 / 完了通知" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.55;entryX=0;entryY=0.5;" parent="1" source="browser" target="functions-api" edge="1">
-          <mxGeometry relative="1" x="-0.05" y="4" as="geometry">
-            <Array as="points">
-              <mxPoint x="335" y="446"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-browser-ingest" value="直接アップロード&#xa;HTTPS 443 + SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=3;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.84;entryX=0;entryY=0.25;" parent="1" source="browser" target="ingest" edge="1">
-          <mxGeometry relative="1" x="0.1" y="16" as="geometry">
-            <Array as="points">
-              <mxPoint x="335" y="500"/>
-              <mxPoint x="335" y="122"/>
-              <mxPoint x="1430" y="122"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-app-functions" value="APIプロキシ" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="app-service" target="functions-api" edge="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-functions-durable" value="orchestration開始" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="functions-api" target="durable" edge="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-durable-activity" value="Activity呼び出し" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.45;exitY=1;entryX=0.5;entryY=0;" parent="1" source="durable" target="activity-validate" edge="1">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="754" y="535"/>
-              <mxPoint x="482" y="535"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-a1-a2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="activity-validate" target="activity-preprocess" edge="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-a2-a3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="activity-preprocess" target="activity-engine" edge="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-a3-a4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="activity-engine" target="activity-normalize" edge="1">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="803" y="705"/>
-              <mxPoint x="482" y="705"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-a4-a5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="activity-normalize" target="activity-minutes" edge="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-a5-a6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="activity-minutes" target="activity-render" edge="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-functions-ingest" value="前処理済みFLAC保存 / 読み取りSAS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.1;entryX=0;entryY=0.35;" parent="1" source="functions-api" target="ingest" edge="1">
-          <mxGeometry relative="1" x="0.05" y="-18" as="geometry">
-            <Array as="points">
-              <mxPoint x="650" y="320"/>
-              <mxPoint x="950" y="240"/>
-              <mxPoint x="1430" y="240"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-ai-ingest" value="audioUrl取得&#xa;SAS付き入力取得" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;startArrow=block;startFill=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.25;entryX=0;entryY=0.68;" parent="1" source="ai-parent" target="ingest" edge="1">
-          <mxGeometry relative="1" x="-0.15" y="-18" as="geometry">
-            <Array as="points">
-              <mxPoint x="1395" y="320"/>
-              <mxPoint x="1395" y="262"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e-engine-ai" value="Fast / Batch / CU / OpenAI呼び出し" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.55;" parent="1" source="activity-engine" target="ai-parent" edge="1">
-          <mxGeometry relative="1" x="-0.1" y="12" as="geometry">
-            <Array as="points">
-              <mxPoint x="920" y="647"/>
-              <mxPoint x="920" y="470"/>
-            </Array>
-          </mxGeometry>
-        </mxCell>
-      </root>
-    </mxGraphModel>
-  </diagram>
+    <diagram id="azure-architecture" name="Azure 概要構成">
+        <mxGraphModel dx="1235" dy="952" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1220" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="Minutes Studio - Azure 概要構成図" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1f4e79;strokeColor=#17365d;fontColor=#ffffff;fontSize=24;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="24" width="1820" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="subtitle" value="録音済み音声を直接アップロードし、Durable Functions で文字起こし・議事録生成・成果物保存を非同期実行する開発MVP" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontColor=#605E5C;" parent="1" vertex="1">
+                    <mxGeometry x="250" y="88" width="1400" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="zone-user" value="1. 利用者とブラウザ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;fontSize=17;fontStyle=1;align=center;verticalAlign=top;spacingTop=12;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="140" width="285" height="840" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="zone-app" target="ai-openai">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="zone-app" value="2. アプリ / API / ワークフロー" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;fontSize=17;fontStyle=1;align=center;verticalAlign=top;spacingTop=12;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="140" width="555" height="840" as="geometry"/>
+                </mxCell>
+                <mxCell id="zone-ai" value="3. AI 処理（単一 AIServices アカウント）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f0ff;strokeColor=#9673a6;strokeWidth=2;fontSize=17;fontStyle=1;align=center;verticalAlign=top;spacingTop=12;" parent="1" vertex="1">
+                    <mxGeometry x="950" y="140" width="430" height="840" as="geometry"/>
+                </mxCell>
+                <mxCell id="zone-data" value="4. 保存 / 状態 / 監視" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;fontSize=17;fontStyle=1;align=center;verticalAlign=top;spacingTop=12;" parent="1" vertex="1">
+                    <mxGeometry x="1415" y="140" width="445" height="840" as="geometry"/>
+                </mxCell>
+                <mxCell id="user" value="ユーザー&#xa;録音済み音声 / 動画" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;strokeWidth=2;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="210" width="205" height="82" as="geometry"/>
+                </mxCell>
+                <mxCell id="browser" value="ブラウザ UI&#xa;ファイル選択 / 直接アップロード&#xa;状態ポーリング / 結果確認" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="380" width="225" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="drawer" value="仕組みガイド&#xa;右サイドドロワー&#xa;処理・Azure構成を説明" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9e6;strokeColor=#d6b656;strokeWidth=1;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="720" width="225" height="92" as="geometry"/>
+                </mxCell>
+                <mxCell id="app-service" value="Azure App Service&#xa;React UI 配信&#xa;アクセスキーゲート / APIプロキシ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="405" y="190" width="225" height="95" as="geometry"/>
+                </mxCell>
+                <mxCell id="functions-api" value="Azure Functions Premium&#xa;HTTP API / Python 3.13&#xa;User Delegation SAS発行" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="405" y="350" width="225" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="durable" value="Durable Functions&#xa;オーケストレーター&#xa;Activity / 再試行 / タイマー待機" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="655" y="350" width="220" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="pipeline" value="標準経路の主なActivity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5faff;strokeColor=#6c8ebf;strokeWidth=1;fontSize=14;fontStyle=1;align=center;verticalAlign=top;spacingTop=8;" parent="1" vertex="1">
+                    <mxGeometry x="390" y="560" width="500" height="270" as="geometry"/>
+                </mxCell>
+                <mxCell id="activity-validate" value="① 入力検証&#xa;サイズ / 形式 / 実Blob確認" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="415" y="615" width="135" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="activity-preprocess" value="② 前処理&#xa;m4a/mp4 → 16kHz mono FLAC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="575" y="615" width="140" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="activity-engine" value="③ エンジン判定&#xa;Fast / Batch自動切替" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="740" y="615" width="125" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="activity-normalize" value="④ 正規化&#xa;話者 / 時刻 / 発話本文" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="415" y="725" width="135" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="activity-minutes" value="⑤ 議事録生成&#xa;文字起こし根拠 / 推測禁止" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="575" y="725" width="140" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="activity-render" value="⑥ schema検証&#xa;Markdownはコード生成" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="740" y="725" width="125" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="ai-parent" value="AIServices アカウント&#xa;Speech / OpenAI / Content Understanding を単一エンドポイントで提供" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;strokeWidth=3;fontSize=14;fontStyle=1;align=center;verticalAlign=top;spacingTop=10;" parent="1" vertex="1">
+                    <mxGeometry x="985" y="190" width="360" height="650" as="geometry"/>
+                </mxCell>
+                <mxCell id="ai-fast" value="Speech: Fast Transcription&#xa;500MB未満 / 2時間未満&#xa;diarization有効" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5edff;strokeColor=#9673a6;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1015" y="265" width="300" height="82" as="geometry"/>
+                </mxCell>
+                <mxCell id="ai-batch" value="Speech: Batch自動切替&#xa;1GB未満 / 4時間未満&#xa;最大24時間の非同期処理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5edff;strokeColor=#9673a6;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1015" y="375" width="300" height="82" as="geometry"/>
+                </mxCell>
+                <mxCell id="ai-cu" value="Content Understanding（実験）&#xa;映像メモ / 映像補足&#xa;標準経路の置換ではない" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#d79b00;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1015" y="485" width="300" height="82" as="geometry"/>
+                </mxCell>
+                <mxCell id="ai-openai" value="Azure OpenAI v1&#xa;議事録JSON生成&#xa;全文生成 / テキスト分割予備処理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5edff;strokeColor=#9673a6;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1015" y="595" width="300" height="82" as="geometry"/>
+                </mxCell>
+                <mxCell id="foundry" value="Foundry プロジェクト&#xa;新ポータルでデモ/実験を整理&#xa;実行時APIは親アカウントのエンドポイント" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f8f8;strokeColor=#666666;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1015" y="735" width="300" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="ingest" value="公開 Ingest Storage&#xa;元音声 / 前処理済みFLAC&#xa;ブラウザ・Speech・CUが参照" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1455" y="190" width="355" height="105" as="geometry"/>
+                </mxCell>
+                <mxCell id="artifact" value="Private Artifact Storage&#xa;生/正規化済み文字起こし&#xa;議事録JSON / Markdown / 映像補足" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef8ee;strokeColor=#82b366;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1455" y="350" width="355" height="112" as="geometry"/>
+                </mxCell>
+                <mxCell id="cosmos" value="Azure Cosmos DB for NoSQL&#xa;ジョブ状態 / 進捗 / 出力URI&#xa;Private Endpoint経由" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef8ee;strokeColor=#82b366;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1455" y="520" width="355" height="112" as="geometry"/>
+                </mxCell>
+                <mxCell id="monitor" value="Application Insights + Log Analytics&#xa;処理時間 / 依存関係 / 失敗調査&#xa;本文・SAS全文はログ禁止" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f8f8;strokeColor=#666666;strokeWidth=2;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1455" y="690" width="355" height="112" as="geometry"/>
+                </mxCell>
+                <mxCell id="security" value="Managed Identity / RBAC&#xa;User Delegation SAS&#xa;Storageアカウントキー不使用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d79b00;strokeWidth=2;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1455" y="850" width="355" height="82" as="geometry"/>
+                </mxCell>
+                <mxCell id="note" value="公開安全な図: 実リソース名、subscription/tenant ID、エンドポイント、SAS URL、token、key は記載しない。現在の開発実機は Private Artifacts / Cosmos Private Endpoint / Cosmos公開アクセス無効を有効化済み。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="1035" width="1820" height="72" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-user-browser" value="ファイル選択" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="user" target="browser" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-browser-app" value="Web UI / API" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.25;entryX=0;entryY=0.5;" parent="1" source="browser" target="app-service" edge="1">
+                    <mxGeometry x="-0.15" y="-14" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="335" y="410"/>
+                            <mxPoint x="335" y="238"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-browser-functions" value="ジョブ作成 / 完了通知" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.55;entryX=0;entryY=0.5;" parent="1" source="browser" target="functions-api" edge="1">
+                    <mxGeometry x="-0.05" y="4" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="335" y="446"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-browser-ingest" value="直接アップロード&#xa;HTTPS 443 + SAS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=3;endArrow=block;endFill=1;fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;exitX=1;exitY=0.84;entryX=0;entryY=0.25;" parent="1" source="browser" target="ingest" edge="1">
+                    <mxGeometry x="0.1" y="16" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="335" y="500"/>
+                            <mxPoint x="335" y="122"/>
+                            <mxPoint x="1430" y="122"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-app-functions" value="APIプロキシ" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="app-service" target="functions-api" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-functions-durable" value="orchestration開始" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="functions-api" target="durable" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-durable-activity" value="Activity呼び出し" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.45;exitY=1;entryX=0.5;entryY=0;" parent="1" source="durable" target="activity-validate" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="754" y="535"/>
+                            <mxPoint x="482" y="535"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-a1-a2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="activity-validate" target="activity-preprocess" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-a2-a3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="activity-preprocess" target="activity-engine" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-a3-a4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="activity-engine" target="activity-normalize" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="803" y="705"/>
+                            <mxPoint x="482" y="705"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-a4-a5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="activity-normalize" target="activity-minutes" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-a5-a6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2f5597;strokeWidth=2;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="activity-minutes" target="activity-render" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-functions-ingest" value="前処理済みFLAC保存 / 読み取りSAS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38761d;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.1;entryX=0;entryY=0.35;" parent="1" source="functions-api" target="ingest" edge="1">
+                    <mxGeometry x="0.05" y="-18" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="630" y="320"/>
+                            <mxPoint x="760" y="320"/>
+                            <mxPoint x="760" y="260"/>
+                            <mxPoint x="1430" y="260"/>
+                            <mxPoint x="1430" y="227"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-ai-ingest" value="audioUrl取得&#xa;SAS付き入力取得" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;startArrow=block;startFill=1;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.25;entryX=0;entryY=0.68;" parent="1" source="ai-parent" target="ingest" edge="1">
+                    <mxGeometry x="-0.15" y="-18" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1395" y="320"/>
+                            <mxPoint x="1395" y="262"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e-engine-ai" value="Fast / Batch / CU / OpenAI呼び出し" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;strokeWidth=2;endArrow=block;endFill=1;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.55;" parent="1" source="activity-engine" target="ai-parent" edge="1">
+                    <mxGeometry x="-0.1" y="12" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="930" y="647"/>
+                            <mxPoint x="930" y="547"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
 </mxfile>
